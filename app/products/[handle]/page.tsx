@@ -4,9 +4,10 @@ import React, { useState, useEffect, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Star, ShoppingCart, ShieldCheck, Check, AlertTriangle, ArrowRight, Truck, RotateCcw, Wrench } from "lucide-react";
+import { Star, ShoppingCart, ShieldCheck, Check, AlertTriangle, ArrowRight, Truck, RotateCcw, Wrench, Heart } from "lucide-react";
 import { getProduct, getProducts, Product } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 
 const MOTORCYCLES = [
   { maker: "KTM", models: ["Duke 390", "RC 390"] },
@@ -39,6 +40,7 @@ export default function ProductPage({
   });
 
   const { addItem } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
   const [isAdding, setIsAdding] = useState(false);
 
   // Fetch product data
@@ -446,24 +448,37 @@ export default function ProductPage({
                   </div>
                 </div>
 
-                {/* Add To Cart CTA */}
-                <button
-                  onClick={handleAddToCart}
-                  disabled={isAdding}
-                  className="w-full bg-brand-primary hover:bg-brand-red text-white py-4 font-headings text-sm uppercase tracking-wider font-extrabold transition-all duration-300 flex items-center justify-center gap-2.5 shadow-md hover:shadow-xl"
-                >
-                  {isAdding ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Adding to Garage...
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingCart className="w-4 h-4" />
-                      Add to Cart
-                    </>
-                  )}
-                </button>
+                {/* Add To Cart & Wishlist CTA */}
+                 <div className="flex gap-3">
+                   <button
+                     onClick={handleAddToCart}
+                     disabled={isAdding}
+                     className="flex-grow bg-brand-primary hover:bg-brand-red text-white py-4 font-headings text-sm uppercase tracking-wider font-extrabold transition-all duration-300 flex items-center justify-center gap-2.5 shadow-md hover:shadow-xl"
+                   >
+                     {isAdding ? (
+                       <>
+                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                         Adding to Garage...
+                       </>
+                     ) : (
+                       <>
+                         <ShoppingCart className="w-4 h-4" />
+                         Add to Cart
+                       </>
+                     )}
+                   </button>
+                   <button
+                     onClick={() => toggleWishlist(product)}
+                     className={`px-4 border rounded-lg flex items-center justify-center transition-all duration-300 ${
+                       isInWishlist(product.id)
+                         ? "border-brand-red bg-brand-red/5 text-brand-red hover:bg-brand-red/10"
+                         : "border-brand-border hover:border-brand-primary text-brand-primary bg-white"
+                     }`}
+                     title={isInWishlist(product.id) ? "Remove from Garage Build Planner" : "Add to Garage Build Planner"}
+                   >
+                     <Heart className={`w-5 h-5 ${isInWishlist(product.id) ? "fill-current" : ""}`} />
+                   </button>
+                 </div>
               </div>
 
               {/* Service banners */}

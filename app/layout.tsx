@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 import InitialLoader from "@/components/InitialLoader";
 import { CartProvider } from "@/context/CartContext";
+import { WishlistProvider } from "@/context/WishlistContext";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -71,25 +72,27 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-brand-bg text-brand-primary">
         <CartProvider>
-          <SmoothScroll>
-            {/* Scroll progress and scroll-to-top dial */}
-            <ScrollIndicator />
+          <WishlistProvider>
+            <SmoothScroll>
+              {/* Scroll progress and scroll-to-top dial */}
+              <ScrollIndicator />
 
-            {/* Initial landing loader */}
-            <InitialLoader />
+              {/* Initial landing loader */}
+              <InitialLoader />
 
-            {/* Transparent Sticky navigation */}
-            <Header />
-            
-            {/* Main content renders here */}
-            <div className="flex-grow flex flex-col">{children}</div>
-            
-            {/* Right aligned sliding shopping cart drawer */}
-            <CartDrawer />
-            
-            {/* Dark themed footer */}
-            <Footer />
-          </SmoothScroll>
+              {/* Transparent Sticky navigation */}
+              <Header />
+              
+              {/* Main content renders here */}
+              <div className="flex-grow flex flex-col">{children}</div>
+              
+              {/* Right aligned sliding shopping cart drawer */}
+              <CartDrawer />
+              
+              {/* Dark themed footer */}
+              <Footer />
+            </SmoothScroll>
+          </WishlistProvider>
         </CartProvider>
       </body>
     </html>

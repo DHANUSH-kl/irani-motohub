@@ -1043,3 +1043,165 @@ export async function addToCart(cartId: string, variantId: string, quantity: num
 
   return null;
 }
+
+export function isProductCompatible(
+  product: Product,
+  bike: { maker: string; model: string; year?: string } | null
+): boolean {
+  if (!bike) return true;
+
+  // Universal products match any bike
+  const isUniversal = 
+    product.compatibility.includes("All Motorcycles") || 
+    product.compatibility.includes("Universal") ||
+    product.category.toLowerCase() === "helmets" || 
+    product.category.toLowerCase() === "riding gear";
+    
+  if (isUniversal) return true;
+
+  const compLower = product.compatibility.map(c => c.toLowerCase().trim());
+  const makerLower = bike.maker.toLowerCase().trim();
+  const modelLower = bike.model.toLowerCase().trim();
+  
+  // 1. Check maker match
+  const makerMatch = compLower.some(c => c === makerLower || c.includes(makerLower) || makerLower.includes(c));
+  if (!makerMatch) return false;
+  
+  // 2. Check model match
+  const modelMatch = compLower.some(c => c === modelLower || c.includes(modelLower) || modelLower.includes(c));
+  if (!modelMatch) return false;
+  
+  // 3. Check year match (only if year is selected and the product has numeric year tags)
+  if (bike.year) {
+    const yearLower = bike.year.toLowerCase().trim();
+    const productHasYearTags = compLower.some(c => /^\d{4}$/.test(c));
+    if (productHasYearTags) {
+      const yearMatch = compLower.includes(yearLower);
+      if (!yearMatch) return false;
+    }
+  }
+  
+  return true;
+}
+
+export interface BikeProfile {
+  maker: string;
+  model: string;
+  stockHP: number;
+  stockWeight: number; // in kg
+  engine: string;
+  image: string;
+}
+
+export const MASTER_MOTORCYCLES: BikeProfile[] = [
+  { 
+    maker: "KTM", 
+    model: "Duke 390", 
+    stockHP: 45.0, 
+    stockWeight: 168, 
+    engine: "399cc Liquid-Cooled Single",
+    image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop"
+  },
+  { 
+    maker: "KTM", 
+    model: "RC 390", 
+    stockHP: 43.5, 
+    stockWeight: 172, 
+    engine: "373cc Liquid-Cooled Single",
+    image: "https://images.unsplash.com/photo-1609630875171-b1321377ee65?q=80&w=400&auto=format&fit=crop"
+  },
+  { 
+    maker: "Royal Enfield", 
+    model: "Himalayan 450", 
+    stockHP: 40.0, 
+    stockWeight: 196, 
+    engine: "452cc Liquid-Cooled Sherpa Single",
+    image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop"
+  },
+  { 
+    maker: "Royal Enfield", 
+    model: "Interceptor 650", 
+    stockHP: 47.0, 
+    stockWeight: 202, 
+    engine: "648cc Air-Oil Cooled Parallel Twin",
+    image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop"
+  },
+  { 
+    maker: "Royal Enfield", 
+    model: "Continental GT 650", 
+    stockHP: 47.0, 
+    stockWeight: 198, 
+    engine: "648cc Air-Oil Cooled Parallel Twin",
+    image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop"
+  },
+  { 
+    maker: "Yamaha", 
+    model: "R15 V4", 
+    stockHP: 18.4, 
+    stockWeight: 142, 
+    engine: "155cc Liquid-Cooled VVA Single",
+    image: "https://images.unsplash.com/photo-1609630875171-b1321377ee65?q=80&w=400&auto=format&fit=crop"
+  },
+  { 
+    maker: "Triumph", 
+    model: "Speed 400", 
+    stockHP: 40.0, 
+    stockWeight: 170, 
+    engine: "398cc Liquid-Cooled Single",
+    image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop"
+  }
+];
+
+export function getActiveMotorcycleGroups(products: Product[]): { maker: string; models: string[] }[] {
+  const activeBikes = MASTER_MOTORCYCLES.filter(bike => {
+    const makerLower = bike.maker.toLowerCase().trim();
+    const modelLower = bike.model.toLowerCase().trim();
+    
+    return products.some(product => {
+      const compLower = product.compatibility.map(c => c.toLowerCase().trim());
+      const hasMaker = compLower.some(c => c === makerLower || c.includes(makerLower) || makerLower.includes(c));
+      const hasModel = compLower.some(c => c === modelLower || c.includes(modelLower) || modelLower.includes(c));
+      return hasMaker && hasModel;
+    });
+  });
+
+  const bikesToGroup = activeBikes.length > 0 
+    ? activeBikes 
+    : MASTER_MOTORCYCLES.filter(b => b.maker === "KTM" || b.maker === "Royal Enfield");
+
+  const groupsMap = new Map<string, string[]>();
+  bikesToGroup.forEach(bike => {
+    if (!groupsMap.has(bike.maker)) {
+      groupsMap.set(bike.maker, []);
+    }
+    const list = groupsMap.get(bike.maker)!;
+    if (!list.includes(bike.model)) {
+      list.push(bike.model);
+    }
+  });
+
+  return Array.from(groupsMap.entries()).map(([maker, models]) => ({
+    maker,
+    models
+  }));
+}
+
+export function getActiveYears(products: Product[]): string[] {
+  const yearsSet = new Set<string>();
+  products.forEach(product => {
+    product.compatibility.forEach(c => {
+      const trimmed = c.trim();
+      if (/^\d{4}$/.test(trimmed)) {
+        yearsSet.add(trimmed);
+      }
+    });
+  });
+
+  if (yearsSet.size === 0) {
+    return ["2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"];
+  }
+
+  return Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
+}
+
+

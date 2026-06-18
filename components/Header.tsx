@@ -7,21 +7,15 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, User, ShoppingBag, Menu, X, ChevronDown, 
-  ArrowRight, ShieldCheck, Wrench, Trash2, Plus, Bike, Check 
+  ArrowRight, ShieldCheck, Wrench, Trash2, Plus, Bike, Check, Heart
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-import { getCollections, getProducts, Collection, Product } from "@/lib/shopify";
-
-// List of supported motorcycles for fitment selection
-const MOTORCYCLES = [
-  { maker: "KTM", models: ["Duke 390", "RC 390"] },
-  { maker: "Royal Enfield", models: ["Himalayan 450", "Interceptor 650", "Continental GT 650"] },
-  { maker: "Yamaha", models: ["R15 V4"] },
-  { maker: "Triumph", models: ["Speed 400"] }
-];
+import { useWishlist } from "@/context/WishlistContext";
+import { getCollections, getProducts, Collection, Product, getActiveMotorcycleGroups, getActiveYears } from "@/lib/shopify";
 
 export default function Header() {
   const { setIsOpen: openCart, cartCount } = useCart();
+  const { wishlist } = useWishlist();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -38,9 +32,15 @@ export default function Header() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
 
   // Rider Garage states
-  const [garageBike, setGarageBike] = useState<{ maker: string; model: string } | null>(null);
+  const [garageBike, setGarageBike] = useState<{ maker: string; model: string; year?: string } | null>(null);
   const [selectedMaker, setSelectedMaker] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const [motorcycles, setMotorcycles] = useState<{ maker: string; models: string[] }[]>([
+    { maker: "KTM", models: ["Duke 390", "RC 390"] },
+    { maker: "Royal Enfield", models: ["Himalayan 450", "Interceptor 650", "Continental GT 650"] }
+  ]);
+  const [years, setYears] = useState<string[]>(["2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"]);
 
   // Fetch collections & products
   useEffect(() => {
@@ -49,6 +49,8 @@ export default function Header() {
       setCollections(cols);
       const prods = await getProducts();
       setAllProducts(prods);
+      setMotorcycles(getActiveMotorcycleGroups(prods));
+      setYears(getActiveYears(prods));
     };
     loadData();
   }, []);
@@ -63,6 +65,7 @@ export default function Header() {
           setGarageBike(parsed);
           setSelectedMaker(parsed.maker);
           setSelectedModel(parsed.model);
+          setSelectedYear(parsed.year || "");
         }
       } catch (e) {
         console.error("Failed to parse garage cache", e);
@@ -78,6 +81,7 @@ export default function Header() {
           setGarageBike(parsed);
           setSelectedMaker(parsed.maker);
           setSelectedModel(parsed.model);
+          setSelectedYear(parsed.year || "");
         } catch (e) {
           setGarageBike(null);
         }
@@ -85,6 +89,7 @@ export default function Header() {
         setGarageBike(null);
         setSelectedMaker("");
         setSelectedModel("");
+        setSelectedYear("");
       }
     };
 
@@ -127,7 +132,7 @@ export default function Header() {
 
   const handleSaveGarage = () => {
     if (selectedMaker && selectedModel) {
-      const bike = { maker: selectedMaker, model: selectedModel };
+      const bike = { maker: selectedMaker, model: selectedModel, year: selectedYear || undefined };
       setGarageBike(bike);
       localStorage.setItem("rider_garage", JSON.stringify(bike));
       setIsGarageOpen(false);
@@ -139,6 +144,7 @@ export default function Header() {
     setGarageBike(null);
     setSelectedMaker("");
     setSelectedModel("");
+    setSelectedYear("");
     localStorage.removeItem("rider_garage");
     setIsGarageOpen(false);
     window.dispatchEvent(new Event("garage-updated"));
@@ -326,7 +332,7 @@ export default function Header() {
               >
                 <Bike className="w-3.5 h-3.5" />
                 <span>
-                  {garageBike ? `Garage: ${garageBike.maker} ${garageBike.model}` : "Select Motorcycle"}
+                  {garageBike ? `Garage: ${garageBike.maker} ${garageBike.model}${garageBike.year ? ` (${garageBike.year})` : ""}` : "Select Motorcycle"}
                 </span>
                 {/* Live Status indicator light */}
                 <span className={`w-1.5 h-1.5 rounded-full ${garageBike ? "bg-emerald-500 animate-pulse" : "bg-amber-500 animate-pulse"}`} />
@@ -364,16 +370,17 @@ export default function Header() {
                           onChange={(e) => {
                             setSelectedMaker(e.target.value);
                             setSelectedModel("");
+                            setSelectedYear("");
                           }}
                           className="w-full bg-[#121212] border border-white/10 rounded px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-brand-red text-white"
                         >
                           <option value="">Choose Maker</option>
-                          {MOTORCYCLES.map((m) => (
+                          {motorcycles.map((m) => (
                             <option key={m.maker} value={m.maker}>{m.maker}</option>
                           ))}
                         </select>
                       </div>
-
+ 
                       <div>
                         <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-gray-500 mb-1">
                           Model Designation
@@ -381,12 +388,32 @@ export default function Header() {
                         <select
                           value={selectedModel}
                           disabled={!selectedMaker}
-                          onChange={(e) => setSelectedModel(e.target.value)}
+                          onChange={(e) => {
+                            setSelectedModel(e.target.value);
+                            setSelectedYear("");
+                          }}
                           className="w-full bg-[#121212] border border-white/10 rounded px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-brand-red text-white disabled:opacity-40"
                         >
                           <option value="">Choose Model</option>
-                          {MOTORCYCLES.find((m) => m.maker === selectedMaker)?.models.map((mod) => (
+                          {motorcycles.find((m) => m.maker === selectedMaker)?.models.map((mod) => (
                             <option key={mod} value={mod}>{mod}</option>
+                          ))}
+                        </select>
+                      </div>
+ 
+                      <div>
+                        <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-gray-500 mb-1">
+                          Model Year
+                        </label>
+                        <select
+                          value={selectedYear}
+                          disabled={!selectedModel}
+                          onChange={(e) => setSelectedYear(e.target.value)}
+                          className="w-full bg-[#121212] border border-white/10 rounded px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-brand-red text-white disabled:opacity-40"
+                        >
+                          <option value="">Choose Year (Optional)</option>
+                          {years.map((y) => (
+                            <option key={y} value={y}>{y}</option>
                           ))}
                         </select>
                       </div>
@@ -411,6 +438,18 @@ export default function Header() {
                         </button>
                       )}
                     </div>
+
+                    {garageBike && (
+                      <div className="pt-3 border-t border-white/5 text-center">
+                        <Link
+                          href="/garage"
+                          onClick={() => setIsGarageOpen(false)}
+                          className="text-[10px] font-bold text-brand-red uppercase tracking-wider hover:underline flex items-center justify-center gap-1"
+                        >
+                          Configure Custom Build <ArrowRight className="w-3 h-3" />
+                        </Link>
+                      </div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -427,6 +466,20 @@ export default function Header() {
               >
                 <Search className="w-4.5 h-4.5" />
               </button>
+
+              {/* Garage Build/Wishlist Icon Link */}
+              <Link
+                href="/garage"
+                className="p-2 text-gray-400 hover:text-white transition-colors relative flex items-center"
+                aria-label="View Garage Dashboard"
+              >
+                <Heart className="w-4.5 h-4.5" />
+                {wishlist.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-brand-red text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
+                    {wishlist.length}
+                  </span>
+                )}
+              </Link>
 
               {/* Account Toggle */}
               <button
@@ -681,28 +734,28 @@ export default function Header() {
                         Reset
                       </button>
                     )}
-                  </div>
-
-                  <div className="space-y-2">
+                                    <div className="space-y-2">
                     <select
                       value={selectedMaker}
                       onChange={(e) => {
                         setSelectedMaker(e.target.value);
                         setSelectedModel("");
+                        setSelectedYear("");
                       }}
                       className="w-full bg-[#121212] border border-white/10 rounded px-2 py-1.5 text-xs font-semibold text-white focus:outline-none"
                     >
                       <option value="">Select Maker</option>
-                      {MOTORCYCLES.map((m) => (
+                      {motorcycles.map((m) => (
                         <option key={m.maker} value={m.maker}>{m.maker}</option>
                       ))}
                     </select>
-
+ 
                     <select
                       value={selectedModel}
                       disabled={!selectedMaker}
                       onChange={(e) => {
                         setSelectedModel(e.target.value);
+                        setSelectedYear("");
                         const savedBike = { maker: selectedMaker, model: e.target.value };
                         setGarageBike(savedBike);
                         localStorage.setItem("rider_garage", JSON.stringify(savedBike));
@@ -711,11 +764,30 @@ export default function Header() {
                       className="w-full bg-[#121212] border border-white/10 rounded px-2 py-1.5 text-xs font-semibold text-white disabled:opacity-40 focus:outline-none"
                     >
                       <option value="">Select Model</option>
-                      {MOTORCYCLES.find((m) => m.maker === selectedMaker)?.models.map((mod) => (
+                      {motorcycles.find((m) => m.maker === selectedMaker)?.models.map((mod) => (
                         <option key={mod} value={mod}>{mod}</option>
                       ))}
                     </select>
+ 
+                    <select
+                      value={selectedYear}
+                      disabled={!selectedModel}
+                      onChange={(e) => {
+                        setSelectedYear(e.target.value);
+                        const savedBike = { maker: selectedMaker, model: selectedModel, year: e.target.value || undefined };
+                        setGarageBike(savedBike);
+                        localStorage.setItem("rider_garage", JSON.stringify(savedBike));
+                        window.dispatchEvent(new Event("garage-updated"));
+                      }}
+                      className="w-full bg-[#121212] border border-white/10 rounded px-2 py-1.5 text-xs font-semibold text-white disabled:opacity-40 focus:outline-none"
+                    >
+                      <option value="">Select Year (Optional)</option>
+                      {years.map((y) => (
+                        <option key={y} value={y}>{y}</option>
+                      ))}
+                    </select>
                   </div>
+ </div>
                   {garageBike && (
                     <p className="text-[9px] text-emerald-500 font-semibold text-center italic">
                       ✓ Garage profile is synchronized across catalog!
@@ -745,6 +817,14 @@ export default function Header() {
 
                 {/* Secondary navigation */}
                 <div className="border-t border-white/5 pt-6 space-y-4 text-sm font-bold uppercase tracking-wider">
+                  <Link
+                    href="/garage"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block text-brand-red hover:text-white transition-colors"
+                  >
+                    Rider Garage & Build Planner
+                  </Link>
+
                   <a
                     href="#brands-section"
                     onClick={() => {

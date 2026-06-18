@@ -1,33 +1,39 @@
 "use client";
 
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
-import { Filter, SlidersHorizontal, Grid, Star, ShoppingCart, Eye, RotateCcw, Heart, ShoppingBag } from "lucide-react";
-import { getCollection, getProducts, Product, Collection, isProductCompatible } from "@/lib/shopify";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Filter, SlidersHorizontal, Star, ShoppingBag, RotateCcw, Heart, Search, Bike, Wrench } from "lucide-react";
+import { getProducts, Product, isProductCompatible, getActiveMotorcycleGroups, getActiveYears } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 
-export default function CollectionPage({
-  params,
-}: {
-  params: Promise<{ handle: string }>;
-}) {
-  const resolvedParams = use(params);
-  const handle = resolvedParams.handle;
+function ProductsContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const searchBarQuery = searchParams.get("search") || "";
+  const urlSearchQuery = searchParams.get("search") || "";
 
-  const [collection, setCollection] = useState<Collection | null>(null);
+  // Data states
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [garageBike, setGarageBike] = useState<{ maker: string; model: string; year?: string } | null>(null);
 
-  // Filter States
+  // Garage states
+  const [garageBike, setGarageBike] = useState<{ maker: string; model: string; year?: string } | null>(null);
+  const [selectedMaker, setSelectedMaker] = useState("");
+  const [selectedModel, setSelectedModel] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const [motorcycles, setMotorcycles] = useState<{ maker: string; models: string[] }[]>([
+    { maker: "KTM", models: ["Duke 390", "RC 390"] },
+    { maker: "Royal Enfield", models: ["Himalayan 450", "Interceptor 650", "Continental GT 650"] }
+  ]);
+  const [years, setYears] = useState<string[]>(["2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"]);
+
+  // Product Filter States
+  const [searchQuery, setSearchQuery] = useState(urlSearchQuery);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedPriceTier, setSelectedPriceTier] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("default");
 
@@ -35,29 +41,27 @@ export default function CollectionPage({
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [addingId, setAddingId] = useState<string | null>(null);
 
-  // Load collection and products
+  // Fetch products on mount
   useEffect(() => {
-    const loadCollectionData = async () => {
+    const fetchAllProducts = async () => {
       setLoading(true);
-      const colData = await getCollection(handle);
-      setCollection(colData);
-
-      // Fetch products for this collection
-      const prodData = await getProducts({ collectionHandle: handle });
-      setProducts(prodData);
-      setFilteredProducts(prodData);
+      const data = await getProducts();
+      setProducts(data);
+      setMotorcycles(getActiveMotorcycleGroups(data));
+      setYears(getActiveYears(data));
       setLoading(false);
     };
+    fetchAllProducts();
 
-    loadCollectionData();
-  }, [handle]);
-
-  // Sync Rider Garage state
-  useEffect(() => {
+    // Load active bike from garage cache
     const saved = localStorage.getItem("rider_garage");
     if (saved) {
       try {
-        setGarageBike(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setGarageBike(parsed);
+        setSelectedMaker(parsed.maker || "");
+        setSelectedModel(parsed.model || "");
+        setSelectedYear(parsed.year || "");
       } catch (e) {
         console.error(e);
       }
@@ -67,12 +71,19 @@ export default function CollectionPage({
       const savedUpdate = localStorage.getItem("rider_garage");
       if (savedUpdate) {
         try {
-          setGarageBike(JSON.parse(savedUpdate));
+          const parsed = JSON.parse(savedUpdate);
+          setGarageBike(parsed);
+          setSelectedMaker(parsed.maker || "");
+          setSelectedModel(parsed.model || "");
+          setSelectedYear(parsed.year || "");
         } catch (e) {
           setGarageBike(null);
         }
       } else {
         setGarageBike(null);
+        setSelectedMaker("");
+        setSelectedModel("");
+        setSelectedYear("");
       }
     };
 
@@ -82,7 +93,12 @@ export default function CollectionPage({
     };
   }, []);
 
-  // Apply filters & sorting
+  // Update local search state if URL search param changes
+  useEffect(() => {
+    setSearchQuery(urlSearchQuery);
+  }, [urlSearchQuery]);
+
+  // Apply filtering and sorting
   useEffect(() => {
     let result = [...products];
 
@@ -91,18 +107,26 @@ export default function CollectionPage({
       result = result.filter((p) => isProductCompatible(p, garageBike));
     }
 
-    // Filter by Search Query from URL
-    if (searchBarQuery) {
+    // Filter by Search Input Query
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase().trim();
       result = result.filter(
         (p) =>
-          p.title.toLowerCase().includes(searchBarQuery.toLowerCase()) ||
-          p.brand.toLowerCase().includes(searchBarQuery.toLowerCase())
+          p.title.toLowerCase().includes(q) ||
+          p.brand.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q) ||
+          p.compatibility.some(c => c.toLowerCase().includes(q))
       );
     }
 
-    // Filter by Brand checkbox
+    // Filter by Brands
     if (selectedBrands.length > 0) {
       result = result.filter((p) => selectedBrands.includes(p.brand));
+    }
+
+    // Filter by Categories
+    if (selectedCategories.length > 0) {
+      result = result.filter((p) => selectedCategories.includes(p.category));
     }
 
     // Filter by Price Tiers
@@ -116,7 +140,7 @@ export default function CollectionPage({
       });
     }
 
-    // Sorting
+    // Sort products
     if (sortBy === "price-asc") {
       result.sort((a, b) => parseFloat(a.priceRange.minVariantPrice.amount) - parseFloat(b.priceRange.minVariantPrice.amount));
     } else if (sortBy === "price-desc") {
@@ -126,21 +150,57 @@ export default function CollectionPage({
     }
 
     setFilteredProducts(result);
-  }, [products, selectedBrands, selectedPriceTier, sortBy, searchBarQuery, garageBike]);
+  }, [products, garageBike, searchQuery, selectedBrands, selectedCategories, selectedPriceTier, sortBy]);
 
-  // Extract unique brands for filters
+  // Extract unique brands & categories for filter options
   const uniqueBrands = Array.from(new Set(products.map((p) => p.brand)));
+  const uniqueCategories = Array.from(new Set(products.map((p) => p.category)));
 
+  // Handlers for selection
   const handleBrandChange = (brand: string) => {
     setSelectedBrands((prev) =>
       prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
     );
   };
 
+  const handleCategoryChange = (cat: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    );
+  };
+
   const handleResetFilters = () => {
     setSelectedBrands([]);
+    setSelectedCategories([]);
     setSelectedPriceTier("all");
     setSortBy("default");
+    setSearchQuery("");
+    
+    // Reset garage local states too if we want a full reset, or keep garage selected
+    setSelectedMaker("");
+    setSelectedModel("");
+    setSelectedYear("");
+    setGarageBike(null);
+    localStorage.removeItem("rider_garage");
+    window.dispatchEvent(new Event("garage-updated"));
+  };
+
+  const handleSaveGarage = () => {
+    if (selectedMaker && selectedModel) {
+      const bike = { maker: selectedMaker, model: selectedModel, year: selectedYear || undefined };
+      setGarageBike(bike);
+      localStorage.setItem("rider_garage", JSON.stringify(bike));
+      window.dispatchEvent(new Event("garage-updated"));
+    }
+  };
+
+  const handleClearGarage = () => {
+    setGarageBike(null);
+    setSelectedMaker("");
+    setSelectedModel("");
+    setSelectedYear("");
+    localStorage.removeItem("rider_garage");
+    window.dispatchEvent(new Event("garage-updated"));
   };
 
   const handleQuickAdd = (e: React.MouseEvent, product: Product) => {
@@ -157,19 +217,7 @@ export default function CollectionPage({
     return (
       <div className="min-h-screen flex flex-col justify-center items-center bg-brand-bg pt-24">
         <div className="w-10 h-10 border-4 border-brand-primary border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-brand-muted text-sm font-semibold tracking-wider uppercase">Loading Collection...</p>
-      </div>
-    );
-  }
-
-  if (!collection) {
-    return (
-      <div className="min-h-screen flex flex-col justify-center items-center bg-brand-bg pt-24 text-center px-4">
-        <h2 className="text-2xl font-headings font-extrabold text-brand-primary mb-2">COLLECTION NOT FOUND</h2>
-        <p className="text-brand-muted text-sm mb-6">The collection you requested does not exist in our store.</p>
-        <Link href="/" className="bg-brand-primary text-white px-6 py-3 font-headings text-xs font-bold uppercase tracking-wider hover:bg-brand-red transition-colors">
-          Return to Garage
-        </Link>
+        <p className="text-brand-muted text-sm font-semibold tracking-wider uppercase">Loading Catalog...</p>
       </div>
     );
   }
@@ -178,73 +226,190 @@ export default function CollectionPage({
     <div className="min-h-screen bg-brand-bg pt-20">
       {/* Banner */}
       <div className="bg-brand-footer text-white py-16 border-b border-[#3a3028] relative overflow-hidden">
-        {/* Subtle geometric pattern overlay */}
         <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
         
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="max-w-2xl space-y-3">
             <span className="text-[10px] font-bold tracking-widest text-brand-red uppercase block">
-              Riding Segment
+              Performance Catalog
             </span>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-headings font-extrabold tracking-tight uppercase leading-none text-white">
-              {collection.title}
+              ALL UPGRADES & PARTS
             </h1>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xl">
-              {collection.description}
+              Browse our complete catalog of certified riding gear, racing filters, fuel tuners, and high-performance components.
             </p>
             {garageBike && (
-              <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 bg-brand-red/10 border border-brand-red/20 text-white rounded-full text-xs font-semibold uppercase tracking-wider">
-                Filtered for: {garageBike.maker} {garageBike.model} {garageBike.year ? `(${garageBike.year})` : ""}
+              <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-brand-red/10 border border-brand-red/20 text-white rounded-full text-xs font-semibold uppercase tracking-wider">
+                Fitted for: {garageBike.maker} {garageBike.model} {garageBike.year ? `(${garageBike.year})` : ""}
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Main Grid Section */}
+      {/* Main Container */}
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex flex-col lg:flex-row gap-8">
           
-          {/* SIDEBAR FILTERS - Desktop */}
-          <aside className="w-full lg:w-64 flex-shrink-0 space-y-8">
-            <div className="bg-white border border-brand-border p-6 rounded-lg space-y-6">
-              <div className="flex justify-between items-center pb-4 border-b border-brand-border">
-                <span className="font-headings font-extrabold text-sm text-brand-primary tracking-wider uppercase flex items-center gap-1.5">
-                  <Filter className="w-4 h-4 text-brand-red" />
-                  Filters
+          {/* SIDEBAR FILTERS */}
+          <aside className="w-full lg:w-72 flex-shrink-0 space-y-6">
+            
+            {/* SEARCH BOX */}
+            <div className="bg-white border border-brand-border p-5 rounded-lg space-y-2">
+              <label className="block text-[10px] font-headings font-extrabold uppercase tracking-wider text-brand-primary">
+                Search Catalog
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Filter by keyword..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-brand-bg border border-brand-border rounded-lg py-2.5 pl-9 pr-3 text-brand-primary placeholder-gray-400 focus:outline-none focus:border-brand-primary text-xs font-semibold"
+                />
+                <Search className="w-4 h-4 text-brand-muted absolute left-3 top-1/2 -translate-y-1/2" />
+              </div>
+            </div>
+
+            {/* MOTORCYCLE COMPATIBILITY SELECTOR */}
+            <div className="bg-white border border-brand-border p-5 rounded-lg space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b border-brand-border">
+                <span className="font-headings font-extrabold text-[11px] text-brand-primary tracking-wider uppercase flex items-center gap-1.5">
+                  <Bike className="w-4 h-4 text-brand-red" />
+                  Rider Garage Fitment
                 </span>
-                {(selectedBrands.length > 0 || selectedPriceTier !== "all" || searchBarQuery) && (
+                {garageBike && (
                   <button
-                    onClick={handleResetFilters}
-                    className="text-[10px] font-bold text-brand-red hover:underline uppercase tracking-wider flex items-center gap-1"
+                    onClick={handleClearGarage}
+                    className="text-[9px] font-bold text-brand-red hover:underline uppercase"
                   >
-                    <RotateCcw className="w-3 h-3" /> Reset
+                    Clear
                   </button>
                 )}
               </div>
 
-              {/* Active Search Term Indicator */}
-              {searchBarQuery && (
-                <div className="p-3 bg-brand-bg rounded border border-brand-border text-xs">
-                  <span className="text-brand-muted block text-[10px] uppercase font-bold mb-0.5">Searching for</span>
-                  <span className="font-semibold text-brand-primary">&quot;{searchBarQuery}&quot;</span>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted mb-1">
+                    Maker
+                  </label>
+                  <select
+                    value={selectedMaker}
+                    onChange={(e) => {
+                      setSelectedMaker(e.target.value);
+                      setSelectedModel("");
+                      setSelectedYear("");
+                    }}
+                    className="w-full bg-brand-bg border border-brand-border rounded p-2 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-primary"
+                  >
+                    <option value="">Choose Maker</option>
+                    {motorcycles.map((m) => (
+                      <option key={m.maker} value={m.maker}>{m.maker}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted mb-1">
+                    Model
+                  </label>
+                  <select
+                    value={selectedModel}
+                    disabled={!selectedMaker}
+                    onChange={(e) => {
+                      setSelectedModel(e.target.value);
+                      setSelectedYear("");
+                    }}
+                    className="w-full bg-brand-bg border border-brand-border rounded p-2 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-primary disabled:opacity-50"
+                  >
+                    <option value="">Choose Model</option>
+                    {motorcycles.find((m) => m.maker === selectedMaker)?.models.map((mod) => (
+                      <option key={mod} value={mod}>{mod}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted mb-1">
+                    Year
+                  </label>
+                  <select
+                    value={selectedYear}
+                    disabled={!selectedModel}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    className="w-full bg-brand-bg border border-brand-border rounded p-2 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-primary disabled:opacity-50"
+                  >
+                    <option value="">Choose Year (Optional)</option>
+                    {years.map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  onClick={handleSaveGarage}
+                  disabled={!selectedMaker || !selectedModel}
+                  className="w-full bg-brand-primary hover:bg-brand-red disabled:bg-brand-muted text-white text-[10px] font-bold font-headings uppercase py-2.5 rounded tracking-wider transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Wrench className="w-3.5 h-3.5" /> Filter entire page
+                </button>
+              </div>
+            </div>
+
+            {/* SIDEBAR FILTERS (CATEGORIES, BRANDS, PRICE) */}
+            <div className="bg-white border border-brand-border p-5 rounded-lg space-y-6">
+              <div className="flex justify-between items-center pb-3 border-b border-brand-border">
+                <span className="font-headings font-extrabold text-[11px] text-brand-primary tracking-wider uppercase flex items-center gap-1.5">
+                  <Filter className="w-4 h-4 text-brand-red" />
+                  Product Filters
+                </span>
+                {(selectedBrands.length > 0 || selectedCategories.length > 0 || selectedPriceTier !== "all" || searchQuery || garageBike) && (
+                  <button
+                    onClick={handleResetFilters}
+                    className="text-[9px] font-bold text-brand-red hover:underline uppercase tracking-wider flex items-center gap-0.5"
+                  >
+                    <RotateCcw className="w-2.5 h-2.5" /> Reset
+                  </button>
+                )}
+              </div>
+
+              {/* Categories */}
+              {uniqueCategories.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-headings font-extrabold text-[10px] tracking-wider text-brand-primary uppercase">
+                    CATEGORIES
+                  </h4>
+                  <div className="space-y-1.5 text-xs text-brand-primary">
+                    {uniqueCategories.map((cat) => (
+                      <label key={cat} className="flex items-center gap-2 cursor-pointer font-medium">
+                        <input
+                          type="checkbox"
+                          checked={selectedCategories.includes(cat)}
+                          onChange={() => handleCategoryChange(cat)}
+                          className="rounded border-brand-border text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
+                        />
+                        {cat}
+                      </label>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              {/* Brand Filter */}
+              {/* Brands */}
               {uniqueBrands.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="font-headings font-extrabold text-xs tracking-wider text-brand-primary uppercase">
+                <div className="space-y-2 border-t border-brand-border pt-4">
+                  <h4 className="font-headings font-extrabold text-[10px] tracking-wider text-brand-primary uppercase">
                     BRANDS
                   </h4>
-                  <div className="space-y-2 text-sm text-brand-primary">
+                  <div className="space-y-1.5 text-xs text-brand-primary">
                     {uniqueBrands.map((brand) => (
                       <label key={brand} className="flex items-center gap-2 cursor-pointer font-medium">
                         <input
                           type="checkbox"
                           checked={selectedBrands.includes(brand)}
                           onChange={() => handleBrandChange(brand)}
-                          className="rounded border-brand-border text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer"
+                          className="rounded border-brand-border text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
                         />
                         {brand}
                       </label>
@@ -253,61 +418,62 @@ export default function CollectionPage({
                 </div>
               )}
 
-              {/* Price Tier Filter */}
-              <div className="space-y-3 border-t border-brand-border pt-6">
-                <h4 className="font-headings font-extrabold text-xs tracking-wider text-brand-primary uppercase">
+              {/* Price Tier */}
+              <div className="space-y-2 border-t border-brand-border pt-4">
+                <h4 className="font-headings font-extrabold text-[10px] tracking-wider text-brand-primary uppercase">
                   PRICE RANGE
                 </h4>
-                <div className="space-y-2 text-sm text-brand-primary">
+                <div className="space-y-1.5 text-xs text-brand-primary">
                   <label className="flex items-center gap-2 cursor-pointer font-medium">
                     <input
                       type="radio"
-                      name="price-tier"
+                      name="all-price-tier"
                       checked={selectedPriceTier === "all"}
                       onChange={() => setSelectedPriceTier("all")}
-                      className="text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer"
+                      className="text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
                     />
                     All Prices
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer font-medium">
                     <input
                       type="radio"
-                      name="price-tier"
+                      name="all-price-tier"
                       checked={selectedPriceTier === "under-2k"}
                       onChange={() => setSelectedPriceTier("under-2k")}
-                      className="text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer"
+                      className="text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
                     />
                     Under ₹2,000
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer font-medium">
                     <input
                       type="radio"
-                      name="price-tier"
+                      name="all-price-tier"
                       checked={selectedPriceTier === "2k-5k"}
                       onChange={() => setSelectedPriceTier("2k-5k")}
-                      className="text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer"
+                      className="text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
                     />
                     ₹2,000 - ₹5,000
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer font-medium">
                     <input
                       type="radio"
-                      name="price-tier"
+                      name="all-price-tier"
                       checked={selectedPriceTier === "over-5k"}
                       onChange={() => setSelectedPriceTier("over-5k")}
-                      className="text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer"
+                      className="text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
                     />
                     Over ₹5,000
                   </label>
                 </div>
               </div>
+
             </div>
           </aside>
 
           {/* PRODUCT RESULTS GRID */}
           <main className="flex-1 space-y-6">
             
-            {/* Top Bar Controls */}
+            {/* Top Controls Bar */}
             <div className="bg-white border border-brand-border p-4 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-4 text-sm font-semibold">
               <span className="text-brand-muted text-xs uppercase tracking-wider">
                 {filteredProducts.length} {filteredProducts.length === 1 ? "Product" : "Products"} found
@@ -328,13 +494,13 @@ export default function CollectionPage({
               </div>
             </div>
 
-            {/* Product Grid */}
+            {/* Results Grid */}
             {filteredProducts.length === 0 ? (
               <div className="bg-white border border-brand-border rounded-lg text-center py-20 px-4 space-y-4">
                 <SlidersHorizontal className="w-12 h-12 text-brand-muted mx-auto stroke-[1.2]" />
-                <h3 className="text-lg font-headings font-extrabold text-brand-primary uppercase">No parts found</h3>
+                <h3 className="text-lg font-headings font-extrabold text-brand-primary uppercase">No upgrades found</h3>
                 <p className="text-brand-muted text-sm max-w-sm mx-auto">
-                  Try adjusting your filters, selecting another brand, or clicking reset to view all items.
+                  Try adjusting your filters, selecting another brand/category, or resetting to view all items.
                 </p>
                 <button
                   onClick={handleResetFilters}
@@ -350,7 +516,7 @@ export default function CollectionPage({
                     key={product.id}
                     className="group flex flex-col w-full bg-transparent"
                   >
-                    {/* Image Container (Full Bleed, Studio background) */}
+                    {/* Image */}
                     <div className="relative aspect-[4/5] w-full bg-[#F3F3F0] overflow-hidden">
                       <Link href={`/products/${product.handle}`}>
                         <Image
@@ -363,7 +529,7 @@ export default function CollectionPage({
                         />
                       </Link>
 
-                      {/* Wishlist Heart Icon (Top-Right) */}
+                      {/* Wishlist toggle */}
                       <button
                         onClick={(e) => {
                           e.preventDefault();
@@ -383,9 +549,9 @@ export default function CollectionPage({
                       </button>
                     </div>
 
-                    {/* Product Info (Left-Aligned) */}
+                    {/* Product details info */}
                     <div className="flex-grow flex flex-col pt-4 pb-4">
-                      {/* Brand name in Red Text */}
+                      {/* Brand */}
                       <span className="text-[10px] font-extrabold text-brand-red uppercase tracking-widest mb-1.5">
                         {product.brand}
                       </span>
@@ -417,14 +583,14 @@ export default function CollectionPage({
                         )}
                       </div>
 
-                      {/* Price (Left-aligned) */}
+                      {/* Price */}
                       <div className="flex items-baseline gap-2 mb-4">
                         <span className="text-sm font-bold text-brand-primary">
                           ₹{parseInt(product.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
                         </span>
                       </div>
 
-                      {/* Full-width Add to Cart Button */}
+                      {/* Add to cart CTA */}
                       <button
                         onClick={(e) => handleQuickAdd(e, product)}
                         disabled={addingId === product.id}
@@ -454,3 +620,17 @@ export default function CollectionPage({
     </div>
   );
 }
+
+export default function AllProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col justify-center items-center bg-brand-bg pt-24">
+        <div className="w-10 h-10 border-4 border-brand-primary border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-brand-muted text-sm font-semibold tracking-wider uppercase">Loading Catalog...</p>
+      </div>
+    }>
+      <ProductsContent />
+    </Suspense>
+  );
+}
+
