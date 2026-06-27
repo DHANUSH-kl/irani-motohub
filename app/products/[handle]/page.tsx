@@ -493,7 +493,7 @@ export default function ProductPage({
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <RotateCcw className="w-5 h-5 text-brand-primary" />
-                  <span>Easy Return</span>
+                  <span>4-Day Replace</span>
                 </div>
               </div>
 

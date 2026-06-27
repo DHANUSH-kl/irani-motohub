@@ -9,7 +9,7 @@ export default function Hero() {
   const trustIndicators = [
     { icon: <Truck className="w-4 h-4 text-brand-red" />, text: "Free Shipping India-Wide" },
     { icon: <ShieldCheck className="w-4 h-4 text-brand-red" />, text: "Certified Products" },
-    { icon: <RotateCcw className="w-4 h-4 text-brand-red" />, text: "10-Day Hassle-Free Returns" },
+    { icon: <RotateCcw className="w-4 h-4 text-brand-red" />, text: "4-Day Defect Replacement" },
     { icon: <Headset className="w-4 h-4 text-brand-red" />, text: "Engineer-Backed Support" }
   ];
 
@@ -106,7 +106,7 @@ export default function Hero() {
             transition={{ duration: 0.8, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
             className="text-gray-300 font-body text-sm sm:text-base md:text-lg max-w-2xl leading-relaxed font-normal"
           >
-            From performance upgrades like air filters and ECU piggybacks to certified helmets, riding gear, bike care products, and touring essentials, shop authentic motorcycle accessories designed to improve every ride.
+            From performance upgrades like air filters to bike care products and touring essentials, shop authentic motorcycle accessories designed to improve every ride.
           </motion.p>
 
           {/* CTA Buttons */}

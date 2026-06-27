@@ -85,9 +85,9 @@ export default function WhyChooseUs() {
     },
     {
       id: 3,
-      title: "10-Day Risk-Free Return Guarantee",
+      title: "4-Day Defect Replacement Policy",
       icon: <RotateCcw className="w-5 h-5 text-brand-red" />,
-      description: "Hassle-free money-back returns if any component fails to meet your performance standards."
+      description: "Replacements issued only for defective products. A compulsory unboxing video must be submitted within 4 days of delivery."
     }
   ];
 
@@ -96,13 +96,13 @@ export default function WhyChooseUs() {
     { rpm: 9800, speed: 192, gear: "6", status: "INTAKE: MAXIMUM", angle: 70 },   // Genuine parts (power peak)
     { rpm: 6200, speed: 124, gear: "4", status: "ECU: OPTIMAL", angle: 5 },       // Support (street cruisey)
     { rpm: 3500, speed: 58,  gear: "2", status: "DRIVE: SECURED", angle: -50 },    // Shipping (safe delivery)
-    { rpm: 0,    speed: 0,   gear: "N", status: "SYS: READY", angle: -110 }      // Returns (neutral stop)
+    { rpm: 0,    speed: 0,   gear: "N", status: "SYS: READY", angle: -110 }      // Replacement (neutral stop)
   ];
 
   const currentTele = telemetryData[activeIndex] || telemetryData[3];
 
   return (
-    <section className="py-24 bg-[#121212] text-white relative overflow-hidden border-t border-b border-white/10">
+    <section id="replacement-policy" className="py-24 bg-[#121212] text-white relative overflow-hidden border-t border-b border-white/10">
       
       {/* Blueprint Grid background */}
       <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />

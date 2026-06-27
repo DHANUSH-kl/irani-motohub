@@ -86,8 +86,8 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/#returns" className="text-gray-400 hover:text-white transition-colors duration-200 block">
-                  Returns & Replacements
+                <Link href="/#replacement-policy" className="text-gray-400 hover:text-white transition-colors duration-200 block">
+                  Replacement Policy
                 </Link>
               </li>
               <li>
