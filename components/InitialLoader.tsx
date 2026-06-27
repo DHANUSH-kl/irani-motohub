@@ -79,7 +79,7 @@ export default function InitialLoader() {
               transition={{ delay: 0.4 }}
               className="text-[10px] tracking-wider uppercase text-gray-400 font-semibold"
             >
-              Genuine Performance Access
+              Certified Performance Access
             </motion.p>
           </div>
         </motion.div>

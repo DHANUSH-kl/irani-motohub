@@ -157,9 +157,9 @@ export default function Header() {
         
         {/* Top Ticker Banner */}
         <div className="bg-[#0A0A0A] text-gray-300 py-2.5 px-4 text-[9px] font-headings font-extrabold uppercase tracking-[0.25em] text-center border-b border-white/5 flex items-center justify-center gap-6">
-          <span>FREE EXPRESS SHIPPING ON ORDERS OVER ₹2,500</span>
+          <span>FREE SHIPPING ON PREPAID ORDERS</span>
           <span className="hidden sm:inline text-brand-red">•</span>
-          <span className="hidden sm:inline">100% GENUINE PERFORMANCE GUARANTEE</span>
+          <span className="hidden sm:inline">CERTIFIED PERFORMANCE GUARANTEE</span>
         </div>
 
         {/* Main Navigation Header (Matte Charcoal Solid Panel) */}

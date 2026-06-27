@@ -94,9 +94,7 @@ export default function FeaturedBrands() {
         
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-2">
-          <span className="text-[10px] font-bold tracking-widest text-brand-red uppercase block">
-            Authorized Dealer
-          </span>
+
           <h2 className="text-3xl sm:text-4xl font-headings font-extrabold tracking-tight text-brand-primary">
             FEATURED BRANDS
           </h2>

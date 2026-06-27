@@ -4,7 +4,8 @@ import React, { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Filter, SlidersHorizontal, Star, ShoppingBag, RotateCcw, Heart, Search, Bike, Wrench } from "lucide-react";
+import { Filter, SlidersHorizontal, Star, ShoppingBag, RotateCcw, Heart, Search, Bike, Wrench, ChevronDown } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { getProducts, Product, isProductCompatible, getActiveMotorcycleGroups, getActiveYears } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -36,6 +37,9 @@ function ProductsContent() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedPriceTier, setSelectedPriceTier] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("default");
+  const [showAllFilters, setShowAllFilters] = useState(false);
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const [showAllBrands, setShowAllBrands] = useState(false);
 
   const { addItem } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -222,6 +226,8 @@ function ProductsContent() {
     );
   }
 
+  const hasActiveFilters = selectedBrands.length > 0 || selectedCategories.length > 0 || selectedPriceTier !== "all" || garageBike !== null;
+
   return (
     <div className="min-h-screen bg-brand-bg pt-20">
       {/* Banner */}
@@ -253,7 +259,7 @@ function ProductsContent() {
         <div className="flex flex-col lg:flex-row gap-8">
           
           {/* SIDEBAR FILTERS */}
-          <aside className="w-full lg:w-72 flex-shrink-0 space-y-6">
+          <aside className="w-full lg:w-72 flex-shrink-0 space-y-4">
             
             {/* SEARCH BOX */}
             <div className="bg-white border border-brand-border p-5 rounded-lg space-y-2">
@@ -272,202 +278,310 @@ function ProductsContent() {
               </div>
             </div>
 
-            {/* MOTORCYCLE COMPATIBILITY SELECTOR */}
-            <div className="bg-white border border-brand-border p-5 rounded-lg space-y-4">
-              <div className="flex justify-between items-center pb-2 border-b border-brand-border">
-                <span className="font-headings font-extrabold text-[11px] text-brand-primary tracking-wider uppercase flex items-center gap-1.5">
-                  <Bike className="w-4 h-4 text-brand-red" />
-                  Rider Garage Fitment
-                </span>
-                {garageBike && (
-                  <button
-                    onClick={handleClearGarage}
-                    className="text-[9px] font-bold text-brand-red hover:underline uppercase"
-                  >
-                    Clear
-                  </button>
+            {/* TOGGLE FILTERS BUTTON */}
+            <button
+              onClick={() => setShowAllFilters(!showAllFilters)}
+              className="w-full flex items-center justify-between bg-white hover:bg-brand-red/5 border border-brand-border hover:border-brand-red/20 px-5 py-3.5 rounded-lg text-xs font-headings font-extrabold uppercase tracking-wider text-brand-primary transition-all duration-300 group"
+            >
+              <span className="flex items-center gap-2">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-brand-red group-hover:rotate-90 transition-transform duration-300" />
+                {showAllFilters ? "Hide Filters" : "Show Filters"}
+              </span>
+              <div className="flex items-center gap-2">
+                {hasActiveFilters && (
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-red opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-red"></span>
+                  </span>
                 )}
+                <ChevronDown className={`w-3.5 h-3.5 text-brand-muted transition-transform duration-300 ${showAllFilters ? 'rotate-180' : ''}`} />
               </div>
+            </button>
 
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted mb-1">
-                    Maker
-                  </label>
-                  <select
-                    value={selectedMaker}
-                    onChange={(e) => {
-                      setSelectedMaker(e.target.value);
-                      setSelectedModel("");
-                      setSelectedYear("");
-                    }}
-                    className="w-full bg-brand-bg border border-brand-border rounded p-2 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-primary"
-                  >
-                    <option value="">Choose Maker</option>
-                    {motorcycles.map((m) => (
-                      <option key={m.maker} value={m.maker}>{m.maker}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted mb-1">
-                    Model
-                  </label>
-                  <select
-                    value={selectedModel}
-                    disabled={!selectedMaker}
-                    onChange={(e) => {
-                      setSelectedModel(e.target.value);
-                      setSelectedYear("");
-                    }}
-                    className="w-full bg-brand-bg border border-brand-border rounded p-2 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-primary disabled:opacity-50"
-                  >
-                    <option value="">Choose Model</option>
-                    {motorcycles.find((m) => m.maker === selectedMaker)?.models.map((mod) => (
-                      <option key={mod} value={mod}>{mod}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted mb-1">
-                    Year
-                  </label>
-                  <select
-                    value={selectedYear}
-                    disabled={!selectedModel}
-                    onChange={(e) => setSelectedYear(e.target.value)}
-                    className="w-full bg-brand-bg border border-brand-border rounded p-2 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-primary disabled:opacity-50"
-                  >
-                    <option value="">Choose Year (Optional)</option>
-                    {years.map((y) => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <button
-                  onClick={handleSaveGarage}
-                  disabled={!selectedMaker || !selectedModel}
-                  className="w-full bg-brand-primary hover:bg-brand-red disabled:bg-brand-muted text-white text-[10px] font-bold font-headings uppercase py-2.5 rounded tracking-wider transition-colors flex items-center justify-center gap-1.5"
+            {/* EXPANDABLE FILTER CONTAINER */}
+            <AnimatePresence initial={false}>
+              {showAllFilters && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="overflow-hidden space-y-4"
                 >
-                  <Wrench className="w-3.5 h-3.5" /> Filter entire page
-                </button>
-              </div>
-            </div>
+                  {/* MOTORCYCLE COMPATIBILITY SELECTOR */}
+                  <div className="bg-white border border-brand-border p-5 rounded-lg space-y-4">
+                    <div className="flex justify-between items-center pb-2 border-b border-brand-border">
+                      <span className="font-headings font-extrabold text-[11px] text-brand-primary tracking-wider uppercase flex items-center gap-1.5">
+                        <Bike className="w-4 h-4 text-brand-red" />
+                        Rider Garage Fitment
+                      </span>
+                      {garageBike && (
+                        <button
+                          onClick={handleClearGarage}
+                          className="text-[9px] font-bold text-brand-red hover:underline uppercase"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
 
-            {/* SIDEBAR FILTERS (CATEGORIES, BRANDS, PRICE) */}
-            <div className="bg-white border border-brand-border p-5 rounded-lg space-y-6">
-              <div className="flex justify-between items-center pb-3 border-b border-brand-border">
-                <span className="font-headings font-extrabold text-[11px] text-brand-primary tracking-wider uppercase flex items-center gap-1.5">
-                  <Filter className="w-4 h-4 text-brand-red" />
-                  Product Filters
-                </span>
-                {(selectedBrands.length > 0 || selectedCategories.length > 0 || selectedPriceTier !== "all" || searchQuery || garageBike) && (
-                  <button
-                    onClick={handleResetFilters}
-                    className="text-[9px] font-bold text-brand-red hover:underline uppercase tracking-wider flex items-center gap-0.5"
-                  >
-                    <RotateCcw className="w-2.5 h-2.5" /> Reset
-                  </button>
-                )}
-              </div>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted mb-1">
+                          Maker
+                        </label>
+                        <select
+                          value={selectedMaker}
+                          onChange={(e) => {
+                            setSelectedMaker(e.target.value);
+                            setSelectedModel("");
+                            setSelectedYear("");
+                          }}
+                          className="w-full bg-brand-bg border border-brand-border rounded p-2 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-primary"
+                        >
+                          <option value="">Choose Maker</option>
+                          {motorcycles.map((m) => (
+                            <option key={m.maker} value={m.maker}>{m.maker}</option>
+                          ))}
+                        </select>
+                      </div>
 
-              {/* Categories */}
-              {uniqueCategories.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="font-headings font-extrabold text-[10px] tracking-wider text-brand-primary uppercase">
-                    CATEGORIES
-                  </h4>
-                  <div className="space-y-1.5 text-xs text-brand-primary">
-                    {uniqueCategories.map((cat) => (
-                      <label key={cat} className="flex items-center gap-2 cursor-pointer font-medium">
-                        <input
-                          type="checkbox"
-                          checked={selectedCategories.includes(cat)}
-                          onChange={() => handleCategoryChange(cat)}
-                          className="rounded border-brand-border text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
-                        />
-                        {cat}
-                      </label>
-                    ))}
+                      <div>
+                        <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted mb-1">
+                          Model
+                        </label>
+                        <select
+                          value={selectedModel}
+                          disabled={!selectedMaker}
+                          onChange={(e) => {
+                            setSelectedModel(e.target.value);
+                            setSelectedYear("");
+                          }}
+                          className="w-full bg-brand-bg border border-brand-border rounded p-2 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-primary disabled:opacity-50"
+                        >
+                          <option value="">Choose Model</option>
+                          {motorcycles.find((m) => m.maker === selectedMaker)?.models.map((mod) => (
+                            <option key={mod} value={mod}>{mod}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted mb-1">
+                          Year
+                        </label>
+                        <select
+                          value={selectedYear}
+                          disabled={!selectedModel}
+                          onChange={(e) => setSelectedYear(e.target.value)}
+                          className="w-full bg-brand-bg border border-brand-border rounded p-2 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-primary disabled:opacity-50"
+                        >
+                          <option value="">Choose Year (Optional)</option>
+                          {years.map((y) => (
+                            <option key={y} value={y}>{y}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <button
+                        onClick={handleSaveGarage}
+                        disabled={!selectedMaker || !selectedModel}
+                        className="w-full bg-brand-primary hover:bg-brand-red disabled:bg-brand-muted text-white text-[10px] font-bold font-headings uppercase py-2.5 rounded tracking-wider transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <Wrench className="w-3.5 h-3.5" /> Filter entire page
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
 
-              {/* Brands */}
-              {uniqueBrands.length > 0 && (
-                <div className="space-y-2 border-t border-brand-border pt-4">
-                  <h4 className="font-headings font-extrabold text-[10px] tracking-wider text-brand-primary uppercase">
-                    BRANDS
-                  </h4>
-                  <div className="space-y-1.5 text-xs text-brand-primary">
-                    {uniqueBrands.map((brand) => (
-                      <label key={brand} className="flex items-center gap-2 cursor-pointer font-medium">
-                        <input
-                          type="checkbox"
-                          checked={selectedBrands.includes(brand)}
-                          onChange={() => handleBrandChange(brand)}
-                          className="rounded border-brand-border text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
-                        />
-                        {brand}
-                      </label>
-                    ))}
+                  {/* SIDEBAR FILTERS (CATEGORIES, BRANDS, PRICE) */}
+                  <div className="bg-white border border-brand-border p-5 rounded-lg space-y-6">
+                    <div className="flex justify-between items-center pb-3 border-b border-brand-border">
+                      <span className="font-headings font-extrabold text-[11px] text-brand-primary tracking-wider uppercase flex items-center gap-1.5">
+                        <Filter className="w-4 h-4 text-brand-red" />
+                        Product Filters
+                      </span>
+                      {(selectedBrands.length > 0 || selectedCategories.length > 0 || selectedPriceTier !== "all" || searchQuery || garageBike) && (
+                        <button
+                          onClick={handleResetFilters}
+                          className="text-[9px] font-bold text-brand-red hover:underline uppercase tracking-wider flex items-center gap-0.5"
+                        >
+                          <RotateCcw className="w-2.5 h-2.5" /> Reset
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Categories */}
+                    {uniqueCategories.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-headings font-extrabold text-[10px] tracking-wider text-brand-primary uppercase">
+                          CATEGORIES
+                        </h4>
+                        <div className="space-y-1.5 text-xs text-brand-primary">
+                          {/* Visible categories */}
+                          {uniqueCategories.slice(0, 4).map((cat) => (
+                            <label key={cat} className="flex items-center gap-2 cursor-pointer font-medium">
+                              <input
+                                type="checkbox"
+                                checked={selectedCategories.includes(cat)}
+                                onChange={() => handleCategoryChange(cat)}
+                                className="rounded border-brand-border text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
+                              />
+                              {cat}
+                            </label>
+                          ))}
+
+                          {/* Expandable Categories */}
+                          <AnimatePresence initial={false}>
+                            {showAllCategories && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.25, ease: "easeInOut" }}
+                                className="overflow-hidden space-y-1.5"
+                              >
+                                {uniqueCategories.slice(4).map((cat) => (
+                                  <label key={cat} className="flex items-center gap-2 cursor-pointer font-medium pt-1.5">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedCategories.includes(cat)}
+                                      onChange={() => handleCategoryChange(cat)}
+                                      className="rounded border-brand-border text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
+                                    />
+                                    {cat}
+                                  </label>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+
+                          {/* Show More / Show Less Button */}
+                          {uniqueCategories.length > 4 && (
+                            <button
+                              onClick={() => setShowAllCategories(!showAllCategories)}
+                              className="text-[9.5px] font-bold text-brand-red hover:text-red-700 transition-colors uppercase tracking-wider pt-1.5 flex items-center gap-0.5"
+                            >
+                              {showAllCategories 
+                                ? `- Show Less` 
+                                : `+ Show More (+${uniqueCategories.length - 4})`}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Brands */}
+                    {uniqueBrands.length > 0 && (
+                      <div className="space-y-2 border-t border-brand-border pt-4">
+                        <h4 className="font-headings font-extrabold text-[10px] tracking-wider text-brand-primary uppercase">
+                          BRANDS
+                        </h4>
+                        <div className="space-y-1.5 text-xs text-brand-primary">
+                          {/* Visible Brands */}
+                          {uniqueBrands.slice(0, 4).map((brand) => (
+                            <label key={brand} className="flex items-center gap-2 cursor-pointer font-medium">
+                              <input
+                                type="checkbox"
+                                checked={selectedBrands.includes(brand)}
+                                onChange={() => handleBrandChange(brand)}
+                                className="rounded border-brand-border text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
+                              />
+                              {brand}
+                            </label>
+                          ))}
+
+                          {/* Expandable Brands */}
+                          <AnimatePresence initial={false}>
+                            {showAllBrands && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.25, ease: "easeInOut" }}
+                                className="overflow-hidden space-y-1.5"
+                              >
+                                {uniqueBrands.slice(4).map((brand) => (
+                                  <label key={brand} className="flex items-center gap-2 cursor-pointer font-medium pt-1.5">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedBrands.includes(brand)}
+                                      onChange={() => handleBrandChange(brand)}
+                                      className="rounded border-brand-border text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
+                                    />
+                                    {brand}
+                                  </label>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+
+                          {/* Show More / Show Less Button */}
+                          {uniqueBrands.length > 4 && (
+                            <button
+                              onClick={() => setShowAllBrands(!showAllBrands)}
+                              className="text-[9.5px] font-bold text-brand-red hover:text-red-700 transition-colors uppercase tracking-wider pt-1.5 flex items-center gap-0.5"
+                            >
+                              {showAllBrands 
+                                ? `- Show Less` 
+                                : `+ Show More (+${uniqueBrands.length - 4})`}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Price Tier */}
+                    <div className="space-y-2 border-t border-brand-border pt-4">
+                      <h4 className="font-headings font-extrabold text-[10px] tracking-wider text-brand-primary uppercase">
+                        PRICE RANGE
+                      </h4>
+                      <div className="space-y-1.5 text-xs text-brand-primary">
+                        <label className="flex items-center gap-2 cursor-pointer font-medium">
+                          <input
+                            type="radio"
+                            name="all-price-tier"
+                            checked={selectedPriceTier === "all"}
+                            onChange={() => setSelectedPriceTier("all")}
+                            className="text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
+                          />
+                          All Prices
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer font-medium">
+                          <input
+                            type="radio"
+                            name="all-price-tier"
+                            checked={selectedPriceTier === "under-2k"}
+                            onChange={() => setSelectedPriceTier("under-2k")}
+                            className="text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
+                          />
+                          Under ₹2,000
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer font-medium">
+                          <input
+                            type="radio"
+                            name="all-price-tier"
+                            checked={selectedPriceTier === "2k-5k"}
+                            onChange={() => setSelectedPriceTier("2k-5k")}
+                            className="text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
+                          />
+                          ₹2,000 - ₹5,000
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer font-medium">
+                          <input
+                            type="radio"
+                            name="all-price-tier"
+                            checked={selectedPriceTier === "over-5k"}
+                            onChange={() => setSelectedPriceTier("over-5k")}
+                            className="text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
+                          />
+                          Over ₹5,000
+                        </label>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </motion.div>
               )}
-
-              {/* Price Tier */}
-              <div className="space-y-2 border-t border-brand-border pt-4">
-                <h4 className="font-headings font-extrabold text-[10px] tracking-wider text-brand-primary uppercase">
-                  PRICE RANGE
-                </h4>
-                <div className="space-y-1.5 text-xs text-brand-primary">
-                  <label className="flex items-center gap-2 cursor-pointer font-medium">
-                    <input
-                      type="radio"
-                      name="all-price-tier"
-                      checked={selectedPriceTier === "all"}
-                      onChange={() => setSelectedPriceTier("all")}
-                      className="text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
-                    />
-                    All Prices
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer font-medium">
-                    <input
-                      type="radio"
-                      name="all-price-tier"
-                      checked={selectedPriceTier === "under-2k"}
-                      onChange={() => setSelectedPriceTier("under-2k")}
-                      className="text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
-                    />
-                    Under ₹2,000
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer font-medium">
-                    <input
-                      type="radio"
-                      name="all-price-tier"
-                      checked={selectedPriceTier === "2k-5k"}
-                      onChange={() => setSelectedPriceTier("2k-5k")}
-                      className="text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
-                    />
-                    ₹2,000 - ₹5,000
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer font-medium">
-                    <input
-                      type="radio"
-                      name="all-price-tier"
-                      checked={selectedPriceTier === "over-5k"}
-                      onChange={() => setSelectedPriceTier("over-5k")}
-                      className="text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
-                    />
-                    Over ₹5,000
-                  </label>
-                </div>
-              </div>
-
-            </div>
+            </AnimatePresence>
           </aside>
 
           {/* PRODUCT RESULTS GRID */}

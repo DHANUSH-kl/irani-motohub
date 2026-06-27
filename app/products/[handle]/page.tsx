@@ -489,7 +489,7 @@ export default function ProductPage({
                 </div>
                 <div className="flex flex-col items-center gap-1 border-x border-brand-border">
                   <ShieldCheck className="w-5 h-5 text-brand-primary" />
-                  <span>100% Genuine</span>
+                  <span>Certified Product</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <RotateCcw className="w-5 h-5 text-brand-primary" />

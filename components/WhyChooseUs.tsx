@@ -67,7 +67,7 @@ export default function WhyChooseUs() {
   const features = [
     {
       id: 0,
-      title: "100% Genuine Performance Parts",
+      title: "Certified Performance Parts",
       icon: <ShieldCheck className="w-5 h-5 text-brand-red" />,
       description: "Direct imports from manufacturers like BMC and K&N. Certified racing specifications with zero duplicates."
     },
@@ -81,7 +81,7 @@ export default function WhyChooseUs() {
       id: 2,
       title: "Secure Transit Across India",
       icon: <Truck className="w-5 h-5 text-brand-red" />,
-      description: "Express shipping with complete transit insurance and anti-shock foam cradle packing."
+      description: "Shipping with complete transit insurance and anti-shock foam cradle packing."
     },
     {
       id: 3,

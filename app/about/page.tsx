@@ -41,7 +41,7 @@ const TEAM_MEMBERS = [
 ];
 
 // Milestones data
-const MILESTONES = [
+const MILESTONES = [ 
   {
     year: "2018",
     title: "The Single-Cylinder Garage",

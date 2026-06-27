@@ -135,15 +135,7 @@ export default function Footer() {
               </div>
             </div>
 
-            <div className="border border-[#3a3028] p-4 rounded bg-[#1e1712] space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-gray-300">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                <span>100% SECURE CHECKOUT</span>
-              </div>
-              <p className="text-[11px] text-gray-500 leading-normal">
-                Direct integration with Shopify checkout ensures bank-grade end-to-end data encryption.
-              </p>
-            </div>
+
           </div>
         </div>
 

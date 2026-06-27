@@ -8,7 +8,7 @@ import { ShieldCheck, Truck, RotateCcw, Headset, ArrowRight } from "lucide-react
 export default function Hero() {
   const trustIndicators = [
     { icon: <Truck className="w-4 h-4 text-brand-red" />, text: "Free Shipping India-Wide" },
-    { icon: <ShieldCheck className="w-4 h-4 text-brand-red" />, text: "100% Genuine Certified" },
+    { icon: <ShieldCheck className="w-4 h-4 text-brand-red" />, text: "Certified Products" },
     { icon: <RotateCcw className="w-4 h-4 text-brand-red" />, text: "10-Day Hassle-Free Returns" },
     { icon: <Headset className="w-4 h-4 text-brand-red" />, text: "Engineer-Backed Support" }
   ];
@@ -88,13 +88,13 @@ export default function Hero() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="text-4xl sm:text-6xl lg:text-7xl font-headings font-extrabold tracking-tight leading-[0.95] text-white flex flex-col uppercase"
+              className="text-3xl sm:text-5xl lg:text-6xl font-headings font-extrabold tracking-tight leading-[1.05] text-white flex flex-col"
             >
               <span className="block text-white">
-                ENGINEERED FOR
+                Everything Your Motorcycle Needs,
               </span>
               <span className="block mt-1">
-                PEAK <span className="text-brand-red">PERFORMANCE.</span>
+                All in <span className="text-brand-red">One Place.</span>
               </span>
             </motion.h1>
           </div>
@@ -104,9 +104,9 @@ export default function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="text-gray-300 font-body text-sm sm:text-base md:text-lg max-w-lg leading-relaxed font-normal"
+            className="text-gray-300 font-body text-sm sm:text-base md:text-lg max-w-2xl leading-relaxed font-normal"
           >
-            Uncompromising power. World-class protection. Re-engineer your motorcycle with race-spec filters, ECU piggybacks, and certified premium helmets selected by engineers.
+            From performance upgrades like air filters and ECU piggybacks to certified helmets, riding gear, bike care products, and touring essentials, shop authentic motorcycle accessories designed to improve every ride.
           </motion.p>
 
           {/* CTA Buttons */}

@@ -219,7 +219,7 @@ export default function CartDrawer() {
                     <div className="flex justify-center items-center gap-4 text-[10px] text-brand-muted uppercase tracking-wider font-semibold">
                       <span className="flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-brand-primary" /> Secure Gateway</span>
                       <span>•</span>
-                      <span>100% Genuine Guarantee</span>
+                      <span>Certified Products Guarantee</span>
                     </div>
                   </div>
                 )}
