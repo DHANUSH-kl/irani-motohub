@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Filter, SlidersHorizontal, Grid, Star, ShoppingCart, Eye, RotateCcw, Heart, ShoppingBag } from "lucide-react";
+import { Filter, SlidersHorizontal, Grid, Star, ShoppingCart, Eye, RotateCcw, Heart, ShoppingBag, ChevronDown } from "lucide-react";
 import { getCollection, getProducts, Product, Collection, isProductCompatible } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -26,10 +26,10 @@ export default function CollectionPage({
   const [loading, setLoading] = useState(true);
   const [garageBike, setGarageBike] = useState<{ maker: string; model: string; year?: string } | null>(null);
 
-  // Filter States
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedPriceTier, setSelectedPriceTier] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("default");
+  const [showAllFilters, setShowAllFilters] = useState(false);
 
   const { addItem } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -205,100 +205,123 @@ export default function CollectionPage({
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex flex-col lg:flex-row gap-8">
           
-          {/* SIDEBAR FILTERS - Desktop */}
-          <aside className="w-full lg:w-64 flex-shrink-0 space-y-8">
-            <div className="bg-white border border-brand-border p-6 rounded-lg space-y-6">
-              <div className="flex justify-between items-center pb-4 border-b border-brand-border">
-                <span className="font-headings font-extrabold text-sm text-brand-primary tracking-wider uppercase flex items-center gap-1.5">
-                  <Filter className="w-4 h-4 text-brand-red" />
-                  Filters
-                </span>
-                {(selectedBrands.length > 0 || selectedPriceTier !== "all" || searchBarQuery) && (
-                  <button
-                    onClick={handleResetFilters}
-                    className="text-[10px] font-bold text-brand-red hover:underline uppercase tracking-wider flex items-center gap-1"
-                  >
-                    <RotateCcw className="w-3 h-3" /> Reset
-                  </button>
+          {/* SIDEBAR FILTERS - Responsive */}
+          <aside className="w-full lg:w-64 flex-shrink-0 space-y-4 lg:space-y-8">
+            {/* TOGGLE FILTERS BUTTON - Mobile Only */}
+            <button
+              onClick={() => setShowAllFilters(!showAllFilters)}
+              className="w-full flex lg:hidden items-center justify-between bg-white hover:bg-brand-red/5 border border-brand-border hover:border-brand-red/20 px-5 py-3.5 rounded-lg text-xs font-headings font-extrabold uppercase tracking-wider text-brand-primary transition-all duration-300 group"
+            >
+              <span className="flex items-center gap-2">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-brand-red group-hover:rotate-90 transition-transform duration-300" />
+                {showAllFilters ? "Hide Filters" : "Show Filters"}
+              </span>
+              <div className="flex items-center gap-2">
+                {(selectedBrands.length > 0 || selectedPriceTier !== "all") && (
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-red opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-red"></span>
+                  </span>
                 )}
+                <ChevronDown className={`w-3.5 h-3.5 text-brand-muted transition-transform duration-300 ${showAllFilters ? 'rotate-180' : ''}`} />
               </div>
+            </button>
 
-              {/* Active Search Term Indicator */}
-              {searchBarQuery && (
-                <div className="p-3 bg-brand-bg rounded border border-brand-border text-xs">
-                  <span className="text-brand-muted block text-[10px] uppercase font-bold mb-0.5">Searching for</span>
-                  <span className="font-semibold text-brand-primary">&quot;{searchBarQuery}&quot;</span>
+            {/* Expandable/Responsive container (always shown on lg+, toggled on mobile) */}
+            <div className={`${showAllFilters ? "block" : "hidden lg:block"} space-y-6`}>
+              <div className="bg-white border border-brand-border p-6 rounded-lg space-y-6">
+                <div className="flex justify-between items-center pb-4 border-b border-brand-border">
+                  <span className="font-headings font-extrabold text-sm text-brand-primary tracking-wider uppercase flex items-center gap-1.5">
+                    <Filter className="w-4 h-4 text-brand-red" />
+                    Filters
+                  </span>
+                  {(selectedBrands.length > 0 || selectedPriceTier !== "all" || searchBarQuery) && (
+                    <button
+                      onClick={handleResetFilters}
+                      className="text-[10px] font-bold text-brand-red hover:underline uppercase tracking-wider flex items-center gap-1"
+                    >
+                      <RotateCcw className="w-3 h-3" /> Reset
+                    </button>
+                  )}
                 </div>
-              )}
 
-              {/* Brand Filter */}
-              {uniqueBrands.length > 0 && (
-                <div className="space-y-3">
+                {/* Active Search Term Indicator */}
+                {searchBarQuery && (
+                  <div className="p-3 bg-brand-bg rounded border border-brand-border text-xs">
+                    <span className="text-brand-muted block text-[10px] uppercase font-bold mb-0.5">Searching for</span>
+                    <span className="font-semibold text-brand-primary">&quot;{searchBarQuery}&quot;</span>
+                  </div>
+                )}
+
+                {/* Brand Filter */}
+                {uniqueBrands.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-headings font-extrabold text-xs tracking-wider text-brand-primary uppercase">
+                      BRANDS
+                    </h4>
+                    <div className="space-y-2 text-sm text-brand-primary">
+                      {uniqueBrands.map((brand) => (
+                        <label key={brand} className="flex items-center gap-2 cursor-pointer font-medium">
+                          <input
+                            type="checkbox"
+                            checked={selectedBrands.includes(brand)}
+                            onChange={() => handleBrandChange(brand)}
+                            className="rounded border-brand-border text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer"
+                          />
+                          {brand}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Price Tier Filter */}
+                <div className="space-y-3 border-t border-brand-border pt-6">
                   <h4 className="font-headings font-extrabold text-xs tracking-wider text-brand-primary uppercase">
-                    BRANDS
+                    PRICE RANGE
                   </h4>
                   <div className="space-y-2 text-sm text-brand-primary">
-                    {uniqueBrands.map((brand) => (
-                      <label key={brand} className="flex items-center gap-2 cursor-pointer font-medium">
-                        <input
-                          type="checkbox"
-                          checked={selectedBrands.includes(brand)}
-                          onChange={() => handleBrandChange(brand)}
-                          className="rounded border-brand-border text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer"
-                        />
-                        {brand}
-                      </label>
-                    ))}
+                    <label className="flex items-center gap-2 cursor-pointer font-medium">
+                      <input
+                        type="radio"
+                        name="price-tier"
+                        checked={selectedPriceTier === "all"}
+                        onChange={() => setSelectedPriceTier("all")}
+                        className="text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer"
+                      />
+                      All Prices
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer font-medium">
+                      <input
+                        type="radio"
+                        name="price-tier"
+                        checked={selectedPriceTier === "under-2k"}
+                        onChange={() => setSelectedPriceTier("under-2k")}
+                        className="text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer"
+                      />
+                      Under ₹2,000
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer font-medium">
+                      <input
+                        type="radio"
+                        name="price-tier"
+                        checked={selectedPriceTier === "2k-5k"}
+                        onChange={() => setSelectedPriceTier("2k-5k")}
+                        className="text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer"
+                      />
+                      ₹2,000 - ₹5,000
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer font-medium">
+                      <input
+                        type="radio"
+                        name="price-tier"
+                        checked={selectedPriceTier === "over-5k"}
+                        onChange={() => setSelectedPriceTier("over-5k")}
+                        className="text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer"
+                      />
+                      Over ₹5,000
+                    </label>
                   </div>
-                </div>
-              )}
-
-              {/* Price Tier Filter */}
-              <div className="space-y-3 border-t border-brand-border pt-6">
-                <h4 className="font-headings font-extrabold text-xs tracking-wider text-brand-primary uppercase">
-                  PRICE RANGE
-                </h4>
-                <div className="space-y-2 text-sm text-brand-primary">
-                  <label className="flex items-center gap-2 cursor-pointer font-medium">
-                    <input
-                      type="radio"
-                      name="price-tier"
-                      checked={selectedPriceTier === "all"}
-                      onChange={() => setSelectedPriceTier("all")}
-                      className="text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer"
-                    />
-                    All Prices
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer font-medium">
-                    <input
-                      type="radio"
-                      name="price-tier"
-                      checked={selectedPriceTier === "under-2k"}
-                      onChange={() => setSelectedPriceTier("under-2k")}
-                      className="text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer"
-                    />
-                    Under ₹2,000
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer font-medium">
-                    <input
-                      type="radio"
-                      name="price-tier"
-                      checked={selectedPriceTier === "2k-5k"}
-                      onChange={() => setSelectedPriceTier("2k-5k")}
-                      className="text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer"
-                    />
-                    ₹2,000 - ₹5,000
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer font-medium">
-                    <input
-                      type="radio"
-                      name="price-tier"
-                      checked={selectedPriceTier === "over-5k"}
-                      onChange={() => setSelectedPriceTier("over-5k")}
-                      className="text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer"
-                    />
-                    Over ₹5,000
-                  </label>
                 </div>
               </div>
             </div>

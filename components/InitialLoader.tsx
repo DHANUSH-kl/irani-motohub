@@ -57,7 +57,7 @@ export default function InitialLoader() {
               className="flex items-center justify-center gap-1.5"
             >
               <h1 className="font-headings font-extrabold text-3xl sm:text-4xl tracking-tighter">
-                IRANI <span className="text-brand-red">MOTOHUB</span>
+                <span className="text-brand-red">IRANI</span> MOTOHUB
               </h1>
               <span className="w-2 h-2 bg-brand-red rounded-full self-end mb-2.5 animate-pulse" />
             </motion.div>

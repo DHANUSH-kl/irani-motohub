@@ -162,30 +162,25 @@ export default function Header() {
           <span className="hidden sm:inline">CERTIFIED PERFORMANCE GUARANTEE</span>
         </div>
 
-        {/* Main Navigation Header (Matte Charcoal Solid Panel) */}
-        <header className="bg-[#121212] border-b border-white/10 text-white h-20">
+        {/* Main Navigation Header (Premium Off-White Glassmorphic Panel) */}
+        <header className="bg-white/80 backdrop-blur-md border-b border-black/10 text-gray-900 h-20">
           <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
             
             {/* Left Box: Logo */}
-            <div className="h-full flex items-center pr-6 lg:pr-8 md:border-r md:border-white/10">
-              <Link href="/" className="flex items-center gap-3">
-                {/* Slow spinning mechanical Brandmark SVG */}
-                <svg className="w-8 h-8 text-brand-red flex-shrink-0" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="50" cy="50" r="38" stroke="currentColor" strokeWidth="6" strokeDasharray="6 6" className="animate-[spin_40s_linear_infinite]" />
-                  <path d="M50 15L60 40H40L50 15Z" fill="currentColor" />
-                  <path d="M50 85L40 60H60L50 85Z" fill="currentColor" />
-                  <path d="M15 50L40 40V60L15 50Z" fill="currentColor" />
-                  <path d="M85 50L60 60V40L85 50Z" fill="currentColor" />
-                  <circle cx="50" cy="50" r="16" fill="currentColor" />
-                  <circle cx="50" cy="50" r="8" fill="#121212" />
-                </svg>
-                <div className="flex flex-col">
-                  <span className="font-headings font-extrabold text-lg sm:text-xl tracking-tight leading-none text-white">
-                    IRANI <span className="text-brand-red">MOTOHUB</span>
-                  </span>
-                  <span className="text-[8px] font-headings font-bold uppercase tracking-[0.2em] text-gray-400 mt-1">
-                    PERFORMANCE GARAGE
-                  </span>
+            <div className="h-full flex items-center pr-2 sm:pr-6 lg:pr-8 md:border-r md:border-black/10">
+              <Link href="/" className="flex items-center">
+                {/* CSS wrapper to crop transparent boundaries of 1024x1024 square image */}
+                <div className="relative w-28 h-12 sm:w-40 sm:h-16 overflow-hidden flex items-center justify-center">
+                  <div className="absolute w-[150px] h-[150px] sm:w-[220px] sm:h-[220px] flex items-center justify-center">
+                    <Image
+                      src="/imhlogo.png"
+                      alt="IRANI MOTOHUB Logo"
+                      width={220}
+                      height={220}
+                      className="object-contain"
+                      priority
+                    />
+                  </div>
                 </div>
               </Link>
             </div>
@@ -194,7 +189,7 @@ export default function Header() {
             <nav className="hidden md:flex items-center h-full flex-grow px-8 gap-8">
               {/* Shop Link (Mega Menu Trigger) */}
               <div className="group h-full flex items-center relative">
-                <button className="flex items-center gap-1 font-body text-xs font-bold uppercase tracking-widest text-gray-300 hover:text-white transition-colors h-full">
+                <button className="flex items-center gap-1 font-body text-xs font-bold uppercase tracking-widest text-gray-850 hover:text-brand-red transition-colors h-full">
                   Shop
                   <ChevronDown className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-300" />
                 </button>
@@ -204,7 +199,7 @@ export default function Header() {
 
                 {/* Desktop Mega Menu Dropdown */}
                 <div className="absolute top-full left-0 pt-0 hidden group-hover:block w-[880px] z-50">
-                  <div className="bg-[#181818] border border-white/10 shadow-2xl p-8 grid grid-cols-12 gap-8 rounded-b-lg">
+                  <div className="bg-white/95 backdrop-blur-md border border-black/10 shadow-2xl p-8 grid grid-cols-12 gap-8 rounded-b-lg text-gray-900">
                     
                     {/* Catalog collections columns */}
                     <div className="col-span-8 grid grid-cols-2 gap-8">
@@ -212,12 +207,12 @@ export default function Header() {
                         <h4 className="font-headings font-extrabold text-[10px] tracking-[0.2em] text-brand-red uppercase">
                           Performance & Tuning
                         </h4>
-                        <ul className="space-y-4 text-xs font-semibold text-gray-400">
+                        <ul className="space-y-4 text-xs font-semibold text-gray-600">
                           {collections.slice(0, 3).map((col) => (
                             <li key={col.id} className="group/item">
                               <Link
                                 href={`/collections/${col.handle}`}
-                                className="hover:text-white transition-colors block"
+                                className="hover:text-brand-red transition-colors block"
                               >
                                 <span>{col.title}</span>
                                 <span className="block text-[10px] text-gray-500 font-normal mt-0.5 normal-case font-body">
@@ -234,12 +229,12 @@ export default function Header() {
                         <h4 className="font-headings font-extrabold text-[10px] tracking-[0.2em] text-brand-red uppercase">
                           Riding Gear & Protection
                         </h4>
-                        <ul className="space-y-4 text-xs font-semibold text-gray-400">
+                        <ul className="space-y-4 text-xs font-semibold text-gray-600">
                           {collections.slice(3, 6).map((col) => (
                             <li key={col.id} className="group/item">
                               <Link
                                 href={`/collections/${col.handle}`}
-                                className="hover:text-white transition-colors block"
+                                className="hover:text-brand-red transition-colors block"
                               >
                                 <span>{col.title}</span>
                                 <span className="block text-[10px] text-gray-500 font-normal mt-0.5 normal-case font-body">
@@ -254,8 +249,8 @@ export default function Header() {
                     </div>
                     
                     {/* Visual Spotlight Banner */}
-                    <div className="col-span-4 bg-[#121212] border border-white/5 p-5 rounded-lg flex flex-col justify-between relative overflow-hidden group/spot">
-                      <div className="relative w-full h-28 bg-[#181818] border border-white/5 rounded mb-3 overflow-hidden">
+                    <div className="col-span-4 bg-gray-50 border border-black/5 p-5 rounded-lg flex flex-col justify-between relative overflow-hidden group/spot">
+                      <div className="relative w-full h-28 bg-white border border-black/5 rounded mb-3 overflow-hidden">
                         <Image
                           src="https://images.unsplash.com/photo-1615887023516-9b6bcd559e87?q=80&w=300&auto=format&fit=crop"
                           alt="Featured Product Spotlight"
@@ -264,10 +259,10 @@ export default function Header() {
                         />
                       </div>
                       <div>
-                        <h5 className="font-headings font-extrabold text-xs text-white uppercase tracking-wider mb-1">
+                        <h5 className="font-headings font-extrabold text-xs text-gray-900 uppercase tracking-wider mb-1">
                           BMC Italian Filters
                         </h5>
-                        <p className="text-gray-400 text-[10px] leading-relaxed font-body">
+                        <p className="text-gray-600 text-[10px] leading-relaxed font-body">
                           Formula 1 spec air filtration now in stock for all Indian performance singles.
                         </p>
                       </div>
@@ -291,7 +286,7 @@ export default function Header() {
                     document.getElementById("brands-section")?.scrollIntoView({ behavior: "smooth" });
                   }
                 }}
-                className="font-body text-xs font-bold uppercase tracking-widest text-gray-300 hover:text-white transition-colors h-full flex items-center relative group"
+                className="font-body text-xs font-bold uppercase tracking-widest text-gray-800 hover:text-brand-red transition-colors h-full flex items-center relative group"
               >
                 Brands
                 <span className="absolute bottom-0 left-0 w-0 group-hover:w-full h-[2px] bg-brand-red transition-all duration-300" />
@@ -299,7 +294,7 @@ export default function Header() {
 
               <Link
                 href="/about"
-                className="font-body text-xs font-bold uppercase tracking-widest text-gray-300 hover:text-white transition-colors h-full flex items-center relative group"
+                className="font-body text-xs font-bold uppercase tracking-widest text-gray-800 hover:text-brand-red transition-colors h-full flex items-center relative group"
               >
                 About
                 <span className="absolute bottom-0 left-0 w-0 group-hover:w-full h-[2px] bg-brand-red transition-all duration-300" />
@@ -313,21 +308,19 @@ export default function Header() {
                     document.getElementById("footer-section")?.scrollIntoView({ behavior: "smooth" });
                   }
                 }}
-                className="font-body text-xs font-bold uppercase tracking-widest text-gray-300 hover:text-white transition-colors h-full flex items-center relative group"
+                className="font-body text-xs font-bold uppercase tracking-widest text-gray-800 hover:text-brand-red transition-colors h-full flex items-center relative group"
               >
                 Contact
                 <span className="absolute bottom-0 left-0 w-0 group-hover:w-full h-[2px] bg-brand-red transition-all duration-300" />
               </a>
-            </nav>
-
-            {/* Middle/Right Box: Active Rider Garage Pill */}
-            <div className="hidden lg:flex items-center h-full px-6 border-l border-white/10 relative">
+            </nav>            {/* Middle/Right Box: Active Rider Garage Pill */}
+            <div className="hidden lg:flex items-center h-full px-6 border-l border-black/10 relative">
               <button 
                 onClick={() => setIsGarageOpen(!isGarageOpen)}
                 className={`flex items-center gap-2.5 px-4 py-2 border rounded-full text-xs font-headings font-extrabold uppercase tracking-wider transition-all duration-300 ${
                   garageBike 
-                    ? "bg-brand-red/10 border-brand-red/40 text-white hover:bg-brand-red/20" 
-                    : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white"
+                    ? "bg-brand-red/5 border-brand-red/30 text-brand-red hover:bg-brand-red/10" 
+                    : "bg-black/5 border-black/10 text-gray-700 hover:bg-black/10 hover:text-black"
                 }`}
               >
                 <Bike className="w-3.5 h-3.5" />
@@ -345,15 +338,15 @@ export default function Header() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="absolute top-full right-6 mt-2 w-80 bg-[#181818] border border-white/10 shadow-2xl p-5 rounded-lg text-white z-50 space-y-4"
+                    className="absolute top-full right-6 mt-2 w-80 bg-white border border-black/10 shadow-2xl p-5 rounded-lg text-gray-900 z-50 space-y-4"
                   >
-                    <div className="flex justify-between items-center pb-2 border-b border-white/5">
-                      <span className="text-[10px] font-headings font-bold uppercase tracking-wider text-gray-400">
+                    <div className="flex justify-between items-center pb-2 border-b border-black/5">
+                      <span className="text-[10px] font-headings font-bold uppercase tracking-wider text-gray-500">
                         Rider Garage Setup
                       </span>
                       <button 
                         onClick={() => setIsGarageOpen(false)}
-                        className="text-gray-400 hover:text-white"
+                        className="text-gray-500 hover:text-black"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -372,7 +365,7 @@ export default function Header() {
                             setSelectedModel("");
                             setSelectedYear("");
                           }}
-                          className="w-full bg-[#121212] border border-white/10 rounded px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-brand-red text-white"
+                          className="w-full bg-gray-50 border border-black/10 rounded px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-brand-red text-gray-900"
                         >
                           <option value="">Choose Maker</option>
                           {motorcycles.map((m) => (
@@ -392,7 +385,7 @@ export default function Header() {
                             setSelectedModel(e.target.value);
                             setSelectedYear("");
                           }}
-                          className="w-full bg-[#121212] border border-white/10 rounded px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-brand-red text-white disabled:opacity-40"
+                          className="w-full bg-gray-50 border border-black/10 rounded px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-brand-red text-gray-900 disabled:opacity-40"
                         >
                           <option value="">Choose Model</option>
                           {motorcycles.find((m) => m.maker === selectedMaker)?.models.map((mod) => (
@@ -409,7 +402,7 @@ export default function Header() {
                           value={selectedYear}
                           disabled={!selectedModel}
                           onChange={(e) => setSelectedYear(e.target.value)}
-                          className="w-full bg-[#121212] border border-white/10 rounded px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-brand-red text-white disabled:opacity-40"
+                          className="w-full bg-gray-50 border border-black/10 rounded px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-brand-red text-gray-900 disabled:opacity-40"
                         >
                           <option value="">Choose Year (Optional)</option>
                           {years.map((y) => (
@@ -431,7 +424,7 @@ export default function Header() {
                       {garageBike && (
                         <button
                           onClick={handleClearGarage}
-                          className="bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white p-2 rounded transition-colors"
+                          className="bg-black/5 hover:bg-black/10 text-gray-600 hover:text-black p-2 rounded transition-colors"
                           title="Clear Garage Profile"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -440,7 +433,7 @@ export default function Header() {
                     </div>
 
                     {garageBike && (
-                      <div className="pt-3 border-t border-white/5 text-center">
+                      <div className="pt-3 border-t border-black/5 text-center">
                         <Link
                           href="/garage"
                           onClick={() => setIsGarageOpen(false)}
@@ -456,12 +449,12 @@ export default function Header() {
             </div>
 
             {/* Right Box: Action Icons */}
-            <div className="h-full flex items-center pl-6 lg:pl-8 border-l border-white/10 gap-2 sm:gap-4">
+            <div className="h-full flex-shrink-0 flex items-center pl-2 sm:pl-6 lg:pl-8 border-l border-black/10 gap-1 sm:gap-4">
               
               {/* Search Trigger */}
               <button
                 onClick={() => setIsSearchOpen(true)}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
+                className="p-2 text-gray-700 hover:text-black transition-colors"
                 aria-label="Open Search Catalog"
               >
                 <Search className="w-4.5 h-4.5" />
@@ -470,7 +463,7 @@ export default function Header() {
               {/* Garage Build/Wishlist Icon Link */}
               <Link
                 href="/garage"
-                className="p-2 text-gray-400 hover:text-white transition-colors relative flex items-center"
+                className="p-2 text-gray-700 hover:text-black transition-colors relative flex items-center"
                 aria-label="View Garage Dashboard"
               >
                 <Heart className="w-4.5 h-4.5" />
@@ -484,7 +477,7 @@ export default function Header() {
               {/* Account Toggle */}
               <button
                 onClick={() => setIsAccountOpen(true)}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
+                className="p-2 text-gray-700 hover:text-black transition-colors hidden sm:block"
                 aria-label="Open Account Portal"
               >
                 <User className="w-4.5 h-4.5" />
@@ -493,7 +486,7 @@ export default function Header() {
               {/* Shopping Cart Drawer Trigger */}
               <button
                 onClick={() => openCart(true)}
-                className="p-2 text-gray-400 hover:text-white transition-colors relative"
+                className="p-2 text-gray-700 hover:text-black transition-colors relative"
                 aria-label="Open Shopping Cart"
               >
                 <ShoppingBag className="w-4.5 h-4.5" />
@@ -507,7 +500,7 @@ export default function Header() {
               {/* Mobile Hamburger Menu Toggle */}
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="p-2 text-gray-400 hover:text-white transition-colors md:hidden"
+                className="p-2 text-gray-700 hover:text-black transition-colors md:hidden"
                 aria-label="Open Navigation Drawer"
               >
                 <Menu className="w-5.5 h-5.5" />
@@ -817,6 +810,16 @@ export default function Header() {
 
                 {/* Secondary navigation */}
                 <div className="border-t border-white/5 pt-6 space-y-4 text-sm font-bold uppercase tracking-wider">
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsAccountOpen(true);
+                    }}
+                    className="block w-full text-left text-gray-300 hover:text-white transition-colors uppercase font-bold text-sm tracking-wider cursor-pointer"
+                  >
+                    Rider Profile Dashboard
+                  </button>
+
                   <Link
                     href="/garage"
                     onClick={() => setIsMobileMenuOpen(false)}
