@@ -4,15 +4,24 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function InitialLoader() {
-  const [show, setShow] = useState(true);
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
-    // Lock scrolling on mount
+    // Check if loader has already run in this session
+    const hasLoaded = sessionStorage.getItem("irani_loader_played");
+    if (hasLoaded) {
+      setShow(false);
+      return;
+    }
+
+    // First time opening the page - trigger loader and lock scroll
+    setShow(true);
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
 
     const timer = setTimeout(() => {
       setShow(false);
+      sessionStorage.setItem("irani_loader_played", "true");
       // Unlock scrolling after loading slide-up completes
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";

@@ -11,11 +11,13 @@ import {
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import { useAuth } from "@/context/AuthContext";
 import { getCollections, getProducts, Collection, Product, getActiveMotorcycleGroups, getActiveYears } from "@/lib/shopify";
 
 export default function Header() {
-  const { setIsOpen: openCart, cartCount } = useCart();
+  const { setIsOpen: openCart, cartCount, clearCart } = useCart();
   const { wishlist } = useWishlist();
+  const { user, signIn, signUp, signOut, error: authError, clearError } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -24,6 +26,15 @@ export default function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isGarageOpen, setIsGarageOpen] = useState(false);
+
+  // Auth form states inside the drawer
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // Search states
   const [searchQuery, setSearchQuery] = useState("");
@@ -120,6 +131,14 @@ export default function Header() {
     setIsMobileMenuOpen(false);
     setIsGarageOpen(false);
     setSearchQuery("");
+    // Reset auth form fields
+    setEmail("");
+    setPassword("");
+    setFirstName("");
+    setLastName("");
+    setFormError(null);
+    setAuthMode("login");
+    clearError();
   }, [pathname]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -148,6 +167,45 @@ export default function Header() {
     localStorage.removeItem("rider_garage");
     setIsGarageOpen(false);
     window.dispatchEvent(new Event("garage-updated"));
+  };
+
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+    setSubmitting(true);
+    clearError();
+
+    if (authMode === "login") {
+      if (!email || !password) {
+        setFormError("Please fill in all fields.");
+        setSubmitting(false);
+        return;
+      }
+      const success = await signIn(email, password);
+      if (success) {
+        setEmail("");
+        setPassword("");
+      }
+    } else {
+      if (!firstName || !lastName || !email || !password) {
+        setFormError("Please fill in all fields.");
+        setSubmitting(false);
+        return;
+      }
+      if (password.length < 6) {
+        setFormError("Password must be at least 6 characters.");
+        setSubmitting(false);
+        return;
+      }
+      const success = await signUp(firstName, lastName, email, password);
+      if (success) {
+        setFirstName("");
+        setLastName("");
+        setEmail("");
+        setPassword("");
+      }
+    }
+    setSubmitting(false);
   };
 
   return (
@@ -208,20 +266,24 @@ export default function Header() {
                           Performance & Tuning
                         </h4>
                         <ul className="space-y-4 text-xs font-semibold text-gray-600">
-                          {collections.slice(0, 3).map((col) => (
-                            <li key={col.id} className="group/item">
-                              <Link
-                                href={`/collections/${col.handle}`}
-                                className="hover:text-brand-red transition-colors block"
-                              >
-                                <span>{col.title}</span>
-                                <span className="block text-[10px] text-gray-500 font-normal mt-0.5 normal-case font-body">
-                                  {col.handle === "performance-air-filters" ? "BMC & K&N Italian high-flow race upgrades." : 
-                                   col.handle === "ecu-tuners-piggybacks" ? "FuelX ECU piggyback tuning maps." : "Premium lubricants & chain care sprays."}
-                                </span>
-                              </Link>
-                            </li>
-                          ))}
+                          {collections
+                            .filter((col) =>
+                              ["performance-air-filters", "engine-performance", "ecu-tuners-piggybacks", "bike-care"].includes(col.handle)
+                            )
+                            .map((col) => (
+                              <li key={col.id} className="group/item">
+                                <Link
+                                  href={`/collections/${col.handle}`}
+                                  className="hover:text-brand-red transition-colors block"
+                                >
+                                  <span>{col.title}</span>
+                                  <span className="block text-[10px] text-gray-500 font-normal mt-0.5 normal-case font-body">
+                                    {col.handle === "performance-air-filters" ? "BMC & K&N Italian high-flow race upgrades." : 
+                                     (col.handle === "engine-performance" || col.handle === "ecu-tuners-piggybacks") ? "FuelX ECU piggyback tuning maps." : "Premium lubricants & chain care sprays."}
+                                  </span>
+                                </Link>
+                              </li>
+                            ))}
                         </ul>
                       </div>
                       
@@ -230,20 +292,24 @@ export default function Header() {
                           Riding Gear & Protection
                         </h4>
                         <ul className="space-y-4 text-xs font-semibold text-gray-600">
-                          {collections.slice(3, 6).map((col) => (
-                            <li key={col.id} className="group/item">
-                              <Link
-                                href={`/collections/${col.handle}`}
-                                className="hover:text-brand-red transition-colors block"
-                              >
-                                <span>{col.title}</span>
-                                <span className="block text-[10px] text-gray-500 font-normal mt-0.5 normal-case font-body">
-                                  {col.handle === "certified-riding-helmets" ? "ECE 22.06 certified SMK and Axor lids." :
-                                   col.handle === "technical-apparel-gear" ? "Abrasion-resistant jackets, gloves and boots." : "Viaterra adventure waterproof saddlebags."}
-                                </span>
-                              </Link>
-                            </li>
-                          ))}
+                          {collections
+                            .filter((col) =>
+                              ["riding-gear", "technical-apparel-gear", "touring-accessories", "touring-gear"].includes(col.handle)
+                            )
+                            .map((col) => (
+                              <li key={col.id} className="group/item">
+                                <Link
+                                  href={`/collections/${col.handle}`}
+                                  className="hover:text-brand-red transition-colors block"
+                                >
+                                  <span>{col.title}</span>
+                                  <span className="block text-[10px] text-gray-500 font-normal mt-0.5 normal-case font-body">
+                                    {(col.handle === "riding-gear" || col.handle === "technical-apparel-gear") ? "Abrasion-resistant jackets, gloves and boots." :
+                                     "Viaterra adventure waterproof saddlebags."}
+                                  </span>
+                                </Link>
+                              </li>
+                            ))}
                         </ul>
                       </div>
                     </div>
@@ -477,10 +543,16 @@ export default function Header() {
               {/* Account Toggle */}
               <button
                 onClick={() => setIsAccountOpen(true)}
-                className="p-2 text-gray-700 hover:text-black transition-colors hidden sm:block"
+                className="p-1 text-gray-700 hover:text-black transition-colors hidden sm:flex items-center justify-center"
                 aria-label="Open Account Portal"
               >
-                <User className="w-4.5 h-4.5" />
+                {user ? (
+                  <span className="w-7 h-7 rounded-full bg-brand-red text-white flex items-center justify-center text-[10px] font-headings font-extrabold uppercase tracking-tight shadow-md border border-brand-red/10 hover:scale-105 transition-transform duration-200">
+                    {user.firstName[0]}{user.lastName[0]}
+                  </span>
+                ) : (
+                  <User className="w-4.5 h-4.5" />
+                )}
               </button>
 
               {/* Shopping Cart Drawer Trigger */}
@@ -532,7 +604,7 @@ export default function Header() {
               <form onSubmit={handleSearchSubmit} className="relative mt-2">
                 <input
                   type="text"
-                  placeholder="Search filters, ECU tuners, certified helmets..."
+                  placeholder="Search filters, ECU tuners, riding gear..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-[#121212] border border-white/10 rounded-lg py-3.5 pl-11 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-brand-red text-sm font-body"
@@ -625,56 +697,255 @@ export default function Header() {
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {/* Rider Info Display Card */}
-                <div className="border border-white/5 p-5 rounded-lg bg-[#181818] flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-brand-red text-white font-headings font-extrabold flex items-center justify-center text-lg">
-                    VS
-                  </div>
-                  <div>
-                    <h4 className="font-headings font-extrabold text-sm text-white">Vikram Singh</h4>
-                    <p className="text-xs text-gray-400 font-body">vikram.singh@rider.in</p>
-                  </div>
-                </div>
-
-                {/* Orders Checklist */}
-                <div className="space-y-4">
-                  <h5 className="font-headings font-extrabold text-[10px] tracking-wider text-gray-400 uppercase">
-                    RECENT GARAGE SHIPMENTS
-                  </h5>
-                  
-                  <div className="border border-white/5 rounded divide-y divide-white/5 bg-[#181818] text-xs">
-                    <div className="p-4 space-y-2">
-                      <div className="flex justify-between font-semibold">
-                        <span>#IMH-2026-8941</span>
-                        <span className="text-emerald-500 font-bold uppercase tracking-wider text-[9px] flex items-center gap-1">
-                          <ShieldCheck className="w-3.5 h-3.5" /> Dispatched
-                        </span>
+                {user ? (
+                  // LOGGED IN: Rider Dashboard
+                  <div className="space-y-6">
+                    {/* Rider Info Card */}
+                    <div className="border border-white/5 p-5 rounded-lg bg-[#181818] flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-brand-red text-white font-headings font-extrabold flex items-center justify-center text-lg">
+                        {user.firstName[0]}{user.lastName[0]}
                       </div>
-                      <p className="text-gray-400 font-body">BMC Performance Air Filter x 1</p>
-                      <p className="text-[9.5px] text-gray-500">Shipped via Delhivery Air • Waybill #DLV8912</p>
+                      <div>
+                        <h4 className="font-headings font-extrabold text-sm text-white">
+                          {user.firstName} {user.lastName}
+                        </h4>
+                        <p className="text-xs text-gray-400 font-body">{user.email}</p>
+                      </div>
                     </div>
 
-                    <div className="p-4 space-y-2">
-                      <div className="flex justify-between font-semibold">
-                        <span>#IMH-2026-3829</span>
-                        <span className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">
-                          Delivered
-                        </span>
+                    {/* Orders List */}
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h5 className="font-headings font-extrabold text-[10px] tracking-wider text-gray-400 uppercase">
+                          RECENT GARAGE SHIPMENTS
+                        </h5>
+                        <Link
+                          href="/account"
+                          onClick={() => setIsAccountOpen(false)}
+                          className="text-[9px] font-bold text-brand-red uppercase tracking-wider hover:underline"
+                        >
+                          View All
+                        </Link>
                       </div>
-                      <p className="text-gray-400 font-body">FuelX Pro Tuning Module x 1</p>
-                      <p className="text-[9.5px] text-gray-500">Delivered May 25, 2026</p>
+
+                      {user.orders && user.orders.length > 0 ? (
+                        <div className="border border-white/5 rounded divide-y divide-white/5 bg-[#181818] text-xs">
+                          {user.orders.slice(0, 3).map((order) => (
+                            <div key={order.id} className="p-4 space-y-2">
+                              <div className="flex justify-between font-semibold">
+                                <span>#{order.orderNumber}</span>
+                                <span className={`font-bold uppercase tracking-wider text-[9px] flex items-center gap-1 ${
+                                  order.fulfillmentStatus.toUpperCase() === "FULFILLED" || order.fulfillmentStatus.toUpperCase() === "DELIVERED"
+                                    ? "text-emerald-500"
+                                    : "text-amber-500"
+                                }`}>
+                                  {order.fulfillmentStatus.toUpperCase() === "FULFILLED" || order.fulfillmentStatus.toUpperCase() === "DELIVERED" ? (
+                                    <ShieldCheck className="w-3.5 h-3.5" />
+                                  ) : null}
+                                  {order.fulfillmentStatus}
+                                </span>
+                              </div>
+                              <p className="text-gray-400 font-body truncate">
+                                {order.lineItems.map((item) => `${item.title} x${item.quantity}`).join(", ")}
+                              </p>
+                              <div className="flex justify-between text-[9.5px] text-gray-500">
+                                <span>{new Date(order.processedAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                <span className="font-semibold text-white">₹{parseFloat(order.totalPrice.amount).toLocaleString("en-IN")}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="border border-white/5 border-dashed p-6 rounded-lg text-center bg-[#181818]/30">
+                          <p className="text-xs text-gray-400">No recent shipments found.</p>
+                          <button
+                            onClick={() => {
+                              setIsAccountOpen(false);
+                              router.push("/collections/performance-air-filters");
+                            }}
+                            className="mt-3 text-[10px] font-bold text-brand-red uppercase tracking-wider hover:underline"
+                          >
+                            Explore Performance Upgrades
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
+                ) : (
+                  // LOGGED OUT: Beautiful Tabbed Authentication Forms
+                  <div className="space-y-6">
+                    {/* Tab Selection */}
+                    <div className="grid grid-cols-2 border-b border-white/10 pb-1">
+                      <button
+                        onClick={() => {
+                          setAuthMode("login");
+                          setFormError(null);
+                          clearError();
+                        }}
+                        className={`pb-2.5 text-xs font-headings font-extrabold uppercase tracking-wider text-center transition-colors ${
+                          authMode === "login"
+                            ? "text-brand-red border-b-2 border-brand-red"
+                            : "text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        SIGN IN
+                      </button>
+                      <button
+                        onClick={() => {
+                          setAuthMode("signup");
+                          setFormError(null);
+                          clearError();
+                        }}
+                        className={`pb-2.5 text-xs font-headings font-extrabold uppercase tracking-wider text-center transition-colors ${
+                          authMode === "signup"
+                            ? "text-brand-red border-b-2 border-brand-red"
+                            : "text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        CREATE ACCOUNT
+                      </button>
+                    </div>
+
+                    {/* Display Errors */}
+                    {(formError || authError) && (
+                      <div className="p-3 bg-red-950/40 border border-red-500/30 text-red-400 rounded text-xs font-semibold">
+                        {formError || authError}
+                      </div>
+                    )}
+
+                    {/* Form Fields */}
+                    <form onSubmit={handleAuthSubmit} className="space-y-4">
+                      {authMode === "signup" && (
+                        <div className="grid grid-cols-2 gap-3.5">
+                          <div>
+                            <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-gray-400 mb-1.5">
+                              First Name
+                            </label>
+                            <input
+                              type="text"
+                              value={firstName}
+                              onChange={(e) => setFirstName(e.target.value)}
+                              placeholder="Rider"
+                              className="w-full bg-[#181818] border border-white/10 rounded px-3 py-2 text-xs font-semibold text-white placeholder-gray-600 focus:outline-none focus:border-brand-red font-body"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-gray-400 mb-1.5">
+                              Last Name
+                            </label>
+                            <input
+                              type="text"
+                              value={lastName}
+                              onChange={(e) => setLastName(e.target.value)}
+                              placeholder="Singh"
+                              className="w-full bg-[#181818] border border-white/10 rounded px-3 py-2 text-xs font-semibold text-white placeholder-gray-600 focus:outline-none focus:border-brand-red font-body"
+                              required
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-gray-400 mb-1.5">
+                          Email Address
+                        </label>
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="your.name@rider.in"
+                          className="w-full bg-[#181818] border border-white/10 rounded px-3 py-2 text-xs font-semibold text-white placeholder-gray-600 focus:outline-none focus:border-brand-red font-body"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-gray-400 mb-1.5">
+                          Password
+                        </label>
+                        <input
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full bg-[#181818] border border-white/10 rounded px-3 py-2 text-xs font-semibold text-white placeholder-gray-600 focus:outline-none focus:border-brand-red font-body"
+                          required
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="w-full bg-brand-red hover:bg-red-700 text-white py-3 rounded text-[10px] font-headings font-bold uppercase tracking-wider transition-colors disabled:opacity-40 flex items-center justify-center gap-1.5 mt-2 shadow-lg shadow-brand-red/10"
+                      >
+                        {submitting ? (
+                          <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : authMode === "login" ? (
+                          "Sign In to Hub"
+                        ) : (
+                          "Register Account"
+                        )}
+                      </button>
+                    </form>
+
+                    <div className="text-center pt-2">
+                      <p className="text-[10px] text-gray-400 font-body">
+                        {authMode === "login" ? (
+                          <>
+                            Don&apos;t have an account?{" "}
+                            <button
+                              onClick={() => {
+                                setAuthMode("signup");
+                                setFormError(null);
+                                clearError();
+                              }}
+                              className="text-brand-red hover:underline font-bold"
+                            >
+                              Create one
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            Already registered?{" "}
+                            <button
+                              onClick={() => {
+                                setAuthMode("login");
+                                setFormError(null);
+                                clearError();
+                              }}
+                              className="text-brand-red hover:underline font-bold"
+                            >
+                              Sign in instead
+                            </button>
+                          </>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="p-6 border-t border-white/10 bg-[#181818] text-center">
-                <button
-                  onClick={() => setIsAccountOpen(false)}
-                  className="text-xs font-bold text-brand-red uppercase tracking-wider hover:underline"
-                >
-                  Sign Out from Hub
-                </button>
+                {user ? (
+                  <button
+                    onClick={() => {
+                      signOut();
+                      clearCart();
+                      setIsAccountOpen(false);
+                    }}
+                    className="text-xs font-bold text-brand-red uppercase tracking-wider hover:underline"
+                  >
+                    Sign Out from Hub
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setIsAccountOpen(false)}
+                    className="text-xs font-bold text-gray-400 uppercase tracking-wider hover:text-white transition-colors"
+                  >
+                    Continue Browsing
+                  </button>
+                )}
               </div>
             </motion.div>
           </>
@@ -817,7 +1088,7 @@ export default function Header() {
                     }}
                     className="block w-full text-left text-gray-300 hover:text-white transition-colors uppercase font-bold text-sm tracking-wider cursor-pointer"
                   >
-                    Rider Profile Dashboard
+                    {user ? `Rider: ${user.firstName}` : "Sign In / Register"}
                   </button>
 
                   <Link

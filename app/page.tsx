@@ -2,7 +2,7 @@ import React from "react";
 import Hero from "@/components/Hero";
 import CategorySection from "@/components/CategorySection";
 import FeaturedProducts from "@/components/FeaturedProducts";
-import WhyChooseUs from "@/components/WhyChooseUs";
+import NewArrivals from "@/components/NewArrivals";
 import PerformanceBanner from "@/components/PerformanceBanner";
 import FeaturedBrands from "@/components/FeaturedBrands";
 import ReviewsCarousel from "@/components/ReviewsCarousel";
@@ -20,8 +20,8 @@ export default function Home() {
       {/* Curated list of items with quick-add */}
       <FeaturedProducts />
 
-      {/* Trust factors */}
-      <WhyChooseUs />
+      {/* Carousel of newest products */}
+      <NewArrivals />
 
       {/* Dynamic performance spotlight banner */}
       <PerformanceBanner />

@@ -69,7 +69,7 @@ const MILESTONES = [
   {
     year: "2026",
     title: "India's Performance Hub",
-    description: "Currently shipping racing air filters, ECU tuners, and ECE 22.06 certified helmets to over 80,000 riders across the country.",
+    description: "Currently shipping racing air filters, ECU tuners, and premium riding gear to over 80,000 riders across the country.",
     badge: "Present Day"
   }
 ];
@@ -559,7 +559,7 @@ export default function AboutPage() {
                 Structural Shielding
               </h3>
               <p className="text-gray-400 text-xs leading-relaxed mt-2 font-body">
-                All riding gear and helmets cataloged must meet ECE 22.06 or CE Level 2 credentials. Impact absorption values are mathematically checked to deliver premium brain and joint security.
+                All riding gear cataloged must meet ECE or CE Level 2 credentials. Safety specifications are checked to deliver premium joint and body security.
               </p>
             </div>
 
@@ -716,7 +716,7 @@ export default function AboutPage() {
               READY TO RE-ENGINEER<br />YOUR BIKE?
             </h2>
             <p className="text-gray-400 text-xs sm:text-sm font-body leading-relaxed">
-              Verify compatibility using our digital Rider Garage configuration engine or browse our curated collections of imported race parts and helmets.
+              Verify compatibility using our digital Rider Garage configuration engine or browse our curated collections of imported race parts and riding gear.
             </p>
           </div>
 

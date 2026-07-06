@@ -103,16 +103,6 @@ const MOCK_COLLECTIONS: Collection[] = [
     }
   },
   {
-    id: "col-3",
-    handle: "helmets",
-    title: "Helmets",
-    description: "ECE and DOT certified helmets offering state-of-the-art protection, aerodynamics, and sleek modern designs.",
-    image: {
-      url: "https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?q=80&w=800&auto=format&fit=crop",
-      altText: "Premium Helmets Collection"
-    }
-  },
-  {
     id: "col-4",
     handle: "riding-gear",
     title: "Riding Gear",
@@ -411,90 +401,6 @@ const MOCK_PRODUCTS: Product[] = [
     rating: 4.6
   },
   {
-    id: "prod-8",
-    handle: "axor-apex-helmet",
-    title: "Axor Apex Venomous Helmet",
-    description: "Axor Apex features a high-impact ABS polycarbonate shell. ECE R22.05 certified. Fitted with an optically correct clear visor, an integrated drop-down sun visor, and emergency quick-release cheek pads. Sleek rear spoiler increases high-speed stability.",
-    priceRange: {
-      minVariantPrice: { amount: "4990", currencyCode: "INR" }
-    },
-    images: [
-      {
-        url: "https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?q=80&w=600&auto=format&fit=crop",
-        altText: "Axor Apex Helmet Angle View"
-      }
-    ],
-    variants: [
-      {
-        id: "var-8-1",
-        title: "Medium / Matte Black Red",
-        price: { amount: "4990", currencyCode: "INR" },
-        availableForSale: true
-      },
-      {
-        id: "var-8-2",
-        title: "Large / Matte Black Red",
-        price: { amount: "4990", currencyCode: "INR" },
-        availableForSale: true
-      }
-    ],
-    brand: "Axor",
-    category: "Helmets",
-    compatibility: ["All Motorcycles"],
-    specifications: [
-      { name: "Shell Material", value: "High Impact ABS Polycarbonate" },
-      { name: "Certification", value: "ECE R-22.05 & DOT Approved" },
-      { name: "Weight", value: "1500 ± 50 grams" },
-      { name: "Visor Type", value: "Anti-fog PINLOCK ready clear visor + Internal Sun Visor" }
-    ],
-    reviews: [
-      { id: "rev-8-1", author: "Nikhil Joshi", rating: 4, date: "2026-05-10", title: "Stunning graphics and fit", comment: "Graphics are very sharp. Wind noise is moderate at 100 km/h, but the safety and fit are stellar for the price." }
-    ],
-    rating: 4.4
-  },
-  {
-    id: "prod-9",
-    handle: "smk-titan-helmet",
-    title: "SMK Titan Carbon Helmet",
-    description: "The SMK Titan is a premium full-face carbon composite helmet built for touring and sport riders. The dual-shell design with advanced channeling ventilation provides unmatched cooling. Equipped with Pinlock 70 anti-fog lens insert.",
-    priceRange: {
-      minVariantPrice: { amount: "10500", currencyCode: "INR" }
-    },
-    images: [
-      {
-        url: "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?q=80&w=600&auto=format&fit=crop",
-        altText: "SMK Titan Carbon fiber weave helmet"
-      }
-    ],
-    variants: [
-      {
-        id: "var-9-1",
-        title: "Medium / Gloss Carbon",
-        price: { amount: "10500", currencyCode: "INR" },
-        availableForSale: true
-      },
-      {
-        id: "var-9-2",
-        title: "Large / Gloss Carbon",
-        price: { amount: "10500", currencyCode: "INR" },
-        availableForSale: true
-      }
-    ],
-    brand: "SMK",
-    category: "Helmets",
-    compatibility: ["All Motorcycles"],
-    specifications: [
-      { name: "Shell Material", value: "High-grade carbon fiber composite" },
-      { name: "Certification", value: "ECE 22-05 Certified" },
-      { name: "Weight", value: "1350 ± 50 grams" },
-      { name: "Visor", value: "Quick release, scratch-resistant, Pinlock included" }
-    ],
-    reviews: [
-      { id: "rev-9-1", author: "Kshitij T", rating: 5, date: "2026-06-03", title: "Carbon fiber at this price is a steal", comment: "Amazingly lightweight. Zero neck fatigue on my 600km weekend ride. Beautiful carbon fiber weave visible under sunlight." }
-    ],
-    rating: 4.9
-  },
-  {
     id: "prod-10",
     handle: "viaterra-riding-gloves",
     title: "Viaterra Grid Full Gauntlet Gloves",
@@ -590,6 +496,30 @@ const isShopifyConfigured = (): boolean => {
 };
 
 async function shopifyFetch<T>(query: string, variables = {}): Promise<{ data?: T; errors?: any } | null> {
+  const isClient = typeof window !== "undefined";
+
+  if (isClient) {
+    try {
+      const response = await fetch("/api/shopify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query, variables }),
+      });
+
+      if (!response.ok) {
+        console.warn(`Shopify Proxy API responded with status ${response.status}`);
+        return null;
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("Failed to fetch from Shopify proxy:", error);
+      return null;
+    }
+  }
+
+  // Server-side direct request
   if (!isShopifyConfigured()) return null;
 
   const endpoint = `https://${DOMAIN}/api/2024-01/graphql.json`;
@@ -1054,7 +984,6 @@ export function isProductCompatible(
   const isUniversal = 
     product.compatibility.includes("All Motorcycles") || 
     product.compatibility.includes("Universal") ||
-    product.category.toLowerCase() === "helmets" || 
     product.category.toLowerCase() === "riding gear";
     
   if (isUniversal) return true;
@@ -1203,5 +1132,392 @@ export function getActiveYears(products: Product[]): string[] {
 
   return Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
 }
+
+// ==========================================
+// CUSTOMER AUTHENTICATION & ACCESS TYPES
+// ==========================================
+
+export interface CustomerOrderLineItem {
+  title: string;
+  quantity: number;
+  price: {
+    amount: string;
+    currencyCode: string;
+  };
+}
+
+export interface CustomerOrder {
+  id: string;
+  orderNumber: string;
+  processedAt: string;
+  totalPrice: {
+    amount: string;
+    currencyCode: string;
+  };
+  financialStatus: string;
+  fulfillmentStatus: string;
+  lineItems: CustomerOrderLineItem[];
+}
+
+export interface Customer {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  accessToken?: string;
+  isMock?: boolean;
+  orders: CustomerOrder[];
+}
+
+// Helper to check if localStorage is available
+const isBrowser = (): boolean => typeof window !== "undefined";
+
+// Mock database key
+const MOCK_USERS_KEY = "irani_motohub_mock_users";
+
+// Helper to get mock users
+function getMockUsers(): any[] {
+  if (!isBrowser()) return [];
+  try {
+    const data = localStorage.getItem(MOCK_USERS_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    console.error("Error reading mock users:", e);
+    return [];
+  }
+}
+
+// Helper to save mock users
+function saveMockUsers(users: any[]) {
+  if (!isBrowser()) return;
+  try {
+    localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(users));
+  } catch (e) {
+    console.error("Error saving mock users:", e);
+  }
+}
+
+// Helper to generate a default mock order history for newly registered / mock users to make it feel premium
+function getMockOrdersForEmail(email: string): CustomerOrder[] {
+  // Return some pre-filled mock orders to make the UI look stunning and populated
+  return [
+    {
+      id: "ord-mock-1",
+      orderNumber: "IMH-2026-8941",
+      processedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+      totalPrice: { amount: "4990.00", currencyCode: "INR" },
+      financialStatus: "PAID",
+      fulfillmentStatus: "FULFILLED",
+      lineItems: [
+        {
+          title: "BMC High Performance Air Filter - KTM Duke 390 (Gen 3)",
+          quantity: 1,
+          price: { amount: "4990.00", currencyCode: "INR" }
+        }
+      ]
+    },
+    {
+      id: "ord-mock-2",
+      orderNumber: "IMH-2026-3829",
+      processedAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(), // 35 days ago
+      totalPrice: { amount: "18250.00", currencyCode: "INR" },
+      financialStatus: "PAID",
+      fulfillmentStatus: "DELIVERED",
+      lineItems: [
+        {
+          title: "FuelX Pro Tuning Module - Royal Enfield Himalayan 450",
+          quantity: 1,
+          price: { amount: "18250.00", currencyCode: "INR" }
+        }
+      ]
+    }
+  ];
+}
+
+/**
+ * Register a new customer in Shopify or fallback to Mock Database.
+ */
+export async function customerRegister(
+  firstName: string,
+  lastName: string,
+  email: string,
+  password: string
+): Promise<{ customer: Customer | null; errors: string[] }> {
+  if (isShopifyConfigured()) {
+    const mutation = `
+      mutation CustomerCreate($input: CustomerCreateInput!) {
+        customerCreate(input: $input) {
+          customer {
+            id
+            firstName
+            lastName
+            email
+            phone
+          }
+          customerUserErrors {
+            code
+            field
+            message
+          }
+        }
+      }
+    `;
+
+    try {
+      const result = await shopifyFetch<any>(mutation, {
+        input: { firstName, lastName, email, password, acceptsMarketing: true }
+      });
+
+      const customerCreate = result?.data?.customerCreate;
+      if (customerCreate?.customerUserErrors?.length > 0) {
+        const errorMsgs = customerCreate.customerUserErrors.map((err: any) => err.message);
+        return { customer: null, errors: errorMsgs };
+      }
+
+      if (result?.data?.customerCreate?.customer) {
+        const c = result.data.customerCreate.customer;
+        const customer: Customer = {
+          id: c.id,
+          firstName: c.firstName || "",
+          lastName: c.lastName || "",
+          email: c.email,
+          phone: c.phone || "",
+          orders: []
+        };
+        return { customer, errors: [] };
+      }
+    } catch (e) {
+      console.warn("Shopify register call failed, falling back to mock database", e);
+    }
+  }
+
+  // FALLBACK MOCK REGISTER
+  const users = getMockUsers();
+  const emailLower = email.toLowerCase().trim();
+  const exists = users.find((u) => u.email.toLowerCase().trim() === emailLower);
+
+  if (exists) {
+    return { customer: null, errors: ["An account with this email address already exists."] };
+  }
+
+  const newMockUser = {
+    id: `mock-usr-${Math.random().toString(36).substr(2, 9)}`,
+    firstName,
+    lastName,
+    email: emailLower,
+    password, // Store plain text since this is a local mock client sandbox,
+    phone: "",
+    orders: getMockOrdersForEmail(emailLower)
+  };
+
+  users.push(newMockUser);
+  saveMockUsers(users);
+
+  const customer: Customer = {
+    id: newMockUser.id,
+    firstName: newMockUser.firstName,
+    lastName: newMockUser.lastName,
+    email: newMockUser.email,
+    phone: newMockUser.phone,
+    isMock: true,
+    orders: newMockUser.orders
+  };
+
+  return { customer, errors: [] };
+}
+
+/**
+ * Log in a customer. Returns Customer and access token.
+ */
+export async function customerLogin(
+  email: string,
+  password: string
+): Promise<{ customer: Customer | null; accessToken?: string; errors: string[] }> {
+  const emailLower = email.toLowerCase().trim();
+
+  if (isShopifyConfigured()) {
+    const mutation = `
+      mutation CustomerAccessTokenCreate($input: CustomerAccessTokenCreateInput!) {
+        customerAccessTokenCreate(input: $input) {
+          customerAccessToken {
+            accessToken
+            expiresAt
+          }
+          customerUserErrors {
+            code
+            field
+            message
+          }
+        }
+      }
+    `;
+
+    try {
+      const result = await shopifyFetch<any>(mutation, {
+        input: { email: emailLower, password }
+      });
+
+      const tokenCreate = result?.data?.customerAccessTokenCreate;
+      if (tokenCreate?.customerUserErrors?.length > 0) {
+        const errorMsgs = tokenCreate.customerUserErrors.map((err: any) => err.message);
+        return { customer: null, errors: errorMsgs };
+      }
+
+      const tokenInfo = result?.data?.customerAccessTokenCreate?.customerAccessToken;
+      if (tokenInfo?.accessToken) {
+        const accessToken = tokenInfo.accessToken;
+        // Fetch full customer details
+        const customer = await customerGet(accessToken);
+        if (customer) {
+          return { customer, accessToken, errors: [] };
+        }
+      }
+    } catch (e) {
+      console.warn("Shopify login call failed, falling back to mock database", e);
+    }
+  }
+
+  // FALLBACK MOCK LOGIN
+  const users = getMockUsers();
+  const matchedUser = users.find(
+    (u) => u.email.toLowerCase().trim() === emailLower && u.password === password
+  );
+
+  if (!matchedUser) {
+    return { customer: null, errors: ["Unrecognized email address or password. Please try again."] };
+  }
+
+  const customer: Customer = {
+    id: matchedUser.id,
+    firstName: matchedUser.firstName,
+    lastName: matchedUser.lastName,
+    email: matchedUser.email,
+    phone: matchedUser.phone,
+    isMock: true,
+    orders: matchedUser.orders || getMockOrdersForEmail(matchedUser.email)
+  };
+
+  // Generate a mock token containing the email
+  const mockToken = `mock-token-${matchedUser.email}`;
+
+  return { customer, accessToken: mockToken, errors: [] };
+}
+
+/**
+ * Get customer info using access token.
+ */
+export async function customerGet(accessToken: string): Promise<Customer | null> {
+  if (accessToken.startsWith("mock-token-")) {
+    const email = accessToken.replace("mock-token-", "").toLowerCase().trim();
+    const users = getMockUsers();
+    const matchedUser = users.find((u) => u.email.toLowerCase().trim() === email);
+
+    if (!matchedUser) return null;
+
+    return {
+      id: matchedUser.id,
+      firstName: matchedUser.firstName,
+      lastName: matchedUser.lastName,
+      email: matchedUser.email,
+      phone: matchedUser.phone,
+      isMock: true,
+      orders: matchedUser.orders || getMockOrdersForEmail(matchedUser.email)
+    };
+  }
+
+  if (isShopifyConfigured()) {
+    const query = `
+      query GetCustomer($customerAccessToken: String!) {
+        customer(customerAccessToken: $customerAccessToken) {
+          id
+          firstName
+          lastName
+          email
+          phone
+          orders(first: 10) {
+            edges {
+              node {
+                id
+                orderNumber
+                processedAt
+                totalPrice {
+                  amount
+                  currencyCode
+                }
+                financialStatus
+                fulfillmentStatus
+                lineItems(first: 10) {
+                  edges {
+                    node {
+                      title
+                      quantity
+                      variant {
+                        price {
+                          amount
+                          currencyCode
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    try {
+      const result = await shopifyFetch<any>(query, { customerAccessToken: accessToken });
+      if (result?.data?.customer) {
+        const c = result.data.customer;
+        
+        // Map Shopify order nodes
+        const orders: CustomerOrder[] = c.orders?.edges?.map((edge: any) => {
+          const o = edge.node;
+          const lineItems = o.lineItems?.edges?.map((liEdge: any) => {
+            const li = liEdge.node;
+            return {
+              title: li.title,
+              quantity: li.quantity,
+              price: {
+                amount: li.variant?.price?.amount || "0",
+                currencyCode: li.variant?.price?.currencyCode || "INR"
+              }
+            };
+          }) || [];
+
+          return {
+            id: o.id,
+            orderNumber: o.orderNumber?.toString() || o.id,
+            processedAt: o.processedAt,
+            totalPrice: {
+              amount: o.totalPrice?.amount || "0",
+              currencyCode: o.totalPrice?.currencyCode || "INR"
+            },
+            financialStatus: o.financialStatus || "PAID",
+            fulfillmentStatus: o.fulfillmentStatus || "UNFULFILLED",
+            lineItems
+          };
+        }) || [];
+
+        return {
+          id: c.id,
+          firstName: c.firstName || "",
+          lastName: c.lastName || "",
+          email: c.email,
+          phone: c.phone || "",
+          orders
+        };
+      }
+    } catch (e) {
+      console.error("Error fetching Shopify customer data:", e);
+    }
+  }
+
+  return null;
+}
+
 
 

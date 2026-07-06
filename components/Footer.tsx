@@ -52,11 +52,6 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/collections/helmets" className="text-gray-400 hover:text-white transition-colors duration-200 block">
-                  Helmets
-                </Link>
-              </li>
-              <li>
                 <Link href="/collections/riding-gear" className="text-gray-400 hover:text-white transition-colors duration-200 block">
                   Riding Gear
                 </Link>

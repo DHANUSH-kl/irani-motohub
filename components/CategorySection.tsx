@@ -28,28 +28,22 @@ export default function CategorySection() {
       count: "02",
     },
     {
-      title: "Certified Helmets",
-      handle: "helmets",
-      imageUrl: "/shop-by-category/certified-helmets.jpeg",
-      count: "03",
-    },
-    {
       title: "Riding Gear",
       handle: "riding-gear",
       imageUrl: "/shop-by-category/riding-gear.jpeg",
-      count: "04",
+      count: "03",
     },
     {
       title: "Bike Care",
       handle: "bike-care",
       imageUrl: "/shop-by-category/bike-care.jpeg",
-      count: "05",
+      count: "04",
     },
     {
       title: "Touring Gear",
       handle: "touring-accessories",
       imageUrl: "/shop-by-category/touring-gear.jpeg",
-      count: "06",
+      count: "05",
     }
   ];
 

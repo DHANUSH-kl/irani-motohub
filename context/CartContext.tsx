@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Product, ProductVariant, Cart, CartItem, createCart } from "@/lib/shopify";
+import { useAuth } from "@/context/AuthContext";
 
 interface CartContextType {
   cart: Cart;
@@ -18,6 +19,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { user, loading: authLoading } = useAuth();
   const [cart, setCart] = useState<Cart>({
     id: "",
     checkoutUrl: "",
@@ -27,31 +29,88 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize cart from localStorage or create new
+  // Helper to determine the storage key depending on user state
+  const getCartKey = (u: any) => u ? `irani_motohub_cart_${u.email}` : "irani_motohub_cart";
+
+  // Switch and merge carts based on auth state changes
   useEffect(() => {
-    const initCart = async () => {
+    if (authLoading) return; // Wait until authentication state is determined
+
+    const initOrSwitchCart = async () => {
       try {
-        const storedCart = localStorage.getItem("irani_motohub_cart");
-        if (storedCart) {
-          const parsed = JSON.parse(storedCart);
-          setCart(parsed);
+        const guestCartStr = localStorage.getItem("irani_motohub_cart");
+        const guestCart = guestCartStr ? JSON.parse(guestCartStr) : null;
+
+        if (user) {
+          // USER LOGGED IN
+          const userKey = `irani_motohub_cart_${user.email}`;
+          const storedUserCartStr = localStorage.getItem(userKey);
+          let userCart: Cart;
+
+          if (storedUserCartStr) {
+            userCart = JSON.parse(storedUserCartStr);
+          } else {
+            const newCart = await createCart();
+            userCart = newCart;
+          }
+
+          // If there were items in the guest cart, merge them into user's cart
+          if (guestCart && guestCart.lines.length > 0) {
+            const mergedLines = [...userCart.lines];
+            
+            guestCart.lines.forEach((guestLine: CartItem) => {
+              const existingIndex = mergedLines.findIndex(
+                (userLine) => userLine.selectedVariant.id === guestLine.selectedVariant.id
+              );
+              if (existingIndex > -1) {
+                mergedLines[existingIndex] = {
+                  ...mergedLines[existingIndex],
+                  quantity: mergedLines[existingIndex].quantity + guestLine.quantity
+                };
+              } else {
+                mergedLines.push(guestLine);
+              }
+            });
+
+            userCart.lines = mergedLines;
+            
+            // Clear the guest cart so it is empty on subsequent signouts
+            localStorage.removeItem("irani_motohub_cart");
+          }
+
+          // Force update subtotal for safety
+          const subtotal = userCart.lines.reduce((acc, line) => {
+            const price = parseFloat(line.selectedVariant.price.amount);
+            return acc + price * line.quantity;
+          }, 0);
+          userCart.subtotalAmount.amount = subtotal.toFixed(2);
+
+          setCart(userCart);
+          localStorage.setItem(userKey, JSON.stringify(userCart));
         } else {
-          const newCart = await createCart();
-          setCart(newCart);
-          localStorage.setItem("irani_motohub_cart", JSON.stringify(newCart));
+          // USER LOGGED OUT (OR GUEST)
+          // Load or initialize guest cart
+          if (guestCart) {
+            setCart(guestCart);
+          } else {
+            const newCart = await createCart();
+            setCart(newCart);
+            localStorage.setItem("irani_motohub_cart", JSON.stringify(newCart));
+          }
         }
       } catch (e) {
-        console.error("Error initializing cart:", e);
+        console.error("Error swapping/initializing cart on auth change:", e);
       } finally {
         setIsInitialized(true);
       }
     };
-    initCart();
-  }, []);
 
-  // Update localStorage and subtotal whenever lines change
+    initOrSwitchCart();
+  }, [user, authLoading]);
+
+  // Sync active cart to local storage whenever lines change
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!isInitialized || authLoading) return;
 
     const subtotal = cart.lines.reduce((acc, line) => {
       const price = parseFloat(line.selectedVariant.price.amount);
@@ -62,12 +121,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       ...cart,
       subtotalAmount: {
         amount: subtotal.toFixed(2),
-        currencyCode: "INR"
+        currencyCode: cart.subtotalAmount.currencyCode || "INR"
       }
     };
 
-    localStorage.setItem("irani_motohub_cart", JSON.stringify(updatedCart));
-  }, [cart.lines, isInitialized]);
+    const key = getCartKey(user);
+    localStorage.setItem(key, JSON.stringify(updatedCart));
+  }, [cart.lines, isInitialized, user, authLoading]);
 
   const addItem = (product: Product, selectedVariant: ProductVariant, quantity = 1) => {
     setCart((prevCart) => {

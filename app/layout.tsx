@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 import InitialLoader from "@/components/InitialLoader";
+import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 
@@ -24,11 +25,11 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Irani MotoHub | Premium Motorcycle Accessories & Performance Parts",
-  description: "India's destination for high-performance motorcycle upgrades, racing air filters, certified riding helmets, gear, and touring accessories.",
+  description: "India's destination for high-performance motorcycle upgrades, racing air filters, technical riding gear, and touring accessories.",
   metadataBase: new URL("https://iranimotohub.com"),
   openGraph: {
     title: "Irani MotoHub | Premium Performance Store",
-    description: "Shop racing air filters, fuel piggybacks, technical riding gear, and helmets from BMC, K&N, Motul, Liqui Moly, Axor, SMK, and more.",
+    description: "Shop racing air filters, fuel piggybacks, and technical riding gear from BMC, K&N, Motul, Liqui Moly, and more.",
     url: "https://iranimotohub.com",
     siteName: "Irani MotoHub",
     images: [
@@ -45,7 +46,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Irani MotoHub | Premium Motorcycle Performance Parts",
-    description: "Unlock better engine performance and ride safety with certified helmets, technical apparel, and engine care products.",
+    description: "Unlock better engine performance and ride safety with technical apparel, engine care products, and performance upgrades.",
     images: ["/hero-bg.png"],
   },
   alternates: {
@@ -71,29 +72,31 @@ export default function RootLayout({
       className={`${manrope.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-brand-bg text-brand-primary">
-        <CartProvider>
-          <WishlistProvider>
-            <SmoothScroll>
-              {/* Scroll progress and scroll-to-top dial */}
-              <ScrollIndicator />
+        <AuthProvider>
+          <CartProvider>
+            <WishlistProvider>
+              <SmoothScroll>
+                {/* Scroll progress and scroll-to-top dial */}
+                <ScrollIndicator />
 
-              {/* Initial landing loader */}
-              <InitialLoader />
+                {/* Initial landing loader */}
+                <InitialLoader />
 
-              {/* Transparent Sticky navigation */}
-              <Header />
-              
-              {/* Main content renders here */}
-              <div className="flex-grow flex flex-col">{children}</div>
-              
-              {/* Right aligned sliding shopping cart drawer */}
-              <CartDrawer />
-              
-              {/* Dark themed footer */}
-              <Footer />
-            </SmoothScroll>
-          </WishlistProvider>
-        </CartProvider>
+                {/* Transparent Sticky navigation */}
+                <Header />
+                
+                {/* Main content renders here */}
+                <div className="flex-grow flex flex-col">{children}</div>
+                
+                {/* Right aligned sliding shopping cart drawer */}
+                <CartDrawer />
+                
+                {/* Dark themed footer */}
+                <Footer />
+              </SmoothScroll>
+            </WishlistProvider>
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );
