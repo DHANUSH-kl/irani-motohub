@@ -6,6 +6,8 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
+import { getCollections } from "@/lib/shopify";
+
 interface Category {
   title: string;
   handle: string;
@@ -14,38 +16,25 @@ interface Category {
 }
 
 export default function CategorySection() {
-  const categories: Category[] = [
-    {
-      title: "Performance Air Filters",
-      handle: "performance-air-filters",
-      imageUrl: "/shop-by-category/performance-air-filters.jpeg",
-      count: "01",
-    },
-    {
-      title: "Engine Tuning",
-      handle: "engine-performance",
-      imageUrl: "/shop-by-category/engine-tuning.jpeg",
-      count: "02",
-    },
-    {
-      title: "Riding Gear",
-      handle: "riding-gear",
-      imageUrl: "/shop-by-category/riding-gear.jpeg",
-      count: "03",
-    },
-    {
-      title: "Bike Care",
-      handle: "bike-care",
-      imageUrl: "/shop-by-category/bike-care.jpeg",
-      count: "04",
-    },
-    {
-      title: "Touring Gear",
-      handle: "touring-accessories",
-      imageUrl: "/shop-by-category/touring-gear.jpeg",
-      count: "05",
-    }
-  ];
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const collections = await getCollections();
+        const mapped = collections.map((col, idx) => ({
+          title: col.title,
+          handle: col.handle,
+          imageUrl: col.image?.url || "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=600",
+          count: String(idx + 1).padStart(2, "0")
+        }));
+        setCategories(mapped);
+      } catch (e) {
+        console.error("Failed to load collections:", e);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);

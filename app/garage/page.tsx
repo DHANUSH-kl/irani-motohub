@@ -12,19 +12,7 @@ import {
 } from "lucide-react";
 
 // Product Tuning Spec mappings (HP and weight effects)
-const TUNING_DB: Record<string, { hpGain: number; weightSaved: number; safetyGained?: number }> = {
-  "bmc-air-filter": { hpGain: 1.2, weightSaved: 0.35 },
-  "kn-air-filter": { hpGain: 1.0, weightSaved: 0.30 },
-  "fuelx-lite": { hpGain: 1.8, weightSaved: 0.0 },
-  "fuelx-pro": { hpGain: 3.2, weightSaved: 0.1 },
-  "ngk-iridium-spark-plug": { hpGain: 0.2, weightSaved: 0.0 },
-  "motul-chain-care-kit": { hpGain: 0.4, weightSaved: 0.0 },
-  "liqui-moly-engine-oil": { hpGain: 0.3, weightSaved: 0.0 },
-  "smk-titan-helmet": { hpGain: 0.0, weightSaved: 0.0, safetyGained: 25 },
-  "axor-apex-helmet": { hpGain: 0.0, weightSaved: 0.0, safetyGained: 15 },
-  "viaterra-riding-gloves": { hpGain: 0.0, weightSaved: 0.0, safetyGained: 10 },
-  "bobo-mobile-holder": { hpGain: 0.0, weightSaved: 0.0 }
-};
+// Shopify metafields will be used dynamically instead of static db.
 
 export default function GaragePage() {
   const { wishlist, removeFromWishlist } = useWishlist();
@@ -164,10 +152,12 @@ export default function GaragePage() {
       const isConfigured = installedItems.includes(item.id);
       
       if (fits && isConfigured) {
-        const specs = TUNING_DB[item.handle] || { hpGain: 0, weightSaved: 0 };
-        totalHpGain += specs.hpGain;
-        totalWeightSaved += specs.weightSaved;
-        totalSafety += specs.safetyGained || 0;
+        const hp = parseFloat(String(item.metafields?.custom?.hp_gain ?? item.hp_gain ?? 0));
+        const wt = parseFloat(String(item.metafields?.custom?.weight_saved ?? item.weight_saved ?? 0));
+        const sf = parseFloat(String(item.metafields?.custom?.safety_rating ?? item.safety_rating ?? 0));
+        totalHpGain += hp;
+        totalWeightSaved += wt;
+        totalSafety += sf;
       }
     });
 
@@ -627,7 +617,8 @@ export default function GaragePage() {
                     <div className="divide-y divide-brand-border">
                       {wishlist.filter(isProductCompatible).map((item) => {
                         const isInstalledInBuilder = installedItems.includes(item.id);
-                        const specs = TUNING_DB[item.handle];
+                        const hp = parseFloat(String(item.metafields?.custom?.hp_gain ?? item.hp_gain ?? 0));
+                        const wt = parseFloat(String(item.metafields?.custom?.weight_saved ?? item.weight_saved ?? 0));
                         const variant = item.variants[0];
 
                         return (
@@ -656,9 +647,9 @@ export default function GaragePage() {
                                   <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold border border-emerald-200 px-1.5 py-0.5 rounded flex items-center gap-0.5 uppercase tracking-wide">
                                     <Check className="w-3 h-3" /> Compatible
                                   </span>
-                                  {specs && (specs.hpGain > 0 || specs.weightSaved > 0) && (
+                                  {(hp > 0 || wt > 0) && (
                                     <span className="text-[9.5px] text-brand-muted font-body font-semibold">
-                                      ({specs.hpGain > 0 ? `+${specs.hpGain} HP` : ""}{specs.hpGain > 0 && specs.weightSaved > 0 ? " • " : ""}{specs.weightSaved > 0 ? `-${specs.weightSaved} kg` : ""})
+                                      ({hp > 0 ? `+${hp} HP` : ""}{hp > 0 && wt > 0 ? " • " : ""}{wt > 0 ? `-${wt} kg` : ""})
                                     </span>
                                   )}
                                 </div>

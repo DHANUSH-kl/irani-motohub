@@ -50,6 +50,17 @@ export interface Product {
   specifications: ProductSpecification[];
   reviews: ProductReview[];
   rating: number;
+  hp_gain?: number;
+  weight_saved?: number;
+  safety_rating?: number;
+  tags?: string[];
+  metafields?: {
+    custom?: {
+      hp_gain?: number | string;
+      weight_saved?: number | string;
+      safety_rating?: number | string;
+    };
+  };
 }
 
 export interface Collection {
@@ -180,7 +191,15 @@ const MOCK_PRODUCTS: Product[] = [
       { id: "rev-1-1", author: "Rohan Sharma", rating: 5, date: "2026-05-12", title: "Immediate performance upgrade", comment: "Superb throttle response immediately felt on my KTM Duke 390. Highly recommend!" },
       { id: "rev-1-2", author: "Aditya Patil", rating: 4, date: "2026-05-28", title: "Excellent build quality", comment: "Fits perfectly. Noticeable improvement in mid-range torque. Build quality is top tier." }
     ],
-    rating: 4.8
+    rating: 4.8,
+    hp_gain: 1.2,
+    weight_saved: 0.35,
+    metafields: {
+      custom: {
+        hp_gain: 1.2,
+        weight_saved: 0.35
+      }
+    }
   },
   {
     id: "prod-2",
@@ -222,7 +241,15 @@ const MOCK_PRODUCTS: Product[] = [
     reviews: [
       { id: "rev-2-1", author: "Vikram Sen", rating: 5, date: "2026-04-10", title: "Legendary filter for GT 650", comment: "Paired with a Red Rooster slip-on, the K&N filter makes my GT 650 roar and breathe so much better." }
     ],
-    rating: 5.0
+    rating: 5.0,
+    hp_gain: 1.0,
+    weight_saved: 0.30,
+    metafields: {
+      custom: {
+        hp_gain: 1.0,
+        weight_saved: 0.30
+      }
+    }
   },
   {
     id: "prod-3",
@@ -258,7 +285,15 @@ const MOCK_PRODUCTS: Product[] = [
     reviews: [
       { id: "rev-3-1", author: "Karan Mehta", rating: 5, date: "2026-05-02", title: "Game changer for Himalayan 450", comment: "Completely eliminated the low-RPM engine knocking. The bike runs much cooler now!" }
     ],
-    rating: 4.9
+    rating: 4.9,
+    hp_gain: 1.8,
+    weight_saved: 0.0,
+    metafields: {
+      custom: {
+        hp_gain: 1.8,
+        weight_saved: 0.0
+      }
+    }
   },
   {
     id: "prod-4",
@@ -293,7 +328,15 @@ const MOCK_PRODUCTS: Product[] = [
     reviews: [
       { id: "rev-4-1", author: "Arjun Dev", rating: 5, date: "2026-03-15", title: "Absolutely insane control", comment: "Switching to Map 9 on the highway changes the bike's character entirely. BMC Filter + FuelX Pro is the magic combo." }
     ],
-    rating: 4.7
+    rating: 4.7,
+    hp_gain: 3.2,
+    weight_saved: 0.1,
+    metafields: {
+      custom: {
+        hp_gain: 3.2,
+        weight_saved: 0.1
+      }
+    }
   },
   {
     id: "prod-5",
@@ -328,7 +371,15 @@ const MOCK_PRODUCTS: Product[] = [
     reviews: [
       { id: "rev-5-1", author: "Rahul V", rating: 4, date: "2026-04-20", title: "Smooth starting", comment: "Noticeable difference in cold starts in winter. Revs cleanly to the redline." }
     ],
-    rating: 4.5
+    rating: 4.5,
+    hp_gain: 0.2,
+    weight_saved: 0.0,
+    metafields: {
+      custom: {
+        hp_gain: 0.2,
+        weight_saved: 0.0
+      }
+    }
   },
   {
     id: "prod-6",
@@ -363,7 +414,15 @@ const MOCK_PRODUCTS: Product[] = [
     reviews: [
       { id: "rev-6-1", author: "Siddharth J", rating: 5, date: "2026-06-01", title: "Gold standard of chain lubes", comment: "Very low fling-off. Chain remains silent and smooth for over 500 kms post application." }
     ],
-    rating: 4.9
+    rating: 4.9,
+    hp_gain: 0.4,
+    weight_saved: 0.0,
+    metafields: {
+      custom: {
+        hp_gain: 0.4,
+        weight_saved: 0.0
+      }
+    }
   },
   {
     id: "prod-7",
@@ -398,7 +457,15 @@ const MOCK_PRODUCTS: Product[] = [
     reviews: [
       { id: "rev-7-1", author: "Piyush G", rating: 5, date: "2026-05-18", title: "Super smooth gear shifts", comment: "Engine noise is cut down significantly. Gear shifts are butter smooth even in stop-and-go bumper traffic." }
     ],
-    rating: 4.6
+    rating: 4.6,
+    hp_gain: 0.3,
+    weight_saved: 0.0,
+    metafields: {
+      custom: {
+        hp_gain: 0.3,
+        weight_saved: 0.0
+      }
+    }
   },
   {
     id: "prod-10",
@@ -439,7 +506,13 @@ const MOCK_PRODUCTS: Product[] = [
     reviews: [
       { id: "rev-10-1", author: "Pranav M", rating: 5, date: "2026-04-18", title: "Feels like armor", comment: "Takes a couple of days to break in the goat leather, but once done, the feedback from the grips is superb. Knox sliders are excellent." }
     ],
-    rating: 4.8
+    rating: 4.8,
+    safety_rating: 10,
+    metafields: {
+      custom: {
+        safety_rating: 10
+      }
+    }
   },
   {
     id: "prod-11",
@@ -575,6 +648,10 @@ function formatShopifyProduct(shopifyProduct: any): Product {
     ? ["All Motorcycles"]
     : shopifyProduct.tags?.filter((t: string) => !t.startsWith("col-")) || ["All Motorcycles"];
 
+  const hp_gain_val = shopifyProduct.hp_gain?.value ? parseFloat(shopifyProduct.hp_gain.value) : undefined;
+  const weight_saved_val = shopifyProduct.weight_saved?.value ? parseFloat(shopifyProduct.weight_saved.value) : undefined;
+  const safety_rating_val = shopifyProduct.safety_rating?.value ? parseInt(shopifyProduct.safety_rating.value) : undefined;
+
   return {
     id: shopifyProduct.id,
     handle: shopifyProduct.handle,
@@ -598,7 +675,18 @@ function formatShopifyProduct(shopifyProduct: any): Product {
     reviews: [
       { id: "rev-default-1", author: "Verified Rider", rating: 5, date: "2026-06-01", title: "Genuine product", comment: "Shipped fast, original packing. Performance is exactly as advertised." }
     ],
-    rating: 4.7
+    rating: 4.7,
+    hp_gain: hp_gain_val,
+    weight_saved: weight_saved_val,
+    safety_rating: safety_rating_val,
+    tags: shopifyProduct.tags || [],
+    metafields: {
+      custom: {
+        hp_gain: hp_gain_val,
+        weight_saved: weight_saved_val,
+        safety_rating: safety_rating_val
+      }
+    }
   };
 }
 
@@ -708,6 +796,15 @@ export async function getProducts(options?: { collectionHandle?: string; limit?:
                     }
                   }
                 }
+                hp_gain: metafield(namespace: "custom", key: "hp_gain") {
+                  value
+                }
+                weight_saved: metafield(namespace: "custom", key: "weight_saved") {
+                  value
+                }
+                safety_rating: metafield(namespace: "custom", key: "safety_rating") {
+                  value
+                }
               }
             }
           }
@@ -758,6 +855,15 @@ export async function getProducts(options?: { collectionHandle?: string; limit?:
                     availableForSale
                   }
                 }
+              }
+              hp_gain: metafield(namespace: "custom", key: "hp_gain") {
+                value
+              }
+              weight_saved: metafield(namespace: "custom", key: "weight_saved") {
+                value
+              }
+              safety_rating: metafield(namespace: "custom", key: "safety_rating") {
+                value
               }
             }
           }
@@ -831,6 +937,15 @@ export async function getProduct(handle: string): Promise<Product | null> {
               availableForSale
             }
           }
+        }
+        hp_gain: metafield(namespace: "custom", key: "hp_gain") {
+          value
+        }
+        weight_saved: metafield(namespace: "custom", key: "weight_saved") {
+          value
+        }
+        safety_rating: metafield(namespace: "custom", key: "safety_rating") {
+          value
         }
       }
     }
@@ -1357,6 +1472,16 @@ export interface CustomerOrderLineItem {
   };
 }
 
+export interface TrackingInfo {
+  number?: string;
+  url?: string;
+  company?: string;
+}
+
+export interface SuccessfulFulfillment {
+  trackingInfo: TrackingInfo[];
+}
+
 export interface CustomerOrder {
   id: string;
   orderNumber: string;
@@ -1368,6 +1493,7 @@ export interface CustomerOrder {
   financialStatus: string;
   fulfillmentStatus: string;
   lineItems: CustomerOrderLineItem[];
+  successfulFulfillments?: SuccessfulFulfillment[];
 }
 
 export interface Customer {
@@ -1426,6 +1552,17 @@ function getMockOrdersForEmail(email: string): CustomerOrder[] {
           quantity: 1,
           price: { amount: "4990.00", currencyCode: "INR" }
         }
+      ],
+      successfulFulfillments: [
+        {
+          trackingInfo: [
+            {
+              number: "DLV891001",
+              company: "Delhivery Air",
+              url: "https://www.delhivery.com/track/share?waybill=DLV891001"
+            }
+          ]
+        }
       ]
     },
     {
@@ -1440,6 +1577,17 @@ function getMockOrdersForEmail(email: string): CustomerOrder[] {
           title: "FuelX Pro Tuning Module - Royal Enfield Himalayan 450",
           quantity: 1,
           price: { amount: "18250.00", currencyCode: "INR" }
+        }
+      ],
+      successfulFulfillments: [
+        {
+          trackingInfo: [
+            {
+              number: "DLV891002",
+              company: "Delhivery Air",
+              url: "https://www.delhivery.com/track/share?waybill=DLV891002"
+            }
+          ]
         }
       ]
     }
@@ -1687,6 +1835,13 @@ export async function customerGet(accessToken: string): Promise<Customer | null>
                     }
                   }
                 }
+                successfulFulfillments(first: 5) {
+                  trackingInfo(first: 5) {
+                    number
+                    url
+                    company
+                  }
+                }
               }
             }
           }
@@ -1714,6 +1869,14 @@ export async function customerGet(accessToken: string): Promise<Customer | null>
             };
           }) || [];
 
+          const successfulFulfillments = o.successfulFulfillments?.map((sf: any) => ({
+            trackingInfo: sf.trackingInfo?.map((ti: any) => ({
+              number: ti.number || null,
+              url: ti.url || null,
+              company: ti.company || null
+            })) || []
+          })) || [];
+
           return {
             id: o.id,
             orderNumber: o.orderNumber?.toString() || o.id,
@@ -1724,7 +1887,8 @@ export async function customerGet(accessToken: string): Promise<Customer | null>
             },
             financialStatus: o.financialStatus || "PAID",
             fulfillmentStatus: o.fulfillmentStatus || "UNFULFILLED",
-            lineItems
+            lineItems,
+            successfulFulfillments
           };
         }) || [];
 
@@ -1743,6 +1907,247 @@ export async function customerGet(accessToken: string): Promise<Customer | null>
   }
 
   return null;
+}
+
+export interface Brand {
+  name: string;
+  category: string;
+  logoUrl: string;
+}
+
+export async function getFeaturedBrands(): Promise<Brand[]> {
+  if (!isShopifyConfigured()) {
+    return [
+      { name: "BMC", category: "Air Filters", logoUrl: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=200&auto=format&fit=crop" },
+      { name: "K&N", category: "Filters & Intake", logoUrl: "https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?q=80&w=200&auto=format&fit=crop" },
+      { name: "Motul", category: "Lubricants", logoUrl: "https://images.unsplash.com/photo-1635843109391-00cc9165e8ec?q=80&w=200&auto=format&fit=crop" },
+      { name: "Liqui Moly", category: "Engine Care", logoUrl: "https://images.unsplash.com/photo-1615887023516-9b6bcd559e87?q=80&w=200&auto=format&fit=crop" },
+      { name: "Axor", category: "Helmets", logoUrl: "https://images.unsplash.com/photo-1609630875171-b1321377ee65?q=80&w=200&auto=format&fit=crop" },
+      { name: "SMK", category: "Helmets", logoUrl: "https://images.unsplash.com/photo-1508974239320-0a029497e820?q=80&w=200&auto=format&fit=crop" }
+    ];
+  }
+
+  const query = `
+    query GetBrandsMetaobjects {
+      metaobjects(type: "brand", first: 20) {
+        edges {
+          node {
+            fields {
+              key
+              value
+              reference {
+                ... on MediaImage {
+                  image {
+                    url
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const result = await shopifyFetch<any>(query);
+    if (result?.data?.metaobjects?.edges) {
+      return result.data.metaobjects.edges.map((edge: any) => {
+        const fields = edge.node.fields;
+        const nameField = fields.find((f: any) => f.key === "name" || f.key === "title");
+        const categoryField = fields.find((f: any) => f.key === "category");
+        const logoField = fields.find((f: any) => f.key === "logo" || f.key === "image");
+        
+        return {
+          name: nameField?.value || "Unknown Brand",
+          category: categoryField?.value || "Motorcycle Parts",
+          logoUrl: logoField?.reference?.image?.url || logoField?.value || "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=200"
+        };
+      });
+    }
+  } catch (e) {
+    console.error("Error fetching brands metaobjects:", e);
+  }
+
+  return [
+    { name: "BMC", category: "Air Filters", logoUrl: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=200" },
+    { name: "K&N", category: "Filters & Intake", logoUrl: "https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?q=80&w=200" },
+    { name: "Motul", category: "Lubricants", logoUrl: "https://images.unsplash.com/photo-1635843109391-00cc9165e8ec?q=80&w=200" },
+    { name: "Liqui Moly", category: "Engine Care", logoUrl: "https://images.unsplash.com/photo-1615887023516-9b6bcd559e87?q=80&w=200" },
+    { name: "Axor", category: "Helmets", logoUrl: "https://images.unsplash.com/photo-1609630875171-b1321377ee65?q=80&w=200" },
+    { name: "SMK", category: "Helmets", logoUrl: "https://images.unsplash.com/photo-1508974239320-0a029497e820?q=80&w=200" }
+  ];
+}
+
+export interface Review {
+  id: string;
+  name: string;
+  location: string;
+  motorcycle: string;
+  rating: number;
+  title: string;
+  quote: string;
+}
+
+export async function getReviews(): Promise<Review[]> {
+  if (!isShopifyConfigured()) {
+    return [
+      {
+        id: "rev-1",
+        name: "Arjun Dev",
+        location: "Bengaluru",
+        motorcycle: "KTM Duke 390 (2024)",
+        rating: 5,
+        title: "Immediate Throttle Response!",
+        quote: "BMC Air Filter + FuelX Pro tuning is absolute magic. Low-end stuttering is completely gone, and switching to Map 9 on the highway is pure power. Exceptional customer service too!"
+      },
+      {
+        id: "rev-2",
+        name: "Priyesh G.",
+        location: "Mumbai",
+        motorcycle: "Royal Enfield Interceptor 650",
+        rating: 5,
+        title: "Super Smooth Gear Shifts",
+        quote: "Bought the Liqui Moly oil and Motul chain care kit. The package arrived in double-boxed premium shockproof wraps. The engine sounds silent, and shifts are butter smooth."
+      },
+      {
+        id: "rev-3",
+        name: "Zakir Khan",
+        location: "Delhi",
+        motorcycle: "Royal Enfield Himalayan 450",
+        rating: 5,
+        title: "Rock Solid Touring Mount",
+        quote: "Tested the BOBO mobile holder on a 1500km ride to Ladakh. Potholes, dirt trails, river crossings—it didn't move a millimeter. QC 3.0 charger is insanely fast."
+      },
+      {
+        id: "rev-4",
+        name: "Rohan Sharma",
+        location: "Pune",
+        motorcycle: "Triumph Speed 400",
+        rating: 5,
+        title: "Premium Carbon Helmet",
+        quote: "The SMK Titan Carbon Helmet is remarkably lightweight. Zero neck fatigue on long weekend runs. Beautiful glossy carbon finish. The fitment team called to verify my size before shipping!"
+      },
+      {
+        id: "rev-5",
+        name: "Kabir Malhotra",
+        location: "Gurugram",
+        motorcycle: "Yamaha YZF-R15 V4",
+        rating: 5,
+        title: "Instant Cold Starts",
+        quote: "NGK Laser Iridium Spark Plugs made cold starts instantaneous. Throttle idle is completely flat now, and mid-range pulling is visibly crisper. Highly recommend for singles!"
+      },
+      {
+        id: "rev-6",
+        name: "Neha Deshmukh",
+        location: "Kolhapur",
+        motorcycle: "KTM Adventure 390",
+        rating: 5,
+        title: "100% Waterproof Luggage",
+        quote: "Viaterra saddlebags stayed bone dry through a heavy 4-hour monsoon downpour. Mount straps are incredibly secure and fit the stock rear frame of my 390 perfectly."
+      }
+    ];
+  }
+
+  const query = `
+    query GetReviewsMetaobjects {
+      metaobjects(type: "review", first: 20) {
+        edges {
+          node {
+            id
+            fields {
+              key
+              value
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const result = await shopifyFetch<any>(query);
+    if (result?.data?.metaobjects?.edges) {
+      return result.data.metaobjects.edges.map((edge: any) => {
+        const fields = edge.node.fields;
+        const name = fields.find((f: any) => f.key === "name")?.value || "Anonymous";
+        const location = fields.find((f: any) => f.key === "location")?.value || "India";
+        const motorcycle = fields.find((f: any) => f.key === "motorcycle")?.value || "Rider";
+        const rating = parseInt(fields.find((f: any) => f.key === "rating")?.value || "5");
+        const title = fields.find((f: any) => f.key === "title")?.value || "Great Upgrade";
+        const quote = fields.find((f: any) => f.key === "quote" || f.key === "comment")?.value || "";
+        
+        return {
+          id: edge.node.id,
+          name,
+          location,
+          motorcycle,
+          rating,
+          title,
+          quote
+        };
+      });
+    }
+  } catch (e) {
+    console.error("Error fetching reviews metaobjects:", e);
+  }
+
+  return [
+    {
+      id: "rev-1",
+      name: "Arjun Dev",
+      location: "Bengaluru",
+      motorcycle: "KTM Duke 390 (2024)",
+      rating: 5,
+      title: "Immediate Throttle Response!",
+      quote: "BMC Air Filter + FuelX Pro tuning is absolute magic. Low-end stuttering is completely gone, and switching to Map 9 on the highway is pure power. Exceptional customer service too!"
+    },
+    {
+      id: "rev-2",
+      name: "Priyesh G.",
+      location: "Mumbai",
+      motorcycle: "Royal Enfield Interceptor 650",
+      rating: 5,
+      title: "Super Smooth Gear Shifts",
+      quote: "Bought the Liqui Moly oil and Motul chain care kit. The package arrived in double-boxed premium shockproof wraps. The engine sounds silent, and shifts are butter smooth."
+    },
+    {
+      id: "rev-3",
+      name: "Zakir Khan",
+      location: "Delhi",
+      motorcycle: "Royal Enfield Himalayan 450",
+      rating: 5,
+      title: "Rock Solid Touring Mount",
+      quote: "Tested the BOBO mobile holder on a 1500km ride to Ladakh. Potholes, dirt trails, river crossings—it didn't move a millimeter. QC 3.0 charger is insanely fast."
+    },
+    {
+      id: "rev-4",
+      name: "Rohan Sharma",
+      location: "Pune",
+      motorcycle: "Triumph Speed 400",
+      rating: 5,
+      title: "Premium Carbon Helmet",
+      quote: "The SMK Titan Carbon Helmet is remarkably lightweight. Zero neck fatigue on long weekend runs. Beautiful glossy carbon finish. The fitment team called to verify my size before shipping!"
+    },
+    {
+      id: "rev-5",
+      name: "Kabir Malhotra",
+      location: "Gurugram",
+      motorcycle: "Yamaha YZF-R15 V4",
+      rating: 5,
+      title: "Instant Cold Starts",
+      quote: "NGK Laser Iridium Spark Plugs made cold starts instantaneous. Throttle idle is completely flat now, and mid-range pulling is visibly crisper. Highly recommend for singles!"
+    },
+    {
+      id: "rev-6",
+      name: "Neha Deshmukh",
+      location: "Kolhapur",
+      motorcycle: "KTM Adventure 390",
+      rating: 5,
+      title: "100% Waterproof Luggage",
+      quote: "Viaterra saddlebags stayed bone dry through a heavy 4-hour monsoon downpour. Mount straps are incredibly secure and fit the stock rear frame of my 390 perfectly."
+    }
+  ];
 }
 
 

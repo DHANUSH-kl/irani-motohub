@@ -153,11 +153,30 @@ export default function AccountPage() {
                       <div>
                         Status: <span className="text-white font-semibold">{order.financialStatus === "PAID" ? "Paid (Prepaid Order)" : "Pending Cash on Delivery"}</span>
                       </div>
-                      {order.id.startsWith("ord-mock-") && (
-                        <div className="flex items-center gap-1 text-brand-red font-semibold uppercase tracking-wider">
-                          <Package className="w-3.5 h-3.5" /> Delhivery Air Tracking: #DLV891{order.id.charCodeAt(order.id.length - 1)}
-                        </div>
-                      )}
+                      {(() => {
+                        const tracking = order.successfulFulfillments?.[0]?.trackingInfo?.[0];
+                        if (tracking) {
+                          return (
+                            <div className="flex items-center gap-1 text-brand-red font-semibold uppercase tracking-wider">
+                              <Package className="w-3.5 h-3.5" /> 
+                              {tracking.url ? (
+                                <a 
+                                  href={tracking.url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="hover:underline flex items-center gap-0.5"
+                                >
+                                  {tracking.company}: #{tracking.number}
+                                  <ExternalLink className="w-2.5 h-2.5 ml-1 inline-block" />
+                                </a>
+                              ) : (
+                                <span>{tracking.company}: #{tracking.number}</span>
+                              )}
+                            </div>
+                          );
+                        }
+                        return <div className="text-gray-500 italic">No tracking info available yet</div>;
+                      })()}
                     </div>
                   </div>
                 ))}

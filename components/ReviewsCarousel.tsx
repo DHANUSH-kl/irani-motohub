@@ -1,78 +1,37 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Star, ShieldCheck, Quote } from "lucide-react";
+import { getReviews, Review } from "@/lib/shopify";
 
-interface Testimonial {
-  id: string;
-  name: string;
-  location: string;
-  motorcycle: string;
-  rating: number;
-  title: string;
-  quote: string;
+interface ReviewsCarouselProps {
+  reviews?: Review[];
 }
 
-export default function ReviewsCarousel() {
-  const reviews: Testimonial[] = [
-    {
-      id: "rev-1",
-      name: "Arjun Dev",
-      location: "Bengaluru",
-      motorcycle: "KTM Duke 390 (2024)",
-      rating: 5,
-      title: "Immediate Throttle Response!",
-      quote: "BMC Air Filter + FuelX Pro tuning is absolute magic. Low-end stuttering is completely gone, and switching to Map 9 on the highway is pure power. Exceptional customer service too!"
-    },
-    {
-      id: "rev-2",
-      name: "Priyesh G.",
-      location: "Mumbai",
-      motorcycle: "Royal Enfield Interceptor 650",
-      rating: 5,
-      title: "Super Smooth Gear Shifts",
-      quote: "Bought the Liqui Moly oil and Motul chain care kit. The package arrived in double-boxed premium shockproof wraps. The engine sounds silent, and shifts are butter smooth."
-    },
-    {
-      id: "rev-3",
-      name: "Zakir Khan",
-      location: "Delhi",
-      motorcycle: "Royal Enfield Himalayan 450",
-      rating: 5,
-      title: "Rock Solid Touring Mount",
-      quote: "Tested the BOBO mobile holder on a 1500km ride to Ladakh. Potholes, dirt trails, river crossings—it didn't move a millimeter. QC 3.0 charger is insanely fast."
-    },
-    {
-      id: "rev-4",
-      name: "Rohan Sharma",
-      location: "Pune",
-      motorcycle: "Triumph Speed 400",
-      rating: 5,
-      title: "Premium Carbon Helmet",
-      quote: "The SMK Titan Carbon Helmet is remarkably lightweight. Zero neck fatigue on long weekend runs. Beautiful glossy carbon finish. The fitment team called to verify my size before shipping!"
-    },
-    {
-      id: "rev-5",
-      name: "Kabir Malhotra",
-      location: "Gurugram",
-      motorcycle: "Yamaha YZF-R15 V4",
-      rating: 5,
-      title: "Instant Cold Starts",
-      quote: "NGK Laser Iridium Spark Plugs made cold starts instantaneous. Throttle idle is completely flat now, and mid-range pulling is visibly crisper. Highly recommend for singles!"
-    },
-    {
-      id: "rev-6",
-      name: "Neha Deshmukh",
-      location: "Kolhapur",
-      motorcycle: "KTM Adventure 390",
-      rating: 5,
-      title: "100% Waterproof Luggage",
-      quote: "Viaterra saddlebags stayed bone dry through a heavy 4-hour monsoon downpour. Mount straps are incredibly secure and fit the stock rear frame of my 390 perfectly."
-    }
-  ];
+export default function ReviewsCarousel({ reviews: initialReviews }: ReviewsCarouselProps) {
+  const [reviews, setReviews] = useState<Review[]>(initialReviews || []);
+
+  useEffect(() => {
+    if (initialReviews) return;
+
+    const fetchReviews = async () => {
+      try {
+        const data = await getReviews();
+        setReviews(data);
+      } catch (e) {
+        console.error("Failed to load reviews:", e);
+      }
+    };
+
+    fetchReviews();
+  }, [initialReviews]);
 
   // Repeat reviews to construct a seamless infinite marquee scroll
   const duplicatedReviews = [...reviews, ...reviews, ...reviews];
+
+  if (reviews.length === 0) {
+    return null;
+  }
 
   return (
     <section className="py-24 bg-[#F8F5F0] overflow-hidden border-b border-brand-border">

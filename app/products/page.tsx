@@ -25,17 +25,15 @@ function ProductsContent() {
   const [selectedMaker, setSelectedMaker] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
-  const [motorcycles, setMotorcycles] = useState<{ maker: string; models: string[] }[]>([
-    { maker: "KTM", models: ["Duke 390", "RC 390"] },
-    { maker: "Royal Enfield", models: ["Himalayan 450", "Interceptor 650", "Continental GT 650"] }
-  ]);
-  const [years, setYears] = useState<string[]>(["2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"]);
+  const [motorcycles, setMotorcycles] = useState<{ maker: string; models: string[] }[]>([]);
+  const [years, setYears] = useState<string[]>([]);
 
   // Product Filter States
   const [searchQuery, setSearchQuery] = useState(urlSearchQuery);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedPriceTier, setSelectedPriceTier] = useState<string>("all");
+  const [maxPrice, setMaxPrice] = useState<number>(20000);
+  const [selectedMaxPrice, setSelectedMaxPrice] = useState<number>(20000);
   const [sortBy, setSortBy] = useState<string>("default");
   const [showAllFilters, setShowAllFilters] = useState(false);
   const [showAllCategories, setShowAllCategories] = useState(false);
@@ -51,8 +49,65 @@ function ProductsContent() {
       setLoading(true);
       const data = await getProducts();
       setProducts(data);
-      setMotorcycles(getActiveMotorcycleGroups(data));
-      setYears(getActiveYears(data));
+
+      // Dynamic extraction of makers, models, and years from products
+      const makerModelsMap: Record<string, Set<string>> = {};
+      const yearsSet = new Set<string>();
+
+      data.forEach((product) => {
+        if (product.compatibility) {
+          product.compatibility.forEach((comp) => {
+            if (comp === "All Motorcycles" || comp === "Universal") return;
+            const parts = comp.split(" ");
+            if (parts.length >= 2) {
+              let maker = parts[0];
+              let model = parts.slice(1).join(" ");
+              
+              if (maker.toLowerCase() === "royal" && parts[1]?.toLowerCase() === "enfield") {
+                maker = "Royal Enfield";
+                model = parts.slice(2).join(" ");
+              }
+              
+              if (maker && model) {
+                if (!makerModelsMap[maker]) {
+                  makerModelsMap[maker] = new Set();
+                }
+                makerModelsMap[maker].add(model);
+              }
+            }
+
+            const yearMatch = comp.match(/\b(20\d{2})\b/);
+            if (yearMatch) {
+              yearsSet.add(yearMatch[1]);
+            }
+          });
+        }
+
+        if (product.tags) {
+          product.tags.forEach((tag) => {
+            const yearMatch = tag.match(/\b(20\d{2})\b/);
+            if (yearMatch) {
+              yearsSet.add(yearMatch[1]);
+            }
+          });
+        }
+      });
+
+      const extractedMotorcycles = Object.entries(makerModelsMap).map(([maker, modelsSet]) => ({
+        maker,
+        models: Array.from(modelsSet)
+      }));
+      setMotorcycles(extractedMotorcycles.length > 0 ? extractedMotorcycles : getActiveMotorcycleGroups(data));
+
+      const extractedYears = Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
+      setYears(extractedYears.length > 0 ? extractedYears : getActiveYears(data));
+
+      // Dynamic price bounds
+      const prices = data.map((p) => parseFloat(p.priceRange.minVariantPrice.amount));
+      const calculatedMax = prices.length > 0 ? Math.ceil(Math.max(...prices)) : 20000;
+      setMaxPrice(calculatedMax);
+      setSelectedMaxPrice(calculatedMax);
+
       setLoading(false);
     };
     fetchAllProducts();
@@ -133,16 +188,11 @@ function ProductsContent() {
       result = result.filter((p) => selectedCategories.includes(p.category));
     }
 
-    // Filter by Price Tiers
-    if (selectedPriceTier !== "all") {
-      result = result.filter((p) => {
-        const price = parseFloat(p.priceRange.minVariantPrice.amount);
-        if (selectedPriceTier === "under-2k") return price < 2000;
-        if (selectedPriceTier === "2k-5k") return price >= 2000 && price <= 5000;
-        if (selectedPriceTier === "over-5k") return price > 5000;
-        return true;
-      });
-    }
+    // Filter by Price Range
+    result = result.filter((p) => {
+      const price = parseFloat(p.priceRange.minVariantPrice.amount);
+      return price <= selectedMaxPrice;
+    });
 
     // Sort products
     if (sortBy === "price-asc") {
@@ -154,7 +204,7 @@ function ProductsContent() {
     }
 
     setFilteredProducts(result);
-  }, [products, garageBike, searchQuery, selectedBrands, selectedCategories, selectedPriceTier, sortBy]);
+  }, [products, garageBike, searchQuery, selectedBrands, selectedCategories, selectedMaxPrice, sortBy]);
 
   // Extract unique brands & categories for filter options
   const uniqueBrands = Array.from(new Set(products.map((p) => p.brand)));
@@ -176,7 +226,7 @@ function ProductsContent() {
   const handleResetFilters = () => {
     setSelectedBrands([]);
     setSelectedCategories([]);
-    setSelectedPriceTier("all");
+    setSelectedMaxPrice(maxPrice);
     setSortBy("default");
     setSearchQuery("");
     
@@ -226,7 +276,7 @@ function ProductsContent() {
     );
   }
 
-  const hasActiveFilters = selectedBrands.length > 0 || selectedCategories.length > 0 || selectedPriceTier !== "all" || garageBike !== null;
+  const hasActiveFilters = selectedBrands.length > 0 || selectedCategories.length > 0 || selectedMaxPrice < maxPrice || garageBike !== null;
 
   return (
     <div className="min-h-screen bg-brand-bg pt-20">
@@ -400,7 +450,7 @@ function ProductsContent() {
                         <Filter className="w-4 h-4 text-brand-red" />
                         Product Filters
                       </span>
-                      {(selectedBrands.length > 0 || selectedCategories.length > 0 || selectedPriceTier !== "all" || searchQuery || garageBike) && (
+                      {(selectedBrands.length > 0 || selectedCategories.length > 0 || selectedMaxPrice < maxPrice || searchQuery || garageBike) && (
                         <button
                           onClick={handleResetFilters}
                           className="text-[9px] font-bold text-brand-red hover:underline uppercase tracking-wider flex items-center gap-0.5"
@@ -530,52 +580,29 @@ function ProductsContent() {
                       </div>
                     )}
 
-                    {/* Price Tier */}
+                    {/* Price Range Slider */}
                     <div className="space-y-2 border-t border-brand-border pt-4">
-                      <h4 className="font-headings font-extrabold text-[10px] tracking-wider text-brand-primary uppercase">
-                        PRICE RANGE
-                      </h4>
-                      <div className="space-y-1.5 text-xs text-brand-primary">
-                        <label className="flex items-center gap-2 cursor-pointer font-medium">
-                          <input
-                            type="radio"
-                            name="all-price-tier"
-                            checked={selectedPriceTier === "all"}
-                            onChange={() => setSelectedPriceTier("all")}
-                            className="text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
-                          />
-                          All Prices
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer font-medium">
-                          <input
-                            type="radio"
-                            name="all-price-tier"
-                            checked={selectedPriceTier === "under-2k"}
-                            onChange={() => setSelectedPriceTier("under-2k")}
-                            className="text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
-                          />
-                          Under ₹2,000
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer font-medium">
-                          <input
-                            type="radio"
-                            name="all-price-tier"
-                            checked={selectedPriceTier === "2k-5k"}
-                            onChange={() => setSelectedPriceTier("2k-5k")}
-                            className="text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
-                          />
-                          ₹2,000 - ₹5,000
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer font-medium">
-                          <input
-                            type="radio"
-                            name="all-price-tier"
-                            checked={selectedPriceTier === "over-5k"}
-                            onChange={() => setSelectedPriceTier("over-5k")}
-                            className="text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
-                          />
-                          Over ₹5,000
-                        </label>
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-headings font-extrabold text-[10px] tracking-wider text-brand-primary uppercase">
+                          PRICE RANGE
+                        </h4>
+                        <span className="text-[10px] font-bold text-brand-red font-headings">
+                          Up to ₹{selectedMaxPrice.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      <div className="pt-2">
+                        <input
+                          type="range"
+                          min="0"
+                          max={maxPrice}
+                          value={selectedMaxPrice}
+                          onChange={(e) => setSelectedMaxPrice(Number(e.target.value))}
+                          className="w-full accent-brand-red cursor-pointer"
+                        />
+                        <div className="flex justify-between text-[9px] text-brand-muted font-bold font-headings mt-1">
+                          <span>₹0</span>
+                          <span>₹{maxPrice.toLocaleString("en-IN")}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
