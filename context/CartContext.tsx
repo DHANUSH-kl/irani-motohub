@@ -108,7 +108,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     initOrSwitchCart();
   }, [user, authLoading]);
 
-  // Sync active cart to local storage whenever lines change
+  // Sync active cart to local storage whenever cart state changes
   useEffect(() => {
     if (!isInitialized || authLoading) return;
 
@@ -127,7 +127,64 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     const key = getCartKey(user);
     localStorage.setItem(key, JSON.stringify(updatedCart));
-  }, [cart.lines, isInitialized, user, authLoading]);
+  }, [cart, isInitialized, user, authLoading]);
+
+  // Helper to sync local lines with Shopify cart
+  const syncWithShopify = async (linesToSync: CartItem[]) => {
+    if (!isInitialized || authLoading) return;
+
+    // If there are no lines, clear cart session fields
+    if (linesToSync.length === 0) {
+      setCart((prev) => ({
+        ...prev,
+        checkoutUrl: "",
+        subtotalAmount: { amount: "0.00", currencyCode: "INR" }
+      }));
+      return;
+    }
+
+    try {
+      console.log("[CartSync] Synchronizing local cart items to Shopify...", linesToSync);
+      const reqLines = linesToSync.map(line => ({
+        variantId: line.selectedVariant.id,
+        quantity: line.quantity
+      }));
+
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lines: reqLines })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.cart) {
+          console.log("[CartSync] Shopify cart synced. Cart ID:", data.cart.id, "Checkout URL:", data.cart.checkoutUrl);
+          setCart((prev) => ({
+            ...prev,
+            id: data.cart.id,
+            checkoutUrl: data.cart.checkoutUrl,
+            subtotalAmount: data.cart.subtotalAmount
+          }));
+        }
+      } else {
+        console.error("[CartSync] Failed to sync cart with Shopify. Status:", response.status);
+      }
+    } catch (e) {
+      console.error("[CartSync] Error syncing cart with Shopify:", e);
+    }
+  };
+
+  // Sync active cart to Shopify whenever lines change
+  useEffect(() => {
+    if (!isInitialized || authLoading) return;
+
+    const timer = setTimeout(() => {
+      syncWithShopify(cart.lines);
+    }, 500); // 500ms debounce to bundle rapid quantity clicks
+
+    return () => clearTimeout(timer);
+  }, [cart.lines, isInitialized, authLoading]);
 
   const addItem = (product: Product, selectedVariant: ProductVariant, quantity = 1) => {
     setCart((prevCart) => {

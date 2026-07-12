@@ -12,18 +12,134 @@ export default function CartDrawer() {
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     setIsCheckingOut(true);
-    // Simulate API checkout or redirect
-    setTimeout(() => {
-      if (cart.checkoutUrl && !cart.id.startsWith("mock-")) {
-        window.location.href = cart.checkoutUrl;
-      } else {
-        // Mock checkout experience
+    console.log("[Checkout] Starting checkout validation & verification. Cart ID:", cart.id, "URL:", cart.checkoutUrl);
+
+    // If mock mode, perform mock checkout
+    if (cart.id.startsWith("mock-")) {
+      setTimeout(() => {
         setIsCheckingOut(false);
         setCheckoutSuccess(true);
+      }, 1500);
+      return;
+    }
+
+    // Helper to validate the checkoutUrl format
+    const validateCheckoutUrl = (url: string | undefined): boolean => {
+      if (!url || url.trim() === "") return false;
+      try {
+        const parsedUrl = new URL(url);
+        // Must be absolute URL
+        if (!parsedUrl.protocol || !parsedUrl.hostname) return false;
+
+        // Must belong to configured Shopify store or standard Shopify domains
+        const shopifyDomain = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN || "";
+        const isShopifyDomain =
+          parsedUrl.hostname === shopifyDomain ||
+          parsedUrl.hostname.endsWith(".myshopify.com") ||
+          parsedUrl.hostname.endsWith("shopify.com");
+
+        if (!isShopifyDomain) return false;
+
+        // Must not be storefront homepage or root paths
+        if (parsedUrl.pathname === "/" || parsedUrl.pathname === "") return false;
+
+        return true;
+      } catch (e) {
+        return false;
       }
-    }, 1500);
+    };
+
+    let checkoutUrl = cart.checkoutUrl;
+    let isUrlValid = validateCheckoutUrl(checkoutUrl);
+    let isCartValidOnShopify = false;
+
+    // 1. Verify existence/validity of the cart on Shopify
+    if (isUrlValid && cart.id) {
+      try {
+        const verifyRes = await fetch(`/api/cart?id=${encodeURIComponent(cart.id)}`);
+        if (verifyRes.ok) {
+          const verifyData = await verifyRes.json();
+          isCartValidOnShopify = verifyData.valid;
+        }
+      } catch (e) {
+        console.error("[Checkout] Shopify cart verification query failed:", e);
+      }
+    }
+
+    // 2. Trigger automatic recovery if invalid or expired
+    if (!isUrlValid || !isCartValidOnShopify) {
+      console.warn("[Checkout] Cart session is stale, invalid or expired on Shopify. Initiating recovery...");
+      try {
+        const reqLines = cart.lines.map(line => ({
+          variantId: line.selectedVariant.id,
+          quantity: line.quantity
+        }));
+
+        const res = await fetch("/api/cart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lines: reqLines })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.cart && validateCheckoutUrl(data.cart.checkoutUrl)) {
+            console.log("[Checkout] Cart successfully recovered. New Checkout URL:", data.cart.checkoutUrl);
+            checkoutUrl = data.cart.checkoutUrl;
+            isUrlValid = true;
+          } else {
+            console.error("[Checkout] Recovery succeeded but returned invalid checkoutUrl:", data.cart?.checkoutUrl);
+          }
+        } else {
+          console.error("[Checkout] Recovery request failed. Status:", res.status);
+        }
+      } catch (e) {
+        console.error("[Checkout] Failed to execute cart recovery:", e);
+      }
+    }
+
+    // 3. Fire Analytics Events if present
+    if (typeof window !== "undefined") {
+      try {
+        // GA4 begin_checkout
+        if ((window as any).gtag) {
+          (window as any).gtag("event", "begin_checkout", {
+            currency: "INR",
+            value: cartSubtotal,
+            items: cart.lines.map(line => ({
+              item_id: line.selectedVariant.id,
+              item_name: line.product.title,
+              price: parseFloat(line.selectedVariant.price.amount),
+              quantity: line.quantity
+            }))
+          });
+        }
+        // Meta Pixel InitiateCheckout
+        if ((window as any).fbq) {
+          (window as any).fbq("track", "InitiateCheckout", {
+            value: cartSubtotal,
+            currency: "INR",
+            content_ids: cart.lines.map(line => line.selectedVariant.id),
+            content_type: "product",
+            num_items: cart.lines.reduce((sum, line) => sum + line.quantity, 0)
+          });
+        }
+      } catch (analyticsError) {
+        console.warn("[Checkout] Analytics tracking error (non-fatal):", analyticsError);
+      }
+    }
+
+    // 4. Execute checkout redirection
+    if (isUrlValid && checkoutUrl) {
+      console.log("[Checkout] Redirecting browser to Shopify Checkout:", checkoutUrl);
+      window.location.href = checkoutUrl;
+    } else {
+      console.error("[Checkout] Redirect aborted: Invalid URL and recovery failed.");
+      alert("We encountered an issue directing you to the checkout screen. Please refresh the page or try again.");
+      setIsCheckingOut(false);
+    }
   };
 
   const closeSuccessAndCart = () => {

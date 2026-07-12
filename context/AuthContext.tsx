@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { Customer, customerLogin, customerRegister, customerGet } from "@/lib/shopify";
+import { Customer } from "@/lib/shopify";
 
 interface AuthContextType {
   user: Customer | null;
@@ -15,25 +15,20 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const TOKEN_KEY = "irani_motohub_access_token";
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Customer | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize session from localStorage
+  // Initialize session from internal api /api/auth
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const storedToken = localStorage.getItem(TOKEN_KEY);
-        if (storedToken) {
-          const customer = await customerGet(storedToken);
-          if (customer) {
-            setUser({ ...customer, accessToken: storedToken });
-          } else {
-            // Invalid/expired token
-            localStorage.removeItem(TOKEN_KEY);
+        const response = await fetch("/api/auth");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.user) {
+            setUser(data.user);
           }
         }
       } catch (e) {
@@ -50,14 +45,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const response = await customerLogin(email, password);
-      if (response.customer && response.accessToken) {
-        localStorage.setItem(TOKEN_KEY, response.accessToken);
-        setUser({ ...response.customer, accessToken: response.accessToken });
+      const response = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "login", email, password }),
+      });
+      const data = await response.json();
+      if (response.ok && data.success && data.user) {
+        setUser(data.user);
         setLoading(false);
         return true;
       } else {
-        setError(response.errors[0] || "Failed to log in.");
+        setError(data.errors?.[0] || data.error || "Failed to log in.");
         setLoading(false);
         return false;
       }
@@ -78,20 +77,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const registerRes = await customerRegister(firstName, lastName, email, password);
-      if (registerRes.customer) {
-        // Auto sign in after sign up
-        const loginRes = await customerLogin(email, password);
-        if (loginRes.customer && loginRes.accessToken) {
-          localStorage.setItem(TOKEN_KEY, loginRes.accessToken);
-          setUser({ ...loginRes.customer, accessToken: loginRes.accessToken });
-          setLoading(false);
-          return true;
-        }
+      const response = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "signup", firstName, lastName, email, password }),
+      });
+      const data = await response.json();
+      if (response.ok && data.success && data.user) {
+        setUser(data.user);
         setLoading(false);
         return true;
       } else {
-        setError(registerRes.errors[0] || "Failed to register.");
+        setError(data.errors?.[0] || data.error || "Failed to register.");
         setLoading(false);
         return false;
       }
@@ -104,7 +101,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = () => {
-    localStorage.removeItem(TOKEN_KEY);
+    fetch("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "logout" }),
+    }).catch((e) => console.error("Error signing out:", e));
+
     setUser(null);
     setError(null);
   };

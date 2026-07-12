@@ -974,6 +974,217 @@ export async function addToCart(cartId: string, variantId: string, quantity: num
   return null;
 }
 
+export async function createCartWithLines(
+  lines: Array<{ variantId: string; quantity: number }>,
+  customerAccessToken?: string
+): Promise<Cart | null> {
+  if (!isShopifyConfigured()) {
+    return {
+      id: "mock-cart-" + Math.random().toString(36).substr(2, 9),
+      checkoutUrl: "https://shopify.com/checkout/mock",
+      lines: [],
+      subtotalAmount: { amount: "0.00", currencyCode: "INR" }
+    };
+  }
+
+  const mutation = `
+    mutation CartCreate($input: CartInput) {
+      cartCreate(input: $input) {
+        cart {
+          id
+          checkoutUrl
+          cost {
+            subtotalAmount {
+              amount
+              currencyCode
+            }
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const input: any = {
+    lines: lines.map(line => ({
+      merchandiseId: line.variantId,
+      quantity: line.quantity
+    }))
+  };
+
+  if (customerAccessToken) {
+    input.buyerIdentity = {
+      customerAccessToken: customerAccessToken
+    };
+  }
+
+  try {
+    const result = await shopifyFetch<any>(mutation, { input });
+    const cart = result?.data?.cartCreate?.cart;
+    if (cart) {
+      return {
+        id: cart.id,
+        checkoutUrl: cart.checkoutUrl,
+        lines: [],
+        subtotalAmount: {
+          amount: cart.cost.subtotalAmount.amount,
+          currencyCode: cart.cost.subtotalAmount.currencyCode
+        }
+      };
+    } else {
+      console.warn("Cart creation failed:", result?.data?.cartCreate?.userErrors);
+    }
+  } catch (e) {
+    console.error("Error creating cart with lines:", e);
+  }
+
+  return null;
+}
+
+export async function getCart(cartId: string): Promise<Cart | null> {
+  if (!isShopifyConfigured() || cartId.startsWith("mock-")) return null;
+
+  const query = `
+    query GetCart($cartId: ID!) {
+      cart(id: $cartId) {
+        id
+        checkoutUrl
+        cost {
+          subtotalAmount {
+            amount
+            currencyCode
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const result = await shopifyFetch<any>(query, { cartId });
+    if (result?.data?.cart) {
+      const rawCart = result.data.cart;
+      return {
+        id: rawCart.id,
+        checkoutUrl: rawCart.checkoutUrl,
+        lines: [],
+        subtotalAmount: {
+          amount: rawCart.cost.subtotalAmount.amount,
+          currencyCode: rawCart.cost.subtotalAmount.currencyCode
+        }
+      };
+    }
+  } catch (e) {
+    console.error("Error fetching cart from Shopify:", e);
+  }
+  return null;
+}
+
+export async function cartLinesUpdate(
+  cartId: string,
+  lines: Array<{ id: string; quantity: number }>
+): Promise<Cart | null> {
+  if (!isShopifyConfigured() || cartId.startsWith("mock-")) return null;
+
+  const mutation = `
+    mutation CartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
+      cartLinesUpdate(cartId: $cartId, lines: $lines) {
+        cart {
+          id
+          checkoutUrl
+          cost {
+            subtotalAmount {
+              amount
+              currencyCode
+            }
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  try {
+    const result = await shopifyFetch<any>(mutation, {
+      cartId,
+      lines: lines.map(line => ({
+        id: line.id,
+        quantity: line.quantity
+      }))
+    });
+    const cart = result?.data?.cartLinesUpdate?.cart;
+    if (cart) {
+      return {
+        id: cart.id,
+        checkoutUrl: cart.checkoutUrl,
+        lines: [],
+        subtotalAmount: {
+          amount: cart.cost.subtotalAmount.amount,
+          currencyCode: cart.cost.subtotalAmount.currencyCode
+        }
+      };
+    }
+  } catch (e) {
+    console.error("Error updating cart lines:", e);
+  }
+  return null;
+}
+
+export async function cartBuyerIdentityUpdate(
+  cartId: string,
+  customerAccessToken: string
+): Promise<Cart | null> {
+  if (!isShopifyConfigured() || cartId.startsWith("mock-")) return null;
+
+  const mutation = `
+    mutation CartBuyerIdentityUpdate($cartId: ID!, $buyerIdentity: CartBuyerIdentityInput!) {
+      cartBuyerIdentityUpdate(cartId: $cartId, buyerIdentity: $buyerIdentity) {
+        cart {
+          id
+          checkoutUrl
+          cost {
+            subtotalAmount {
+              amount
+              currencyCode
+            }
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  try {
+    const result = await shopifyFetch<any>(mutation, {
+      cartId,
+      buyerIdentity: { customerAccessToken }
+    });
+    const cart = result?.data?.cartBuyerIdentityUpdate?.cart;
+    if (cart) {
+      return {
+        id: cart.id,
+        checkoutUrl: cart.checkoutUrl,
+        lines: [],
+        subtotalAmount: {
+          amount: cart.cost.subtotalAmount.amount,
+          currencyCode: cart.cost.subtotalAmount.currencyCode
+        }
+      };
+    }
+  } catch (e) {
+    console.error("Error updating cart buyer identity:", e);
+  }
+  return null;
+}
+
 export function isProductCompatible(
   product: Product,
   bike: { maker: string; model: string; year?: string } | null
@@ -1413,7 +1624,22 @@ export async function customerGet(accessToken: string): Promise<Customer | null>
     const users = getMockUsers();
     const matchedUser = users.find((u) => u.email.toLowerCase().trim() === email);
 
-    if (!matchedUser) return null;
+    if (!matchedUser) {
+      if (typeof window === "undefined") {
+        const namePart = email.split('@')[0];
+        const firstName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+        return {
+          id: `mock-usr-${email}`,
+          firstName: firstName,
+          lastName: "Rider",
+          email: email,
+          phone: "",
+          isMock: true,
+          orders: getMockOrdersForEmail(email)
+        };
+      }
+      return null;
+    }
 
     return {
       id: matchedUser.id,
