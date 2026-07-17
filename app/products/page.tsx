@@ -39,6 +39,9 @@ function ProductsContent() {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [showAllBrands, setShowAllBrands] = useState(false);
 
+  // Pagination State
+  const [visibleCount, setVisibleCount] = useState(24);
+
   const { addItem } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [addingId, setAddingId] = useState<string | null>(null);
@@ -204,6 +207,7 @@ function ProductsContent() {
     }
 
     setFilteredProducts(result);
+    setVisibleCount(24);
   }, [products, garageBike, searchQuery, selectedBrands, selectedCategories, selectedMaxPrice, sortBy]);
 
   // Extract unique brands & categories for filter options
@@ -651,107 +655,121 @@ function ProductsContent() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    className="group flex flex-col w-full bg-transparent"
-                  >
-                    {/* Image */}
-                    <div className="relative aspect-[4/5] w-full bg-[#F3F3F0] overflow-hidden">
-                      <Link href={`/products/${product.handle}`}>
-                        <Image
-                          src={product.images[0]?.url}
-                          alt={product.images[0]?.altText || product.title}
-                          fill
-                          className="object-contain p-6 transition-transform duration-700 ease-out group-hover:scale-105"
-                          sizes="(max-w-768px) 100vw, 25vw"
-                          priority
-                        />
-                      </Link>
-
-                      {/* Wishlist toggle */}
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          toggleWishlist(product);
-                        }}
-                        className="absolute top-4 right-4 p-2 bg-white/80 hover:bg-white rounded-full text-brand-primary hover:text-brand-red shadow-sm transition-all duration-200 z-10"
-                        aria-label="Add to wishlist"
-                      >
-                        <Heart
-                          className={`w-4 h-4 transition-colors ${
-                            isInWishlist(product.id)
-                              ? "text-brand-red fill-brand-red"
-                              : "text-brand-primary"
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    {/* Product details info */}
-                    <div className="flex-grow flex flex-col pt-4 pb-4">
-                      {/* Brand */}
-                      <span className="text-[10px] font-extrabold text-brand-red uppercase tracking-widest mb-1.5">
-                        {product.brand}
-                      </span>
-
-                      {/* Title */}
-                      <h3 className="font-headings font-extrabold text-sm text-brand-primary tracking-tight uppercase line-clamp-1 mb-1 group-hover:text-brand-red transition-colors">
+              <div className="space-y-10">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredProducts.slice(0, visibleCount).map((product, idx) => (
+                    <div
+                      key={product.id}
+                      className="group flex flex-col w-full bg-transparent"
+                    >
+                      {/* Image */}
+                      <div className="relative aspect-[4/5] w-full bg-[#F3F3F0] overflow-hidden">
                         <Link href={`/products/${product.handle}`}>
-                          {product.title}
+                          <Image
+                            src={product.images[0]?.url}
+                            alt={product.images[0]?.altText || product.title}
+                            fill
+                            className="object-contain p-6 transition-transform duration-700 ease-out group-hover:scale-105"
+                            sizes="(max-w-768px) 100vw, 25vw"
+                            priority={idx < 6}
+                          />
                         </Link>
-                      </h3>
 
-                      {/* Compatibility indicator */}
-                      <div className="mb-3 min-h-[22px] flex items-center">
-                        {garageBike ? (
-                          isProductCompatible(product, garageBike) ? (
-                            <span className="text-[9px] bg-emerald-50 text-emerald-700 font-bold border border-emerald-200 px-1.5 py-0.5 rounded uppercase tracking-wide">
-                              ✓ Fits Your Bike
-                            </span>
-                          ) : (
-                            <span className="text-[9px] bg-red-50 text-red-700 font-bold border border-red-200 px-1.5 py-0.5 rounded uppercase tracking-wide">
-                              ✗ Does Not Fit
-                            </span>
-                          )
-                        ) : (
-                          <p className="text-[10px] text-brand-muted font-semibold uppercase tracking-wider">
-                            Fits: {product.compatibility.slice(0, 1).join(", ")}
-                            {product.compatibility.length > 1 && " & more"}
-                          </p>
-                        )}
+                        {/* Wishlist toggle */}
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleWishlist(product);
+                          }}
+                          className="absolute top-4 right-4 p-2 bg-white/80 hover:bg-white rounded-full text-brand-primary hover:text-brand-red shadow-sm transition-all duration-200 z-10"
+                          aria-label="Add to wishlist"
+                        >
+                          <Heart
+                            className={`w-4 h-4 transition-colors ${
+                              isInWishlist(product.id)
+                                ? "text-brand-red fill-brand-red"
+                                : "text-brand-primary"
+                            }`}
+                          />
+                        </button>
                       </div>
 
-                      {/* Price */}
-                      <div className="flex items-baseline gap-2 mb-4">
-                        <span className="text-sm font-bold text-brand-primary">
-                          ₹{parseInt(product.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
+                      {/* Product details info */}
+                      <div className="flex-grow flex flex-col pt-4 pb-4">
+                        {/* Brand */}
+                        <span className="text-[10px] font-extrabold text-brand-red uppercase tracking-widest mb-1.5">
+                          {product.brand}
                         </span>
-                      </div>
 
-                      {/* Add to cart CTA */}
-                      <button
-                        onClick={(e) => handleQuickAdd(e, product)}
-                        disabled={addingId === product.id}
-                        className="w-full bg-[#1E1E1E] hover:bg-brand-red text-white py-3.5 font-headings text-xs font-bold uppercase tracking-widest transition-colors duration-300 flex items-center justify-center gap-2"
-                      >
-                        {addingId === product.id ? (
-                          <>
-                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            ADDING...
-                          </>
-                        ) : (
-                          <>
-                            <ShoppingBag className="w-3.5 h-3.5" />
-                            ADD TO CART
-                          </>
-                        )}
-                      </button>
+                        {/* Title */}
+                        <h3 className="font-headings font-extrabold text-sm text-brand-primary tracking-tight uppercase line-clamp-1 mb-1 group-hover:text-brand-red transition-colors">
+                          <Link href={`/products/${product.handle}`}>
+                            {product.title}
+                          </Link>
+                        </h3>
+
+                        {/* Compatibility indicator */}
+                        <div className="mb-3 min-h-[22px] flex items-center">
+                          {garageBike ? (
+                            isProductCompatible(product, garageBike) ? (
+                              <span className="text-[9px] bg-emerald-50 text-emerald-700 font-bold border border-emerald-200 px-1.5 py-0.5 rounded uppercase tracking-wide">
+                                ✓ Fits Your Bike
+                              </span>
+                            ) : (
+                              <span className="text-[9px] bg-red-50 text-red-700 font-bold border border-red-200 px-1.5 py-0.5 rounded uppercase tracking-wide">
+                                ✗ Does Not Fit
+                              </span>
+                            )
+                          ) : (
+                            <p className="text-[10px] text-brand-muted font-semibold uppercase tracking-wider">
+                              Fits: {product.compatibility.slice(0, 1).join(", ")}
+                              {product.compatibility.length > 1 && " & more"}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Price */}
+                        <div className="flex items-baseline gap-2 mb-4">
+                          <span className="text-sm font-bold text-brand-primary">
+                            ₹{parseInt(product.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
+                          </span>
+                        </div>
+
+                        {/* Add to cart CTA */}
+                        <button
+                          onClick={(e) => handleQuickAdd(e, product)}
+                          disabled={addingId === product.id}
+                          className="w-full bg-[#1E1E1E] hover:bg-brand-red text-white py-3.5 font-headings text-xs font-bold uppercase tracking-widest transition-colors duration-300 flex items-center justify-center gap-2"
+                        >
+                          {addingId === product.id ? (
+                            <>
+                              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              ADDING...
+                            </>
+                          ) : (
+                            <>
+                              <ShoppingBag className="w-3.5 h-3.5" />
+                              ADD TO CART
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
+                  ))}
+                </div>
+
+                {/* Load More Button */}
+                {visibleCount < filteredProducts.length && (
+                  <div className="flex justify-center pt-8 border-t border-brand-border">
+                    <button
+                      onClick={() => setVisibleCount((prev) => prev + 24)}
+                      className="bg-[#1E1E1E] hover:bg-brand-red text-white px-8 py-3.5 font-headings text-xs font-bold uppercase tracking-widest transition-all duration-300 flex items-center gap-2 shadow-md hover:shadow-lg rounded"
+                    >
+                      Load More Upgrades ({filteredProducts.length - visibleCount} Remaining)
+                    </button>
                   </div>
-                ))}
+                )}
               </div>
             )}
           </main>

@@ -690,9 +690,11 @@ function formatShopifyProduct(shopifyProduct: any): Product {
   };
 }
 
-// ==========================================
-// STOREFRONT API HANDLERS (WITH FALLBACKS)
-// ==========================================
+let cachedProducts: Product[] | null = null;
+let productsFetchPromise: Promise<Product[]> | null = null;
+
+const cachedCollectionProducts: Record<string, Product[] | undefined> = {};
+const collectionProductsFetchPromises: Record<string, Promise<Product[]> | undefined> = {};
 
 export async function getCollections(): Promise<Collection[]> {
   if (!isShopifyConfigured()) {
@@ -701,7 +703,7 @@ export async function getCollections(): Promise<Collection[]> {
 
   const query = `
     query GetCollections {
-      collections(first: 10) {
+      collections(first: 100) {
         edges {
           node {
             id
@@ -733,27 +735,270 @@ export async function getCollections(): Promise<Collection[]> {
 }
 
 export async function getProducts(options?: { collectionHandle?: string; limit?: number }): Promise<Product[]> {
-  const limit = options?.limit || 24;
+  const limit = options?.limit;
   const collectionHandle = options?.collectionHandle;
 
+  // Cache general catalog requests (no limit, no collection handle)
+  if (!limit && !collectionHandle) {
+    if (cachedProducts) {
+      return cachedProducts;
+    }
+    if (productsFetchPromise) {
+      return productsFetchPromise;
+    }
+
+    productsFetchPromise = (async () => {
+      const prods = await fetchAllProductsInternal();
+      cachedProducts = prods;
+      return prods;
+    })();
+
+    return productsFetchPromise;
+  }
+
+  // Cache collection-specific requests with no limit
+  if (collectionHandle && !limit) {
+    const cached = cachedCollectionProducts[collectionHandle];
+    if (cached) {
+      return cached;
+    }
+    const promise = collectionProductsFetchPromises[collectionHandle];
+    if (promise) {
+      return promise;
+    }
+
+    const newPromise = (async () => {
+      const prods = await fetchAllProductsInternal(collectionHandle);
+      cachedCollectionProducts[collectionHandle] = prods;
+      return prods;
+    })();
+
+    collectionProductsFetchPromises[collectionHandle] = newPromise;
+    return newPromise;
+  }
+
+  // Otherwise, fetch direct batch
+  return fetchProductsBatch(collectionHandle, limit);
+}
+
+async function fetchAllProductsInternal(collectionHandle?: string): Promise<Product[]> {
   if (!isShopifyConfigured()) {
     let products = MOCK_PRODUCTS;
     if (collectionHandle) {
-      // Find matching category corresponding to collection handle
       const collection = MOCK_COLLECTIONS.find(c => c.handle === collectionHandle);
       if (collection) {
         products = MOCK_PRODUCTS.filter(p => p.category.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-') === collectionHandle);
       }
     }
-    return products.slice(0, limit);
+    return products;
+  }
+
+  const allProducts: Product[] = [];
+  let hasNextPage = true;
+  let cursor: string | null = null;
+
+  try {
+    while (hasNextPage) {
+      const batchLimit = 250;
+      let query = "";
+      const variables: any = { first: batchLimit };
+      if (cursor) {
+        variables.after = cursor;
+      }
+
+      if (collectionHandle) {
+        query = `
+          query GetCollectionProducts($handle: String!, $first: Int!, $after: String) {
+            collection(handle: $handle) {
+              products(first: $first, after: $after) {
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                }
+                edges {
+                  node {
+                    id
+                    handle
+                    title
+                    description
+                    vendor
+                    productType
+                    tags
+                    priceRange {
+                      minVariantPrice {
+                        amount
+                        currencyCode
+                      }
+                    }
+                    images(first: 5) {
+                      edges {
+                        node {
+                          url
+                          altText
+                        }
+                      }
+                    }
+                    variants(first: 10) {
+                      edges {
+                        node {
+                          id
+                          title
+                          price {
+                            amount
+                            currencyCode
+                          }
+                          compareAtPrice {
+                            amount
+                            currencyCode
+                          }
+                          availableForSale
+                        }
+                      }
+                    }
+                    hp_gain: metafield(namespace: "custom", key: "hp_gain") {
+                      value
+                    }
+                    weight_saved: metafield(namespace: "custom", key: "weight_saved") {
+                      value
+                    }
+                    safety_rating: metafield(namespace: "custom", key: "safety_rating") {
+                      value
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `;
+        variables.handle = collectionHandle;
+      } else {
+        query = `
+          query GetProducts($first: Int!, $after: String) {
+            products(first: $first, after: $after) {
+              pageInfo {
+                hasNextPage
+                endCursor
+              }
+              edges {
+                node {
+                  id
+                  handle
+                  title
+                  description
+                  vendor
+                  productType
+                  tags
+                  priceRange {
+                    minVariantPrice {
+                      amount
+                      currencyCode
+                    }
+                  }
+                  images(first: 5) {
+                    edges {
+                      node {
+                        url
+                        altText
+                      }
+                    }
+                  }
+                  variants(first: 10) {
+                    edges {
+                      node {
+                        id
+                        title
+                        price {
+                          amount
+                          currencyCode
+                        }
+                        compareAtPrice {
+                          amount
+                          currencyCode
+                        }
+                        availableForSale
+                      }
+                    }
+                  }
+                  hp_gain: metafield(namespace: "custom", key: "hp_gain") {
+                    value
+                  }
+                  weight_saved: metafield(namespace: "custom", key: "weight_saved") {
+                    value
+                  }
+                  safety_rating: metafield(namespace: "custom", key: "safety_rating") {
+                    value
+                  }
+                }
+              }
+            }
+          }
+        `;
+      }
+
+      const result = await shopifyFetch<any>(query, variables);
+      let pageProducts: any[] = [];
+      let pageInfo: any = null;
+
+      if (collectionHandle) {
+        if (result?.data?.collection?.products) {
+          pageProducts = result.data.collection.products.edges || [];
+          pageInfo = result.data.collection.products.pageInfo;
+        }
+      } else {
+        if (result?.data?.products) {
+          pageProducts = result.data.products.edges || [];
+          pageInfo = result.data.products.pageInfo;
+        }
+      }
+
+      if (pageProducts.length === 0) {
+        break;
+      }
+
+      const formatted = pageProducts.map((edge: any) => formatShopifyProduct(edge.node));
+      allProducts.push(...formatted);
+
+      if (pageInfo) {
+        hasNextPage = pageInfo.hasNextPage;
+        cursor = pageInfo.endCursor;
+      } else {
+        hasNextPage = false;
+      }
+    }
+  } catch (error) {
+    console.error("Error in fetchAllProductsInternal:", error);
+  }
+
+  if (allProducts.length > 0) {
+    return allProducts;
+  }
+
+  let products = MOCK_PRODUCTS;
+  if (collectionHandle) {
+    products = MOCK_PRODUCTS.filter(p => p.category.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-') === collectionHandle);
+  }
+  return products;
+}
+
+async function fetchProductsBatch(collectionHandle?: string, limit?: number): Promise<Product[]> {
+  const finalLimit = limit || 24;
+  if (!isShopifyConfigured()) {
+    let products = MOCK_PRODUCTS;
+    if (collectionHandle) {
+      const collection = MOCK_COLLECTIONS.find(c => c.handle === collectionHandle);
+      if (collection) {
+        products = MOCK_PRODUCTS.filter(p => p.category.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-') === collectionHandle);
+      }
+    }
+    return products.slice(0, finalLimit);
   }
 
   let query = "";
-  let variables: any = { first: limit };
+  const variables: any = { first: finalLimit };
 
   if (collectionHandle) {
     query = `
-      query GetCollectionProducts($handle: String!, $first: Int!) {
+      query GetCollectionProductsBatch($handle: String!, $first: Int!) {
         collection(handle: $handle) {
           products(first: $first) {
             edges {
@@ -814,7 +1059,7 @@ export async function getProducts(options?: { collectionHandle?: string; limit?:
     variables.handle = collectionHandle;
   } else {
     query = `
-      query GetProducts($first: Int!) {
+      query GetProductsBatch($first: Int!) {
         products(first: $first) {
           edges {
             node {
@@ -872,24 +1117,26 @@ export async function getProducts(options?: { collectionHandle?: string; limit?:
     `;
   }
 
-  const result = await shopifyFetch<any>(query, variables);
-  
-  if (collectionHandle) {
-    if (result?.data?.collection?.products?.edges) {
-      return result.data.collection.products.edges.map((edge: any) => formatShopifyProduct(edge.node));
+  try {
+    const result = await shopifyFetch<any>(query, variables);
+    if (collectionHandle) {
+      if (result?.data?.collection?.products?.edges) {
+        return result.data.collection.products.edges.map((edge: any) => formatShopifyProduct(edge.node));
+      }
+    } else {
+      if (result?.data?.products?.edges) {
+        return result.data.products.edges.map((edge: any) => formatShopifyProduct(edge.node));
+      }
     }
-  } else {
-    if (result?.data?.products?.edges) {
-      return result.data.products.edges.map((edge: any) => formatShopifyProduct(edge.node));
-    }
+  } catch (error) {
+    console.error("Error in fetchProductsBatch:", error);
   }
 
-  // Fallback to mock data if API results are empty or error out
   let products = MOCK_PRODUCTS;
   if (collectionHandle) {
     products = MOCK_PRODUCTS.filter(p => p.category.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-') === collectionHandle);
   }
-  return products.slice(0, limit);
+  return products.slice(0, finalLimit);
 }
 
 export async function getProduct(handle: string): Promise<Product | null> {
