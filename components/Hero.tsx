@@ -8,8 +8,8 @@ import { ShieldCheck, Truck, RotateCcw, Headset, ArrowRight } from "lucide-react
 export default function Hero() {
   const trustIndicators = [
     { icon: <Truck className="w-4 h-4 text-brand-red" />, text: "Free Shipping India-Wide" },
-    { icon: <ShieldCheck className="w-4 h-4 text-brand-red" />, text: "Certified Products" },
-    { icon: <RotateCcw className="w-4 h-4 text-brand-red" />, text: "4-Day Defect Replacement" },
+    { icon: <ShieldCheck className="w-4 h-4 text-brand-red" />, text: "100% Genuine Guarantee" },
+    { icon: <RotateCcw className="w-4 h-4 text-brand-red" />, text: "Easy Returns & Exchanges" },
     { icon: <Headset className="w-4 h-4 text-brand-red" />, text: "Engineer-Backed Support" }
   ];
 
@@ -117,18 +117,18 @@ export default function Hero() {
             className="flex flex-wrap items-center gap-4 pt-4"
           >
             <Link
-              href="/collections/performance-air-filters"
+              href="/products"
               className="bg-brand-red hover:bg-white hover:text-[#121212] text-white px-8 py-4 font-headings text-xs font-bold uppercase tracking-widest transition-all duration-300 shadow-xl hover:shadow-2xl flex items-center gap-2 group rounded-sm"
             >
-              Shop Performance Parts
+              All Products
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
             
             <a
-              href="#brands-section"
+              href="#categories-section"
               className="border border-white/20 hover:border-white hover:bg-white/5 text-white px-8 py-4 font-headings text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-sm"
             >
-              Explore Manufacturers
+              Explore Collections
             </a>
           </motion.div>
         </div>

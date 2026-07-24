@@ -112,7 +112,7 @@ export default function CategorySection() {
   };
 
   return (
-    <section className="py-24 bg-[#121212] text-white relative overflow-hidden border-b border-white/10">
+    <section id="categories-section" className="py-24 bg-[#121212] text-white relative overflow-hidden border-b border-white/10">
       {/* Decorative vertical lines in background */}
       <div className="absolute inset-y-0 left-1/4 w-[1px] bg-white/[0.02] pointer-events-none hidden lg:block" />
       <div className="absolute inset-y-0 left-2/4 w-[1px] bg-white/[0.02] pointer-events-none hidden lg:block" />

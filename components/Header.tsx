@@ -228,7 +228,7 @@ export default function Header() {
             <div className="h-full flex items-center pr-2 sm:pr-6 lg:pr-8 md:border-r md:border-black/10">
               <Link href="/" className="flex items-center">
                 {/* CSS wrapper to crop transparent boundaries of 1024x1024 square image */}
-                <div className="relative w-28 h-12 sm:w-40 sm:h-16 overflow-hidden flex items-center justify-center">
+                <div className="relative w-32 h-12 sm:w-44 sm:h-16 overflow-hidden flex items-center justify-center">
                   <div className="absolute w-[150px] h-[150px] sm:w-[220px] sm:h-[220px] flex items-center justify-center">
                     <Image
                       src="/imhlogo.png"
@@ -245,10 +245,19 @@ export default function Header() {
 
             {/* Desktop Navigation Links */}
             <nav className="hidden md:flex items-center h-full flex-grow px-8 gap-8">
+              {/* All Products Link */}
+              <Link
+                href="/products"
+                className="font-body text-xs font-bold uppercase tracking-widest text-gray-800 hover:text-brand-red transition-colors h-full flex items-center relative group"
+              >
+                All Products
+                <span className="absolute bottom-0 left-0 w-0 group-hover:w-full h-[2px] bg-brand-red transition-all duration-300" />
+              </Link>
+
               {/* Shop Link (Mega Menu Trigger) */}
               <div className="group h-full flex items-center relative">
                 <button className="flex items-center gap-1 font-body text-xs font-bold uppercase tracking-widest text-gray-850 hover:text-brand-red transition-colors h-full">
-                  Shop
+                  Shop Collections
                   <ChevronDown className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-300" />
                 </button>
                 
@@ -316,27 +325,31 @@ export default function Header() {
                     
                     {/* Visual Spotlight Banner */}
                     <div className="col-span-4 bg-gray-50 border border-black/5 p-5 rounded-lg flex flex-col justify-between relative overflow-hidden group/spot">
-                      <div className="relative w-full h-28 bg-white border border-black/5 rounded mb-3 overflow-hidden">
+                      <div className="relative w-full h-28 bg-[#181818] border border-black/5 rounded mb-3 overflow-hidden flex items-center justify-center">
                         <Image
-                          src="https://images.unsplash.com/photo-1615887023516-9b6bcd559e87?q=80&w=300&auto=format&fit=crop"
-                          alt="Featured Product Spotlight"
+                          src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop"
+                          alt="All Products Catalog Spotlight"
                           fill
-                          className="object-contain p-2 group-hover/spot:scale-105 transition-transform duration-500"
+                          className="object-cover group-hover/spot:scale-105 transition-transform duration-500 opacity-90"
                         />
+                        <div className="absolute inset-0 bg-black/30" />
+                        <span className="relative z-10 text-white font-headings font-extrabold text-xs uppercase tracking-widest bg-brand-red px-2.5 py-1 rounded">
+                          Full Store Catalog
+                        </span>
                       </div>
                       <div>
                         <h5 className="font-headings font-extrabold text-xs text-gray-900 uppercase tracking-wider mb-1">
-                          BMC Italian Filters
+                          All Products
                         </h5>
                         <p className="text-gray-600 text-[10px] leading-relaxed font-body">
-                          Formula 1 spec air filtration now in stock for all Indian performance singles.
+                          Browse our complete range of high-flow air filters, ECU tuners, riding gear, and bike care accessories.
                         </p>
                       </div>
                       <Link
-                        href="/collections/performance-air-filters"
+                        href="/products"
                         className="text-brand-red font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 hover:gap-2 transition-all mt-4"
                       >
-                        Browse Filters <ArrowRight className="w-3.5 h-3.5" />
+                        Browse All Products <ArrowRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>
 
@@ -1062,9 +1075,18 @@ export default function Header() {
                 {/* Collections block */}
                 <div className="space-y-4">
                   <h4 className="font-headings font-extrabold text-[10px] tracking-wider text-brand-red uppercase">
-                    COLLECTIONS
+                    CATALOG & COLLECTIONS
                   </h4>
                   <ul className="space-y-3.5 text-sm font-semibold">
+                    <li>
+                      <Link
+                        href="/products"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="text-brand-red hover:text-white transition-colors block py-1 font-body font-bold flex items-center gap-2"
+                      >
+                        ⚡ ALL PRODUCTS CATALOG
+                      </Link>
+                    </li>
                     {collections.map((col) => (
                       <li key={col.id}>
                         <Link

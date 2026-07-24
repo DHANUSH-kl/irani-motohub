@@ -85,9 +85,9 @@ export default function WhyChooseUs() {
     },
     {
       id: 3,
-      title: "4-Day Defect Replacement Policy",
+      title: "Hassle-Free Return & Exchange Support",
       icon: <RotateCcw className="w-5 h-5 text-brand-red" />,
-      description: "Replacements issued only for defective products. A compulsory unboxing video must be submitted within 4 days of delivery."
+      description: "Complete customer protection with swift resolution and easy exchange for any damaged or incompatible parts."
     }
   ];
 

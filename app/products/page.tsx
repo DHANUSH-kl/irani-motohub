@@ -4,19 +4,30 @@ import React, { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Filter, SlidersHorizontal, Star, ShoppingBag, RotateCcw, Heart, Search, Bike, Wrench, ChevronDown } from "lucide-react";
+import { 
+  Filter, SlidersHorizontal, Star, ShoppingBag, RotateCcw, Heart, 
+  Search, Bike, Wrench, ChevronDown, X, Sparkles, Layers, Tag, DollarSign
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getProducts, Product, isProductCompatible, getActiveMotorcycleGroups, getActiveYears } from "@/lib/shopify";
+import { 
+  getProducts, getCollections, Product, Collection, 
+  isProductCompatible, getActiveMotorcycleGroups, getActiveYears 
+} from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 
 function ProductsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  
   const urlSearchQuery = searchParams.get("search") || "";
+  const urlCollection = searchParams.get("collection") || "all";
+  const urlCategory = searchParams.get("category") || "all";
+  const urlBrand = searchParams.get("brand") || "all";
 
   // Data states
   const [products, setProducts] = useState<Product[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,16 +39,13 @@ function ProductsContent() {
   const [motorcycles, setMotorcycles] = useState<{ maker: string; models: string[] }[]>([]);
   const [years, setYears] = useState<string[]>([]);
 
-  // Product Filter States
-  const [searchQuery, setSearchQuery] = useState(urlSearchQuery);
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [maxPrice, setMaxPrice] = useState<number>(20000);
-  const [selectedMaxPrice, setSelectedMaxPrice] = useState<number>(20000);
+  // Dropdown Filter States
+  const [selectedCollection, setSelectedCollection] = useState<string>(urlCollection);
+  const [selectedCategory, setSelectedCategory] = useState<string>(urlCategory);
+  const [selectedBrand, setSelectedBrand] = useState<string>(urlBrand);
+  const [priceRangeFilter, setPriceRangeFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("default");
-  const [showAllFilters, setShowAllFilters] = useState(false);
-  const [showAllCategories, setShowAllCategories] = useState(false);
-  const [showAllBrands, setShowAllBrands] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(urlSearchQuery);
 
   // Pagination State
   const [visibleCount, setVisibleCount] = useState(24);
@@ -46,18 +54,23 @@ function ProductsContent() {
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [addingId, setAddingId] = useState<string | null>(null);
 
-  // Fetch products on mount
+  // Initial Data Fetch
   useEffect(() => {
-    const fetchAllProducts = async () => {
+    const loadData = async () => {
       setLoading(true);
-      const data = await getProducts();
-      setProducts(data);
+      const [allProds, allCols] = await Promise.all([
+        getProducts(),
+        getCollections()
+      ]);
+      
+      setProducts(allProds);
+      setCollections(allCols);
 
-      // Dynamic extraction of makers, models, and years from products
+      // Extract makers, models, and years from products
       const makerModelsMap: Record<string, Set<string>> = {};
       const yearsSet = new Set<string>();
 
-      data.forEach((product) => {
+      allProds.forEach((product) => {
         if (product.compatibility) {
           product.compatibility.forEach((comp) => {
             if (comp === "All Motorcycles" || comp === "Universal") return;
@@ -100,20 +113,15 @@ function ProductsContent() {
         maker,
         models: Array.from(modelsSet)
       }));
-      setMotorcycles(extractedMotorcycles.length > 0 ? extractedMotorcycles : getActiveMotorcycleGroups(data));
+      setMotorcycles(extractedMotorcycles.length > 0 ? extractedMotorcycles : getActiveMotorcycleGroups(allProds));
 
       const extractedYears = Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
-      setYears(extractedYears.length > 0 ? extractedYears : getActiveYears(data));
-
-      // Dynamic price bounds
-      const prices = data.map((p) => parseFloat(p.priceRange.minVariantPrice.amount));
-      const calculatedMax = prices.length > 0 ? Math.ceil(Math.max(...prices)) : 20000;
-      setMaxPrice(calculatedMax);
-      setSelectedMaxPrice(calculatedMax);
+      setYears(extractedYears.length > 0 ? extractedYears : getActiveYears(allProds));
 
       setLoading(false);
     };
-    fetchAllProducts();
+
+    loadData();
 
     // Load active bike from garage cache
     const saved = localStorage.getItem("rider_garage");
@@ -155,47 +163,71 @@ function ProductsContent() {
     };
   }, []);
 
-  // Update local search state if URL search param changes
+  // Update local filter state if URL params change
   useEffect(() => {
-    setSearchQuery(urlSearchQuery);
-  }, [urlSearchQuery]);
+    if (urlSearchQuery) setSearchQuery(urlSearchQuery);
+    if (urlCollection) setSelectedCollection(urlCollection);
+    if (urlCategory) setSelectedCategory(urlCategory);
+    if (urlBrand) setSelectedBrand(urlBrand);
+  }, [urlSearchQuery, urlCollection, urlCategory, urlBrand]);
+
+  // Extract unique brands & categories for filter options
+  const uniqueBrands = Array.from(new Set(products.map((p) => p.brand))).sort();
+  const uniqueCategories = Array.from(new Set(products.map((p) => p.category))).sort();
 
   // Apply filtering and sorting
   useEffect(() => {
     let result = [...products];
 
-    // Filter by Active Garage Bike
+    // Filter by Active Garage Bike / Fitted Bike
     if (garageBike) {
       result = result.filter((p) => isProductCompatible(p, garageBike));
     }
 
-    // Filter by Search Input Query
-    if (searchQuery) {
+    // Filter by Search Query
+    if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter(
         (p) =>
           p.title.toLowerCase().includes(q) ||
           p.brand.toLowerCase().includes(q) ||
           p.category.toLowerCase().includes(q) ||
-          p.compatibility.some(c => c.toLowerCase().includes(q))
+          p.compatibility.some((c) => c.toLowerCase().includes(q))
       );
     }
 
-    // Filter by Brands
-    if (selectedBrands.length > 0) {
-      result = result.filter((p) => selectedBrands.includes(p.brand));
+    // Filter by Selected Collection
+    if (selectedCollection && selectedCollection !== "all") {
+      result = result.filter((p) => {
+        const catSlug = p.category.toLowerCase().replace(/ & /g, "-").replace(/ /g, "-");
+        const tagMatch = p.tags?.some((t) => t.toLowerCase() === selectedCollection || t.toLowerCase() === `col-${selectedCollection}`);
+        const textMatch = p.category.toLowerCase().includes(selectedCollection.replace(/-/g, " "));
+        return catSlug === selectedCollection || tagMatch || textMatch;
+      });
     }
 
-    // Filter by Categories
-    if (selectedCategories.length > 0) {
-      result = result.filter((p) => selectedCategories.includes(p.category));
+    // Filter by Category
+    if (selectedCategory && selectedCategory !== "all") {
+      result = result.filter((p) => p.category === selectedCategory);
     }
 
-    // Filter by Price Range
-    result = result.filter((p) => {
-      const price = parseFloat(p.priceRange.minVariantPrice.amount);
-      return price <= selectedMaxPrice;
-    });
+    // Filter by Brand
+    if (selectedBrand && selectedBrand !== "all") {
+      result = result.filter((p) => p.brand === selectedBrand);
+    }
+
+    // Filter by Price Range Dropdown
+    if (priceRangeFilter !== "all") {
+      result = result.filter((p) => {
+        const price = parseFloat(p.priceRange.minVariantPrice.amount);
+        if (priceRangeFilter === "under-1k") return price < 1000;
+        if (priceRangeFilter === "1k-3k") return price >= 1000 && price <= 3000;
+        if (priceRangeFilter === "3k-5k") return price >= 3000 && price <= 5000;
+        if (priceRangeFilter === "5k-10k") return price >= 5000 && price <= 10000;
+        if (priceRangeFilter === "above-10k") return price > 10000;
+        return true;
+      });
+    }
 
     // Sort products
     if (sortBy === "price-asc") {
@@ -204,43 +236,24 @@ function ProductsContent() {
       result.sort((a, b) => parseFloat(b.priceRange.minVariantPrice.amount) - parseFloat(a.priceRange.minVariantPrice.amount));
     } else if (sortBy === "rating") {
       result.sort((a, b) => b.rating - a.rating);
+    } else if (sortBy === "title-asc") {
+      result.sort((a, b) => a.title.localeCompare(b.title));
     }
 
     setFilteredProducts(result);
     setVisibleCount(24);
-  }, [products, garageBike, searchQuery, selectedBrands, selectedCategories, selectedMaxPrice, sortBy]);
+  }, [products, garageBike, searchQuery, selectedCollection, selectedCategory, selectedBrand, priceRangeFilter, sortBy]);
 
-  // Extract unique brands & categories for filter options
-  const uniqueBrands = Array.from(new Set(products.map((p) => p.brand)));
-  const uniqueCategories = Array.from(new Set(products.map((p) => p.category)));
-
-  // Handlers for selection
-  const handleBrandChange = (brand: string) => {
-    setSelectedBrands((prev) =>
-      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
-    );
-  };
-
-  const handleCategoryChange = (cat: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
-    );
-  };
-
-  const handleResetFilters = () => {
-    setSelectedBrands([]);
-    setSelectedCategories([]);
-    setSelectedMaxPrice(maxPrice);
-    setSortBy("default");
-    setSearchQuery("");
-    
-    // Reset garage local states too if we want a full reset, or keep garage selected
-    setSelectedMaker("");
-    setSelectedModel("");
-    setSelectedYear("");
-    setGarageBike(null);
-    localStorage.removeItem("rider_garage");
-    window.dispatchEvent(new Event("garage-updated"));
+  // Handle Collection dropdown change with URL sync
+  const handleCollectionChange = (newHandle: string) => {
+    setSelectedCollection(newHandle);
+    const params = new URLSearchParams(searchParams.toString());
+    if (newHandle && newHandle !== "all") {
+      params.set("collection", newHandle);
+    } else {
+      params.delete("collection");
+    }
+    router.replace(`/products?${params.toString()}`, { scroll: false });
   };
 
   const handleSaveGarage = () => {
@@ -261,6 +274,17 @@ function ProductsContent() {
     window.dispatchEvent(new Event("garage-updated"));
   };
 
+  const handleResetFilters = () => {
+    setSelectedCollection("all");
+    setSelectedCategory("all");
+    setSelectedBrand("all");
+    setPriceRangeFilter("all");
+    setSortBy("default");
+    setSearchQuery("");
+    handleClearGarage();
+    router.replace("/products", { scroll: false });
+  };
+
   const handleQuickAdd = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
     const variant = product.variants[0];
@@ -271,37 +295,62 @@ function ProductsContent() {
     setTimeout(() => setAddingId(null), 1000);
   };
 
+  const activeCollectionObj = collections.find((c) => c.handle === selectedCollection);
+
+  const hasActiveFilters =
+    selectedCollection !== "all" ||
+    selectedCategory !== "all" ||
+    selectedBrand !== "all" ||
+    priceRangeFilter !== "all" ||
+    searchQuery.trim() !== "" ||
+    garageBike !== null;
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col justify-center items-center bg-brand-bg pt-24">
         <div className="w-10 h-10 border-4 border-brand-primary border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-brand-muted text-sm font-semibold tracking-wider uppercase">Loading Catalog...</p>
+        <p className="text-brand-muted text-sm font-semibold tracking-wider uppercase font-headings">Loading Catalog...</p>
       </div>
     );
   }
 
-  const hasActiveFilters = selectedBrands.length > 0 || selectedCategories.length > 0 || selectedMaxPrice < maxPrice || garageBike !== null;
-
   return (
     <div className="min-h-screen bg-brand-bg pt-20">
       {/* Banner */}
-      <div className="bg-brand-footer text-white py-16 border-b border-[#3a3028] relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
+      <div className="bg-[#121212] text-white py-14 border-b border-white/10 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:35px_35px] pointer-events-none" />
         
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="max-w-2xl space-y-3">
-            <span className="text-[10px] font-bold tracking-widest text-brand-red uppercase block">
-              Performance Catalog
-            </span>
+          <div className="max-w-3xl space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-[1px] bg-brand-red" />
+              <span className="text-[10px] font-headings font-extrabold tracking-[0.25em] text-brand-red uppercase block">
+                {activeCollectionObj ? activeCollectionObj.title : "Catalog Overview"}
+              </span>
+            </div>
+            
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-headings font-extrabold tracking-tight uppercase leading-none text-white">
-              ALL UPGRADES & PARTS
+              {activeCollectionObj ? activeCollectionObj.title : "ALL PRODUCTS & UPGRADES"}
             </h1>
-            <p className="text-gray-400 text-sm leading-relaxed max-w-xl">
-              Browse our complete catalog of certified riding gear, racing filters, fuel tuners, and high-performance components.
+            
+            <p className="text-gray-400 text-xs sm:text-sm leading-relaxed max-w-2xl font-body">
+              {activeCollectionObj 
+                ? activeCollectionObj.description 
+                : "Explore our complete range of high-flow air filters, ECU piggyback tuners, track-tested riding gear, and bike care essentials."}
             </p>
+
             {garageBike && (
-              <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-brand-red/10 border border-brand-red/20 text-white rounded-full text-xs font-semibold uppercase tracking-wider">
-                Fitted for: {garageBike.maker} {garageBike.model} {garageBike.year ? `(${garageBike.year})` : ""}
+              <div className="pt-2 flex items-center gap-2">
+                <span className="bg-brand-red/10 border border-brand-red/30 text-white text-[10px] font-bold py-1 px-3 rounded-full uppercase tracking-wider flex items-center gap-2 font-headings">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Fitment Active: {garageBike.maker} {garageBike.model} {garageBike.year ? `(${garageBike.year})` : ""}
+                </span>
+                <button
+                  onClick={handleClearGarage}
+                  className="text-[9px] text-gray-400 hover:text-brand-red underline uppercase font-bold"
+                >
+                  Remove Bike Filter
+                </button>
               </div>
             )}
           </div>
@@ -309,472 +358,386 @@ function ProductsContent() {
       </div>
 
       {/* Main Container */}
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        
+        {/* COMPACT DROPDOWN FILTER BAR (Non-Vertically-Long Design) */}
+        <div className="bg-white border border-brand-border rounded-xl p-5 shadow-lg space-y-4">
           
-          {/* SIDEBAR FILTERS */}
-          <aside className="w-full lg:w-72 flex-shrink-0 space-y-4">
+          {/* Top Bar: Search Input + Results Count + Clear Button */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-4 border-b border-brand-border">
             
-            {/* SEARCH BOX */}
-            <div className="bg-white border border-brand-border p-5 rounded-lg space-y-2">
-              <label className="block text-[10px] font-headings font-extrabold uppercase tracking-wider text-brand-primary">
-                Search Catalog
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Filter by keyword..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-brand-bg border border-brand-border rounded-lg py-2.5 pl-9 pr-3 text-brand-primary placeholder-gray-400 focus:outline-none focus:border-brand-primary text-xs font-semibold"
-                />
-                <Search className="w-4 h-4 text-brand-muted absolute left-3 top-1/2 -translate-y-1/2" />
-              </div>
+            {/* Search Input Box */}
+            <div className="relative w-full md:w-96">
+              <input
+                type="text"
+                placeholder="Search products by title, brand, bike..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-brand-bg border border-brand-border rounded-lg py-2.5 pl-9 pr-8 text-xs font-semibold text-brand-primary placeholder-gray-400 focus:outline-none focus:border-brand-red transition-all"
+              />
+              <Search className="w-4 h-4 text-brand-muted absolute left-3 top-1/2 -translate-y-1/2" />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-red"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
-            {/* TOGGLE FILTERS BUTTON */}
-            <button
-              onClick={() => setShowAllFilters(!showAllFilters)}
-              className="w-full flex items-center justify-between bg-white hover:bg-brand-red/5 border border-brand-border hover:border-brand-red/20 px-5 py-3.5 rounded-lg text-xs font-headings font-extrabold uppercase tracking-wider text-brand-primary transition-all duration-300 group"
-            >
-              <span className="flex items-center gap-2">
-                <SlidersHorizontal className="w-3.5 h-3.5 text-brand-red group-hover:rotate-90 transition-transform duration-300" />
-                {showAllFilters ? "Hide Filters" : "Show Filters"}
+            {/* Results Count & Reset Action */}
+            <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+              <span className="text-xs font-headings font-extrabold uppercase text-brand-primary tracking-wider">
+                Showing <span className="text-brand-red">{filteredProducts.length}</span> {filteredProducts.length === 1 ? "Product" : "Products"}
               </span>
-              <div className="flex items-center gap-2">
-                {hasActiveFilters && (
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-red opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-red"></span>
-                  </span>
-                )}
-                <ChevronDown className={`w-3.5 h-3.5 text-brand-muted transition-transform duration-300 ${showAllFilters ? 'rotate-180' : ''}`} />
-              </div>
-            </button>
 
-            {/* EXPANDABLE FILTER CONTAINER */}
-            <AnimatePresence initial={false}>
-              {showAllFilters && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="overflow-hidden space-y-4"
+              {hasActiveFilters && (
+                <button
+                  onClick={handleResetFilters}
+                  className="text-[10px] font-headings font-extrabold uppercase text-brand-red hover:text-red-700 tracking-wider flex items-center gap-1 bg-brand-red/5 hover:bg-brand-red/10 px-3 py-1.5 rounded transition-all"
                 >
-                  {/* MOTORCYCLE COMPATIBILITY SELECTOR */}
-                  <div className="bg-white border border-brand-border p-5 rounded-lg space-y-4">
-                    <div className="flex justify-between items-center pb-2 border-b border-brand-border">
-                      <span className="font-headings font-extrabold text-[11px] text-brand-primary tracking-wider uppercase flex items-center gap-1.5">
-                        <Bike className="w-4 h-4 text-brand-red" />
-                        Rider Garage Fitment
+                  <RotateCcw className="w-3 h-3" /> Reset All Filters
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Grid of Dropdown Select Controls */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 pt-1">
+            
+            {/* 1. COLLECTION DROPDOWN */}
+            <div className="space-y-1">
+              <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted flex items-center gap-1">
+                <Layers className="w-3 h-3 text-brand-red" /> Collection
+              </label>
+              <select
+                value={selectedCollection}
+                onChange={(e) => handleCollectionChange(e.target.value)}
+                className="w-full bg-brand-bg border border-brand-border hover:border-brand-red rounded-lg p-2.5 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-red cursor-pointer transition-colors"
+              >
+                <option value="all">⚡ All Collections</option>
+                {collections.map((col) => (
+                  <option key={col.id} value={col.handle}>
+                    {col.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 2. CATEGORY DROPDOWN */}
+            <div className="space-y-1">
+              <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted flex items-center gap-1">
+                <Tag className="w-3 h-3 text-brand-red" /> Category
+              </label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full bg-brand-bg border border-brand-border hover:border-brand-red rounded-lg p-2.5 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-red cursor-pointer transition-colors"
+              >
+                <option value="all">All Categories</option>
+                {uniqueCategories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 3. BRAND DROPDOWN */}
+            <div className="space-y-1">
+              <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-brand-red" /> Brand
+              </label>
+              <select
+                value={selectedBrand}
+                onChange={(e) => setSelectedBrand(e.target.value)}
+                className="w-full bg-brand-bg border border-brand-border hover:border-brand-red rounded-lg p-2.5 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-red cursor-pointer transition-colors"
+              >
+                <option value="all">All Brands</option>
+                {uniqueBrands.map((brand) => (
+                  <option key={brand} value={brand}>
+                    {brand}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 4. MOTORCYCLE / RIDER GARAGE DROPDOWN */}
+            <div className="space-y-1">
+              <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted flex items-center gap-1">
+                <Bike className="w-3 h-3 text-brand-red" /> Bike Fitment
+              </label>
+              <select
+                value={selectedMaker ? `${selectedMaker}|${selectedModel}` : ""}
+                onChange={(e) => {
+                  if (!e.target.value) {
+                    handleClearGarage();
+                    return;
+                  }
+                  const [maker, model] = e.target.value.split("|");
+                  setSelectedMaker(maker);
+                  setSelectedModel(model);
+                  const bike = { maker, model };
+                  setGarageBike(bike);
+                  localStorage.setItem("rider_garage", JSON.stringify(bike));
+                  window.dispatchEvent(new Event("garage-updated"));
+                }}
+                className="w-full bg-brand-bg border border-brand-border hover:border-brand-red rounded-lg p-2.5 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-red cursor-pointer transition-colors"
+              >
+                <option value="">All Motorcycles</option>
+                {motorcycles.map((group) => (
+                  <optgroup key={group.maker} label={group.maker}>
+                    {group.models.map((mod) => (
+                      <option key={`${group.maker}-${mod}`} value={`${group.maker}|${mod}`}>
+                        {group.maker} {mod}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+
+            {/* 5. PRICE RANGE DROPDOWN */}
+            <div className="space-y-1">
+              <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted flex items-center gap-1">
+                <DollarSign className="w-3 h-3 text-brand-red" /> Price Range
+              </label>
+              <select
+                value={priceRangeFilter}
+                onChange={(e) => setPriceRangeFilter(e.target.value)}
+                className="w-full bg-brand-bg border border-brand-border hover:border-brand-red rounded-lg p-2.5 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-red cursor-pointer transition-colors"
+              >
+                <option value="all">All Prices</option>
+                <option value="under-1k">Under ₹1,000</option>
+                <option value="1k-3k">₹1,000 - ₹3,000</option>
+                <option value="3k-5k">₹3,000 - ₹5,000</option>
+                <option value="5k-10k">₹5,000 - ₹10,000</option>
+                <option value="above-10k">Above ₹10,000</option>
+              </select>
+            </div>
+
+            {/* 6. SORT ORDER DROPDOWN */}
+            <div className="space-y-1">
+              <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted flex items-center gap-1">
+                <SlidersHorizontal className="w-3 h-3 text-brand-red" /> Sort By
+              </label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full bg-brand-bg border border-brand-border hover:border-brand-red rounded-lg p-2.5 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-red cursor-pointer transition-colors"
+              >
+                <option value="default">Relevance</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="rating">Top Rated</option>
+                <option value="title-asc">Name: A to Z</option>
+              </select>
+            </div>
+
+          </div>
+
+          {/* Active Filter Chips / Badges */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-brand-border">
+              <span className="text-[9px] font-headings font-bold uppercase tracking-wider text-brand-muted mr-1">
+                Active Filters:
+              </span>
+              
+              {selectedCollection !== "all" && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-brand-red/10 text-brand-red text-[10px] font-bold rounded-full border border-brand-red/20 uppercase font-headings">
+                  Collection: {collections.find(c => c.handle === selectedCollection)?.title || selectedCollection}
+                  <button onClick={() => handleCollectionChange("all")} className="hover:text-black">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+
+              {selectedCategory !== "all" && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-brand-red/10 text-brand-red text-[10px] font-bold rounded-full border border-brand-red/20 uppercase font-headings">
+                  Category: {selectedCategory}
+                  <button onClick={() => setSelectedCategory("all")} className="hover:text-black">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+
+              {selectedBrand !== "all" && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-brand-red/10 text-brand-red text-[10px] font-bold rounded-full border border-brand-red/20 uppercase font-headings">
+                  Brand: {selectedBrand}
+                  <button onClick={() => setSelectedBrand("all")} className="hover:text-black">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+
+              {garageBike && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-800 text-[10px] font-bold rounded-full border border-emerald-200 uppercase font-headings">
+                  Bike: {garageBike.maker} {garageBike.model}
+                  <button onClick={handleClearGarage} className="hover:text-black">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+
+              {priceRangeFilter !== "all" && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-brand-red/10 text-brand-red text-[10px] font-bold rounded-full border border-brand-red/20 uppercase font-headings">
+                  Price: {priceRangeFilter}
+                  <button onClick={() => setPriceRangeFilter("all")} className="hover:text-black">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
+
+        </div>
+
+        {/* RESULTS GRID */}
+        <main className="space-y-6">
+          {filteredProducts.length === 0 ? (
+            <div className="bg-white border border-brand-border rounded-xl text-center py-20 px-4 space-y-4 shadow-sm">
+              <SlidersHorizontal className="w-12 h-12 text-brand-muted mx-auto stroke-[1.2]" />
+              <h3 className="text-lg font-headings font-extrabold text-brand-primary uppercase">No products match your filters</h3>
+              <p className="text-brand-muted text-xs sm:text-sm max-w-sm mx-auto font-body">
+                Try selecting a different collection, category, or resetting your filter options to see all upgrades.
+              </p>
+              <button
+                onClick={handleResetFilters}
+                className="bg-brand-primary text-white px-6 py-3 font-headings text-xs font-bold uppercase tracking-wider hover:bg-brand-red transition-colors rounded"
+              >
+                Reset All Filters
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {filteredProducts.slice(0, visibleCount).map((product, idx) => (
+                  <div
+                    key={product.id}
+                    className="group flex flex-col w-full bg-white border border-brand-border rounded-lg overflow-hidden hover:border-brand-red/40 hover:shadow-xl transition-all duration-300"
+                  >
+                    {/* Image */}
+                    <div className="relative aspect-[4/5] w-full bg-[#F3F3F0] overflow-hidden">
+                      <Link href={`/products/${product.handle}`}>
+                        <Image
+                          src={product.images[0]?.url}
+                          alt={product.images[0]?.altText || product.title}
+                          fill
+                          className="object-contain p-6 transition-transform duration-700 ease-out group-hover:scale-105"
+                          sizes="(max-w-768px) 100vw, 25vw"
+                          priority={idx < 8}
+                        />
+                      </Link>
+
+                      {/* Wishlist toggle */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          toggleWishlist(product);
+                        }}
+                        className="absolute top-3 right-3 p-2 bg-white/90 hover:bg-white rounded-full text-brand-primary hover:text-brand-red shadow transition-all duration-200 z-10"
+                        aria-label="Add to wishlist"
+                      >
+                        <Heart
+                          className={`w-4 h-4 transition-colors ${
+                            isInWishlist(product.id)
+                              ? "text-brand-red fill-brand-red"
+                              : "text-brand-primary"
+                          }`}
+                        />
+                      </button>
+
+                      {/* Category tag */}
+                      <span className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-[8px] font-headings font-bold uppercase px-2 py-0.5 rounded tracking-wider">
+                        {product.category}
                       </span>
-                      {garageBike && (
-                        <button
-                          onClick={handleClearGarage}
-                          className="text-[9px] font-bold text-brand-red hover:underline uppercase"
-                        >
-                          Clear
-                        </button>
-                      )}
                     </div>
 
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted mb-1">
-                          Maker
-                        </label>
-                        <select
-                          value={selectedMaker}
-                          onChange={(e) => {
-                            setSelectedMaker(e.target.value);
-                            setSelectedModel("");
-                            setSelectedYear("");
-                          }}
-                          className="w-full bg-brand-bg border border-brand-border rounded p-2 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-primary"
-                        >
-                          <option value="">Choose Maker</option>
-                          {motorcycles.map((m) => (
-                            <option key={m.maker} value={m.maker}>{m.maker}</option>
-                          ))}
-                        </select>
+                    {/* Product details info */}
+                    <div className="flex-grow flex flex-col p-4">
+                      {/* Brand */}
+                      <span className="text-[10px] font-extrabold text-brand-red uppercase tracking-widest mb-1 font-headings">
+                        {product.brand}
+                      </span>
+
+                      {/* Title */}
+                      <h3 className="font-headings font-extrabold text-xs sm:text-sm text-brand-primary tracking-tight uppercase line-clamp-2 mb-2 min-h-[36px] group-hover:text-brand-red transition-colors">
+                        <Link href={`/products/${product.handle}`}>
+                          {product.title}
+                        </Link>
+                      </h3>
+
+                      {/* Compatibility indicator */}
+                      <div className="mb-3 min-h-[22px] flex items-center">
+                        {garageBike ? (
+                          isProductCompatible(product, garageBike) ? (
+                            <span className="text-[9px] bg-emerald-50 text-emerald-700 font-bold border border-emerald-200 px-1.5 py-0.5 rounded uppercase tracking-wide">
+                              ✓ Fits Your Bike
+                            </span>
+                          ) : (
+                            <span className="text-[9px] bg-red-50 text-red-700 font-bold border border-red-200 px-1.5 py-0.5 rounded uppercase tracking-wide">
+                              ✗ Does Not Fit
+                            </span>
+                          )
+                        ) : (
+                          <p className="text-[9.5px] text-brand-muted font-semibold uppercase tracking-wider truncate">
+                            Fits: {product.compatibility.slice(0, 1).join(", ")}
+                            {product.compatibility.length > 1 && " & more"}
+                          </p>
+                        )}
                       </div>
 
-                      <div>
-                        <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted mb-1">
-                          Model
-                        </label>
-                        <select
-                          value={selectedModel}
-                          disabled={!selectedMaker}
-                          onChange={(e) => {
-                            setSelectedModel(e.target.value);
-                            setSelectedYear("");
-                          }}
-                          className="w-full bg-brand-bg border border-brand-border rounded p-2 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-primary disabled:opacity-50"
-                        >
-                          <option value="">Choose Model</option>
-                          {motorcycles.find((m) => m.maker === selectedMaker)?.models.map((mod) => (
-                            <option key={mod} value={mod}>{mod}</option>
-                          ))}
-                        </select>
+                      {/* Price & Rating */}
+                      <div className="flex items-center justify-between mt-auto pt-2 border-t border-brand-border mb-3">
+                        <span className="text-sm font-bold text-brand-primary font-headings">
+                          ₹{parseInt(product.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
+                        </span>
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-amber-500">
+                          <Star className="w-3 h-3 fill-amber-400 stroke-amber-400" />
+                          <span>{product.rating}</span>
+                        </div>
                       </div>
 
-                      <div>
-                        <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted mb-1">
-                          Year
-                        </label>
-                        <select
-                          value={selectedYear}
-                          disabled={!selectedModel}
-                          onChange={(e) => setSelectedYear(e.target.value)}
-                          className="w-full bg-brand-bg border border-brand-border rounded p-2 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-primary disabled:opacity-50"
-                        >
-                          <option value="">Choose Year (Optional)</option>
-                          {years.map((y) => (
-                            <option key={y} value={y}>{y}</option>
-                          ))}
-                        </select>
-                      </div>
-
+                      {/* Add to cart CTA */}
                       <button
-                        onClick={handleSaveGarage}
-                        disabled={!selectedMaker || !selectedModel}
-                        className="w-full bg-brand-primary hover:bg-brand-red disabled:bg-brand-muted text-white text-[10px] font-bold font-headings uppercase py-2.5 rounded tracking-wider transition-colors flex items-center justify-center gap-1.5"
+                        onClick={(e) => handleQuickAdd(e, product)}
+                        disabled={addingId === product.id}
+                        className="w-full bg-[#1E1E1E] hover:bg-brand-red text-white py-3 font-headings text-[11px] font-bold uppercase tracking-widest transition-colors duration-300 flex items-center justify-center gap-2 rounded-sm"
                       >
-                        <Wrench className="w-3.5 h-3.5" /> Filter entire page
+                        {addingId === product.id ? (
+                          <>
+                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ADDING...
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingBag className="w-3.5 h-3.5" />
+                            ADD TO CART
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
-
-                  {/* SIDEBAR FILTERS (CATEGORIES, BRANDS, PRICE) */}
-                  <div className="bg-white border border-brand-border p-5 rounded-lg space-y-6">
-                    <div className="flex justify-between items-center pb-3 border-b border-brand-border">
-                      <span className="font-headings font-extrabold text-[11px] text-brand-primary tracking-wider uppercase flex items-center gap-1.5">
-                        <Filter className="w-4 h-4 text-brand-red" />
-                        Product Filters
-                      </span>
-                      {(selectedBrands.length > 0 || selectedCategories.length > 0 || selectedMaxPrice < maxPrice || searchQuery || garageBike) && (
-                        <button
-                          onClick={handleResetFilters}
-                          className="text-[9px] font-bold text-brand-red hover:underline uppercase tracking-wider flex items-center gap-0.5"
-                        >
-                          <RotateCcw className="w-2.5 h-2.5" /> Reset
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Categories */}
-                    {uniqueCategories.length > 0 && (
-                      <div className="space-y-2">
-                        <h4 className="font-headings font-extrabold text-[10px] tracking-wider text-brand-primary uppercase">
-                          CATEGORIES
-                        </h4>
-                        <div className="space-y-1.5 text-xs text-brand-primary">
-                          {/* Visible categories */}
-                          {uniqueCategories.slice(0, 4).map((cat) => (
-                            <label key={cat} className="flex items-center gap-2 cursor-pointer font-medium">
-                              <input
-                                type="checkbox"
-                                checked={selectedCategories.includes(cat)}
-                                onChange={() => handleCategoryChange(cat)}
-                                className="rounded border-brand-border text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
-                              />
-                              {cat}
-                            </label>
-                          ))}
-
-                          {/* Expandable Categories */}
-                          <AnimatePresence initial={false}>
-                            {showAllCategories && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.25, ease: "easeInOut" }}
-                                className="overflow-hidden space-y-1.5"
-                              >
-                                {uniqueCategories.slice(4).map((cat) => (
-                                  <label key={cat} className="flex items-center gap-2 cursor-pointer font-medium pt-1.5">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedCategories.includes(cat)}
-                                      onChange={() => handleCategoryChange(cat)}
-                                      className="rounded border-brand-border text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
-                                    />
-                                    {cat}
-                                  </label>
-                                ))}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-
-                          {/* Show More / Show Less Button */}
-                          {uniqueCategories.length > 4 && (
-                            <button
-                              onClick={() => setShowAllCategories(!showAllCategories)}
-                              className="text-[9.5px] font-bold text-brand-red hover:text-red-700 transition-colors uppercase tracking-wider pt-1.5 flex items-center gap-0.5"
-                            >
-                              {showAllCategories 
-                                ? `- Show Less` 
-                                : `+ Show More (+${uniqueCategories.length - 4})`}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Brands */}
-                    {uniqueBrands.length > 0 && (
-                      <div className="space-y-2 border-t border-brand-border pt-4">
-                        <h4 className="font-headings font-extrabold text-[10px] tracking-wider text-brand-primary uppercase">
-                          BRANDS
-                        </h4>
-                        <div className="space-y-1.5 text-xs text-brand-primary">
-                          {/* Visible Brands */}
-                          {uniqueBrands.slice(0, 4).map((brand) => (
-                            <label key={brand} className="flex items-center gap-2 cursor-pointer font-medium">
-                              <input
-                                type="checkbox"
-                                checked={selectedBrands.includes(brand)}
-                                onChange={() => handleBrandChange(brand)}
-                                className="rounded border-brand-border text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
-                              />
-                              {brand}
-                            </label>
-                          ))}
-
-                          {/* Expandable Brands */}
-                          <AnimatePresence initial={false}>
-                            {showAllBrands && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.25, ease: "easeInOut" }}
-                                className="overflow-hidden space-y-1.5"
-                              >
-                                {uniqueBrands.slice(4).map((brand) => (
-                                  <label key={brand} className="flex items-center gap-2 cursor-pointer font-medium pt-1.5">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedBrands.includes(brand)}
-                                      onChange={() => handleBrandChange(brand)}
-                                      className="rounded border-brand-border text-brand-red focus:ring-brand-red w-3.5 h-3.5 cursor-pointer"
-                                    />
-                                    {brand}
-                                  </label>
-                                ))}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-
-                          {/* Show More / Show Less Button */}
-                          {uniqueBrands.length > 4 && (
-                            <button
-                              onClick={() => setShowAllBrands(!showAllBrands)}
-                              className="text-[9.5px] font-bold text-brand-red hover:text-red-700 transition-colors uppercase tracking-wider pt-1.5 flex items-center gap-0.5"
-                            >
-                              {showAllBrands 
-                                ? `- Show Less` 
-                                : `+ Show More (+${uniqueBrands.length - 4})`}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Price Range Slider */}
-                    <div className="space-y-2 border-t border-brand-border pt-4">
-                      <div className="flex justify-between items-center">
-                        <h4 className="font-headings font-extrabold text-[10px] tracking-wider text-brand-primary uppercase">
-                          PRICE RANGE
-                        </h4>
-                        <span className="text-[10px] font-bold text-brand-red font-headings">
-                          Up to ₹{selectedMaxPrice.toLocaleString("en-IN")}
-                        </span>
-                      </div>
-                      <div className="pt-2">
-                        <input
-                          type="range"
-                          min="0"
-                          max={maxPrice}
-                          value={selectedMaxPrice}
-                          onChange={(e) => setSelectedMaxPrice(Number(e.target.value))}
-                          className="w-full accent-brand-red cursor-pointer"
-                        />
-                        <div className="flex justify-between text-[9px] text-brand-muted font-bold font-headings mt-1">
-                          <span>₹0</span>
-                          <span>₹{maxPrice.toLocaleString("en-IN")}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </aside>
-
-          {/* PRODUCT RESULTS GRID */}
-          <main className="flex-1 space-y-6">
-            
-            {/* Top Controls Bar */}
-            <div className="bg-white border border-brand-border p-4 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-4 text-sm font-semibold">
-              <span className="text-brand-muted text-xs uppercase tracking-wider">
-                {filteredProducts.length} {filteredProducts.length === 1 ? "Product" : "Products"} found
-              </span>
-              
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <span className="text-brand-muted text-xs uppercase tracking-wider whitespace-nowrap">Sort By:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-brand-bg border border-brand-border rounded px-3 py-1.5 text-xs text-brand-primary font-semibold focus:outline-none focus:border-brand-primary w-full sm:w-auto"
-                >
-                  <option value="default">Relevance</option>
-                  <option value="price-asc">Price: Low to High</option>
-                  <option value="price-desc">Price: High to Low</option>
-                  <option value="rating">Top Rated</option>
-                </select>
+                ))}
               </div>
-            </div>
 
-            {/* Results Grid */}
-            {filteredProducts.length === 0 ? (
-              <div className="bg-white border border-brand-border rounded-lg text-center py-20 px-4 space-y-4">
-                <SlidersHorizontal className="w-12 h-12 text-brand-muted mx-auto stroke-[1.2]" />
-                <h3 className="text-lg font-headings font-extrabold text-brand-primary uppercase">No upgrades found</h3>
-                <p className="text-brand-muted text-sm max-w-sm mx-auto">
-                  Try adjusting your filters, selecting another brand/category, or resetting to view all items.
-                </p>
-                <button
-                  onClick={handleResetFilters}
-                  className="bg-brand-primary text-white px-5 py-2.5 font-headings text-xs font-bold uppercase tracking-wider hover:bg-brand-red transition-colors"
-                >
-                  Reset All Filters
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-10">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredProducts.slice(0, visibleCount).map((product, idx) => (
-                    <div
-                      key={product.id}
-                      className="group flex flex-col w-full bg-transparent"
-                    >
-                      {/* Image */}
-                      <div className="relative aspect-[4/5] w-full bg-[#F3F3F0] overflow-hidden">
-                        <Link href={`/products/${product.handle}`}>
-                          <Image
-                            src={product.images[0]?.url}
-                            alt={product.images[0]?.altText || product.title}
-                            fill
-                            className="object-contain p-6 transition-transform duration-700 ease-out group-hover:scale-105"
-                            sizes="(max-w-768px) 100vw, 25vw"
-                            priority={idx < 6}
-                          />
-                        </Link>
-
-                        {/* Wishlist toggle */}
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleWishlist(product);
-                          }}
-                          className="absolute top-4 right-4 p-2 bg-white/80 hover:bg-white rounded-full text-brand-primary hover:text-brand-red shadow-sm transition-all duration-200 z-10"
-                          aria-label="Add to wishlist"
-                        >
-                          <Heart
-                            className={`w-4 h-4 transition-colors ${
-                              isInWishlist(product.id)
-                                ? "text-brand-red fill-brand-red"
-                                : "text-brand-primary"
-                            }`}
-                          />
-                        </button>
-                      </div>
-
-                      {/* Product details info */}
-                      <div className="flex-grow flex flex-col pt-4 pb-4">
-                        {/* Brand */}
-                        <span className="text-[10px] font-extrabold text-brand-red uppercase tracking-widest mb-1.5">
-                          {product.brand}
-                        </span>
-
-                        {/* Title */}
-                        <h3 className="font-headings font-extrabold text-sm text-brand-primary tracking-tight uppercase line-clamp-1 mb-1 group-hover:text-brand-red transition-colors">
-                          <Link href={`/products/${product.handle}`}>
-                            {product.title}
-                          </Link>
-                        </h3>
-
-                        {/* Compatibility indicator */}
-                        <div className="mb-3 min-h-[22px] flex items-center">
-                          {garageBike ? (
-                            isProductCompatible(product, garageBike) ? (
-                              <span className="text-[9px] bg-emerald-50 text-emerald-700 font-bold border border-emerald-200 px-1.5 py-0.5 rounded uppercase tracking-wide">
-                                ✓ Fits Your Bike
-                              </span>
-                            ) : (
-                              <span className="text-[9px] bg-red-50 text-red-700 font-bold border border-red-200 px-1.5 py-0.5 rounded uppercase tracking-wide">
-                                ✗ Does Not Fit
-                              </span>
-                            )
-                          ) : (
-                            <p className="text-[10px] text-brand-muted font-semibold uppercase tracking-wider">
-                              Fits: {product.compatibility.slice(0, 1).join(", ")}
-                              {product.compatibility.length > 1 && " & more"}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Price */}
-                        <div className="flex items-baseline gap-2 mb-4">
-                          <span className="text-sm font-bold text-brand-primary">
-                            ₹{parseInt(product.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
-                          </span>
-                        </div>
-
-                        {/* Add to cart CTA */}
-                        <button
-                          onClick={(e) => handleQuickAdd(e, product)}
-                          disabled={addingId === product.id}
-                          className="w-full bg-[#1E1E1E] hover:bg-brand-red text-white py-3.5 font-headings text-xs font-bold uppercase tracking-widest transition-colors duration-300 flex items-center justify-center gap-2"
-                        >
-                          {addingId === product.id ? (
-                            <>
-                              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                              ADDING...
-                            </>
-                          ) : (
-                            <>
-                              <ShoppingBag className="w-3.5 h-3.5" />
-                              ADD TO CART
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+              {/* Load More Button */}
+              {visibleCount < filteredProducts.length && (
+                <div className="flex justify-center pt-8 border-t border-brand-border">
+                  <button
+                    onClick={() => setVisibleCount((prev) => prev + 24)}
+                    className="bg-[#1E1E1E] hover:bg-brand-red text-white px-8 py-3.5 font-headings text-xs font-bold uppercase tracking-widest transition-all duration-300 flex items-center gap-2 shadow-md hover:shadow-lg rounded"
+                  >
+                    Load More Upgrades ({filteredProducts.length - visibleCount} Remaining)
+                  </button>
                 </div>
+              )}
+            </div>
+          )}
+        </main>
 
-                {/* Load More Button */}
-                {visibleCount < filteredProducts.length && (
-                  <div className="flex justify-center pt-8 border-t border-brand-border">
-                    <button
-                      onClick={() => setVisibleCount((prev) => prev + 24)}
-                      className="bg-[#1E1E1E] hover:bg-brand-red text-white px-8 py-3.5 font-headings text-xs font-bold uppercase tracking-widest transition-all duration-300 flex items-center gap-2 shadow-md hover:shadow-lg rounded"
-                    >
-                      Load More Upgrades ({filteredProducts.length - visibleCount} Remaining)
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </main>
-
-        </div>
       </div>
     </div>
   );
@@ -785,11 +748,10 @@ export default function AllProductsPage() {
     <Suspense fallback={
       <div className="min-h-screen flex flex-col justify-center items-center bg-brand-bg pt-24">
         <div className="w-10 h-10 border-4 border-brand-primary border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-brand-muted text-sm font-semibold tracking-wider uppercase">Loading Catalog...</p>
+        <p className="text-brand-muted text-sm font-semibold tracking-wider uppercase font-headings">Loading Catalog...</p>
       </div>
     }>
       <ProductsContent />
     </Suspense>
   );
 }
-
