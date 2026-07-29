@@ -6,10 +6,21 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, ShieldCheck, Truck } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import {
+  calculateEstimatedShipping,
+  calculateEstimatedTotal,
+  formatShippingCost,
+  getFreeShippingMessage,
+  isFreeShipping,
+} from "@/lib/shipping";
 
 export default function CartDrawer() {
   const { cart, isOpen, setIsOpen, updateQuantity, removeItem, cartSubtotal, clearCart } = useCart();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+
+  const estimatedShipping = calculateEstimatedShipping(cartSubtotal);
+  const estimatedTotal = calculateEstimatedTotal(cartSubtotal);
+  const freeShippingMessage = getFreeShippingMessage(cartSubtotal);
 
   const handleCheckout = async () => {
     setIsCheckingOut(true);
@@ -97,7 +108,7 @@ export default function CartDrawer() {
         if ((window as any).gtag) {
           (window as any).gtag("event", "begin_checkout", {
             currency: "INR",
-            value: cartSubtotal,
+            value: estimatedTotal,
             items: cart.lines.map(line => ({
               item_id: line.selectedVariant.id,
               item_name: line.product.title,
@@ -109,7 +120,7 @@ export default function CartDrawer() {
         // Meta Pixel InitiateCheckout
         if ((window as any).fbq) {
           (window as any).fbq("track", "InitiateCheckout", {
-            value: cartSubtotal,
+            value: estimatedTotal,
             currency: "INR",
             content_ids: cart.lines.map(line => line.selectedVariant.id),
             content_type: "product",
@@ -254,18 +265,41 @@ export default function CartDrawer() {
             {/* Footer / Summary */}
             {cart.lines.length > 0 && (
               <div className="p-6 border-t border-brand-border bg-brand-bg space-y-4">
+                {freeShippingMessage && (
+                  <div
+                    className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold ${
+                      isFreeShipping(cartSubtotal)
+                        ? "bg-emerald-500/10 text-emerald-700 border border-emerald-500/20"
+                        : "bg-brand-primary/5 text-brand-primary border border-brand-border"
+                    }`}
+                  >
+                    <Truck className="w-4 h-4 flex-shrink-0" />
+                    <span>{freeShippingMessage}</span>
+                  </div>
+                )}
+
                 <div className="space-y-2 text-sm text-brand-primary">
                   <div className="flex justify-between">
-                    <span className="text-brand-muted">Shipping</span>
-                    <span className="font-semibold text-emerald-600">FREE</span>
+                    <span className="text-brand-muted">Subtotal</span>
+                    <span className="font-semibold">₹{cartSubtotal.toLocaleString("en-IN")}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-brand-muted">GST (included)</span>
-                    <span className="font-semibold">Calculated at Checkout</span>
+                    <span className="text-brand-muted">Shipping</span>
+                    <span
+                      className={`font-semibold ${
+                        estimatedShipping === 0 ? "text-emerald-600" : "text-brand-primary"
+                      }`}
+                    >
+                      {formatShippingCost(estimatedShipping)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-brand-muted">GST</span>
+                    <span className="font-semibold text-brand-muted">Prices include GST</span>
                   </div>
                   <div className="flex justify-between border-t border-brand-border pt-3 text-base font-bold font-headings">
-                    <span>ESTIMATED SUBTOTAL</span>
-                    <span className="text-brand-red">₹{cartSubtotal.toLocaleString("en-IN")}</span>
+                    <span>ESTIMATED TOTAL</span>
+                    <span className="text-brand-red">₹{estimatedTotal.toLocaleString("en-IN")}</span>
                   </div>
                 </div>
 

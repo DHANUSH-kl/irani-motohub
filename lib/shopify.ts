@@ -568,6 +568,11 @@ const isShopifyConfigured = (): boolean => {
   return typeof DOMAIN === "string" && DOMAIN.length > 0 && typeof ACCESS_TOKEN === "string" && ACCESS_TOKEN.length > 0;
 };
 
+/** Mock auth is only allowed in local development when Shopify is not configured. */
+const isMockAuthEnabled = (): boolean => {
+  return process.env.NODE_ENV !== "production" && !isShopifyConfigured();
+};
+
 async function shopifyFetch<T>(query: string, variables = {}): Promise<{ data?: T; errors?: any } | null> {
   const isClient = typeof window !== "undefined";
 
@@ -1894,11 +1899,18 @@ export async function customerRegister(
         return { customer, errors: [] };
       }
     } catch (e) {
-      console.warn("Shopify register call failed, falling back to mock database", e);
+      console.warn("Shopify register call failed", e);
+      return { customer: null, errors: ["Registration failed. Please try again later."] };
     }
+
+    return { customer: null, errors: ["Registration failed. Please try again later."] };
   }
 
-  // FALLBACK MOCK REGISTER
+  if (!isMockAuthEnabled()) {
+    return { customer: null, errors: ["Authentication is unavailable. Please try again later."] };
+  }
+
+  // Local dev fallback when Shopify is not configured
   const users = getMockUsers();
   const emailLower = email.toLowerCase().trim();
   const exists = users.find((u) => u.email.toLowerCase().trim() === emailLower);
@@ -1980,11 +1992,18 @@ export async function customerLogin(
         }
       }
     } catch (e) {
-      console.warn("Shopify login call failed, falling back to mock database", e);
+      console.warn("Shopify login call failed", e);
+      return { customer: null, errors: ["Login failed. Please try again later."] };
     }
+
+    return { customer: null, errors: ["Unrecognized email address or password. Please try again."] };
   }
 
-  // FALLBACK MOCK LOGIN
+  if (!isMockAuthEnabled()) {
+    return { customer: null, errors: ["Authentication is unavailable. Please try again later."] };
+  }
+
+  // Local dev fallback when Shopify is not configured
   const users = getMockUsers();
   const matchedUser = users.find(
     (u) => u.email.toLowerCase().trim() === emailLower && u.password === password
@@ -2015,6 +2034,7 @@ export async function customerLogin(
  */
 export async function customerGet(accessToken: string): Promise<Customer | null> {
   if (accessToken.startsWith("mock-token-")) {
+    if (!isMockAuthEnabled()) return null;
     const email = accessToken.replace("mock-token-", "").toLowerCase().trim();
     const users = getMockUsers();
     const matchedUser = users.find((u) => u.email.toLowerCase().trim() === email);
