@@ -248,7 +248,7 @@ export default function FeaturedProducts() {
               className="flex gap-6"
               style={{ width: displayedProducts.length * cardWidth + (displayedProducts.length - 1) * gap }}
             >
-              {displayedProducts.map((product) => (
+              {displayedProducts.map((product, idx) => (
                 <div
                   key={product.id}
                   className="group flex flex-col bg-transparent flex-shrink-0"
@@ -263,7 +263,7 @@ export default function FeaturedProducts() {
                         fill
                         className="object-contain p-6 transition-transform duration-700 ease-out group-hover:scale-105"
                         sizes="(max-w-768px) 100vw, 25vw"
-                        priority
+                        priority={idx < 2}
                         draggable={false}
                       />
                     </Link>

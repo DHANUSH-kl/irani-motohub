@@ -57,14 +57,13 @@ export default function CollectionPage({
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [addingId, setAddingId] = useState<string | null>(null);
 
-  // Fetch collection & all products data
+  // Fetch collection & products data
   useEffect(() => {
     const loadCollectionData = async () => {
       setLoading(true);
-      const [colData, collectionsData, allProdsData, collectionProdsData] = await Promise.all([
+      const [colData, collectionsData, collectionProdsData] = await Promise.all([
         getCollection(handle),
         getCollections(),
-        getProducts(),
         getProducts({ collectionHandle: handle })
       ]);
 
@@ -72,14 +71,14 @@ export default function CollectionPage({
       setAllCollections(collectionsData);
       setSelectedCollection(handle);
 
-      // Use collection specific products if available, or fall back to full catalog
-      const baseProds = collectionProdsData.length > 0 ? collectionProdsData : allProdsData;
+      // Use collection specific products
+      const baseProds = collectionProdsData;
       setProducts(baseProds);
       setFilteredProducts(baseProds);
 
-      // Extract makers for garage filter
+      // Extract makers for garage filter from collection products
       const makerModelsMap: Record<string, Set<string>> = {};
-      allProdsData.forEach((product) => {
+      baseProds.forEach((product) => {
         if (product.compatibility) {
           product.compatibility.forEach((comp) => {
             if (comp === "All Motorcycles" || comp === "Universal") return;
@@ -103,7 +102,7 @@ export default function CollectionPage({
         maker,
         models: Array.from(modelsSet)
       }));
-      setMotorcycles(extracted.length > 0 ? extracted : getActiveMotorcycleGroups(allProdsData));
+      setMotorcycles(extracted.length > 0 ? extracted : getActiveMotorcycleGroups(baseProds));
 
       setLoading(false);
     };
@@ -250,9 +249,42 @@ export default function CollectionPage({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col justify-center items-center bg-brand-bg pt-24">
-        <div className="w-10 h-10 border-4 border-brand-primary border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-brand-muted text-sm font-semibold tracking-wider uppercase font-headings">Loading Collection...</p>
+      <div className="min-h-screen bg-brand-bg pt-20">
+        <div className="bg-[#121212] text-white py-14 border-b border-white/10">
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="space-y-3 max-w-3xl">
+              <div className="h-3 w-28 bg-white/10 rounded animate-pulse" />
+              <div className="h-10 w-72 bg-white/10 rounded animate-pulse" />
+              <div className="h-4 w-80 bg-white/5 rounded animate-pulse" />
+            </div>
+          </div>
+        </div>
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white border border-brand-border rounded-xl p-5 shadow-lg mb-8">
+            <div className="flex items-center gap-4 pb-4">
+              <div className="h-10 w-96 bg-gray-100 rounded-lg animate-pulse" />
+              <div className="h-4 w-32 bg-gray-100 rounded animate-pulse ml-auto" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="bg-white border border-brand-border rounded-lg overflow-hidden">
+                <div className="aspect-[4/5] w-full bg-gray-100 animate-pulse" />
+                <div className="p-4 space-y-3">
+                  <div className="h-2.5 w-12 bg-red-100 rounded animate-pulse" />
+                  <div className="h-3.5 w-3/4 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-3 w-1/2 bg-gray-100 rounded animate-pulse" />
+                  <div className="h-px bg-brand-border" />
+                  <div className="flex justify-between items-center">
+                    <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-3 w-8 bg-amber-100 rounded animate-pulse" />
+                  </div>
+                  <div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -572,7 +604,7 @@ export default function CollectionPage({
                           fill
                           className="object-contain p-6 transition-transform duration-700 ease-out group-hover:scale-105"
                           sizes="(max-w-768px) 100vw, 25vw"
-                          priority={idx < 8}
+                          priority={idx < 4}
                         />
                       </Link>
 
