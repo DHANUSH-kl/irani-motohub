@@ -11,6 +11,7 @@ import { useWishlist } from "@/context/WishlistContext";
 
 export default function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { addItem } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [addingId, setAddingId] = useState<string | null>(null);
@@ -38,8 +39,10 @@ export default function FeaturedProducts() {
 
   useEffect(() => {
     const fetchProds = async () => {
+      setIsLoading(true);
       const allProds = await getProducts();
       setProducts(allProds);
+      setIsLoading(false);
     };
     fetchProds();
 
@@ -222,7 +225,39 @@ export default function FeaturedProducts() {
         </div>
 
         {/* Carousel / Product track container */}
-        {displayedProducts.length === 0 ? (
+        {isLoading ? (
+          /* Skeleton Loading Cards */
+          <div className="flex gap-6 overflow-hidden">
+            {[...Array(4)].map((_, i) => (
+              <div
+                key={i}
+                className="flex-shrink-0 flex flex-col bg-transparent animate-pulse"
+                style={{ width: `calc((100% - ${gap * 3}px) / 4)`, minWidth: 220 }}
+              >
+                {/* Image skeleton */}
+                <div className="relative aspect-[4/5] w-full bg-gray-100 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-200/70 to-gray-100 skeleton-shimmer" />
+                </div>
+                {/* Info skeleton */}
+                <div className="pt-4 pb-4 space-y-3">
+                  {/* Brand */}
+                  <div className="h-2.5 w-16 bg-gray-200 rounded-sm skeleton-shimmer" />
+                  {/* Title */}
+                  <div className="h-4 w-3/4 bg-gray-200 rounded-sm skeleton-shimmer" />
+                  {/* Compatibility */}
+                  <div className="h-3 w-24 bg-gray-100 rounded-sm skeleton-shimmer" />
+                  {/* Price */}
+                  <div className="flex items-baseline gap-2">
+                    <div className="h-4 w-20 bg-gray-200 rounded-sm skeleton-shimmer" />
+                    <div className="h-3 w-14 bg-gray-100 rounded-sm skeleton-shimmer" />
+                  </div>
+                  {/* Button */}
+                  <div className="h-12 w-full bg-gray-200 rounded-sm skeleton-shimmer" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : displayedProducts.length === 0 ? (
           <div className="text-center py-12 text-gray-500 font-semibold">
             No featured products compatible with your {garageBike?.maker} {garageBike?.model} at the moment.
           </div>
