@@ -264,7 +264,11 @@ export default function NewArrivals() {
 
                   {/* Wishlist Heart */}
                   <button
-                    onClick={() => toggleWishlist(product)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleWishlist(product);
+                    }}
                     className="absolute top-4 right-4 p-2 bg-[#121212]/80 hover:bg-brand-red rounded-full text-white shadow-sm transition-all duration-200 z-10"
                     aria-label="Add to wishlist"
                   >

@@ -42,18 +42,18 @@ export default function Footer() {
             </h4>
             <ul className="space-y-3 text-sm">
               <li>
-                <Link href="/collections/performance-air-filters" className="text-gray-400 hover:text-white transition-colors duration-200 block">
-                  Performance Air Filters
+                <Link href="/collections/exhaust-systems" className="text-gray-400 hover:text-white transition-colors duration-200 block">
+                  Exhaust Systems
                 </Link>
               </li>
               <li>
-                <Link href="/collections/engine-performance" className="text-gray-400 hover:text-white transition-colors duration-200 block">
-                  Engine & Performance
+                <Link href="/collections/chain-sprocket-kit" className="text-gray-400 hover:text-white transition-colors duration-200 block">
+                  Chain & Sprocket Kits
                 </Link>
               </li>
               <li>
-                <Link href="/collections/riding-gear" className="text-gray-400 hover:text-white transition-colors duration-200 block">
-                  Riding Gear
+                <Link href="/collections/lights-electronics" className="text-gray-400 hover:text-white transition-colors duration-200 block">
+                  Lights & Electronics
                 </Link>
               </li>
             </ul>

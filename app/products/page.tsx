@@ -54,75 +54,88 @@ function ProductsContent() {
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [addingId, setAddingId] = useState<string | null>(null);
 
-  // Initial Data Fetch
+  // Load collections once on mount
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      const [allProds, allCols] = await Promise.all([
-        getProducts(),
-        getCollections()
-      ]);
-      
-      setProducts(allProds);
+    const loadStaticData = async () => {
+      const allCols = await getCollections();
       setCollections(allCols);
+    };
+    loadStaticData();
+  }, []);
 
-      // Extract makers, models, and years from products
-      const makerModelsMap: Record<string, Set<string>> = {};
-      const yearsSet = new Set<string>();
+  // Fetch products when selectedCollection changes
+  useEffect(() => {
+    const loadProducts = async () => {
+      setLoading(true);
+      try {
+        const prods = await getProducts({
+          collectionHandle: selectedCollection === "all" ? undefined : selectedCollection
+        });
+        setProducts(prods);
 
-      allProds.forEach((product) => {
-        if (product.compatibility) {
-          product.compatibility.forEach((comp) => {
-            if (comp === "All Motorcycles" || comp === "Universal") return;
-            const parts = comp.split(" ");
-            if (parts.length >= 2) {
-              let maker = parts[0];
-              let model = parts.slice(1).join(" ");
-              
-              if (maker.toLowerCase() === "royal" && parts[1]?.toLowerCase() === "enfield") {
-                maker = "Royal Enfield";
-                model = parts.slice(2).join(" ");
-              }
-              
-              if (maker && model) {
-                if (!makerModelsMap[maker]) {
-                  makerModelsMap[maker] = new Set();
+        // Extract makers, models, and years from products to keep garage lists updated
+        const makerModelsMap: Record<string, Set<string>> = {};
+        const yearsSet = new Set<string>();
+
+        prods.forEach((product) => {
+          if (product.compatibility) {
+            product.compatibility.forEach((comp) => {
+              if (comp === "All Motorcycles" || comp === "Universal") return;
+              const parts = comp.split(" ");
+              if (parts.length >= 2) {
+                let maker = parts[0];
+                let model = parts.slice(1).join(" ");
+                
+                if (maker.toLowerCase() === "royal" && parts[1]?.toLowerCase() === "enfield") {
+                  maker = "Royal Enfield";
+                  model = parts.slice(2).join(" ");
                 }
-                makerModelsMap[maker].add(model);
+                
+                if (maker && model) {
+                  if (!makerModelsMap[maker]) {
+                    makerModelsMap[maker] = new Set();
+                  }
+                  makerModelsMap[maker].add(model);
+                }
               }
-            }
 
-            const yearMatch = comp.match(/\b(20\d{2})\b/);
-            if (yearMatch) {
-              yearsSet.add(yearMatch[1]);
-            }
-          });
-        }
+              const yearMatch = comp.match(/\b(20\d{2})\b/);
+              if (yearMatch) {
+                yearsSet.add(yearMatch[1]);
+              }
+            });
+          }
 
-        if (product.tags) {
-          product.tags.forEach((tag) => {
-            const yearMatch = tag.match(/\b(20\d{2})\b/);
-            if (yearMatch) {
-              yearsSet.add(yearMatch[1]);
-            }
-          });
-        }
-      });
+          if (product.tags) {
+            product.tags.forEach((tag) => {
+              const yearMatch = tag.match(/\b(20\d{2})\b/);
+              if (yearMatch) {
+                yearsSet.add(yearMatch[1]);
+              }
+            });
+          }
+        });
 
-      const extractedMotorcycles = Object.entries(makerModelsMap).map(([maker, modelsSet]) => ({
-        maker,
-        models: Array.from(modelsSet)
-      }));
-      setMotorcycles(extractedMotorcycles.length > 0 ? extractedMotorcycles : getActiveMotorcycleGroups(allProds));
+        const extractedMotorcycles = Object.entries(makerModelsMap).map(([maker, modelsSet]) => ({
+          maker,
+          models: Array.from(modelsSet)
+        }));
+        setMotorcycles(extractedMotorcycles.length > 0 ? extractedMotorcycles : getActiveMotorcycleGroups(prods));
 
-      const extractedYears = Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
-      setYears(extractedYears.length > 0 ? extractedYears : getActiveYears(allProds));
+        const extractedYears = Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
+        setYears(extractedYears.length > 0 ? extractedYears : getActiveYears(prods));
 
-      setLoading(false);
+      } catch (e) {
+        console.error("Failed to load products for collection", selectedCollection, e);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    loadData();
+    loadProducts();
+  }, [selectedCollection]);
 
+  useEffect(() => {
     // Load active bike from garage cache
     const saved = localStorage.getItem("rider_garage");
     if (saved) {
@@ -196,15 +209,7 @@ function ProductsContent() {
       );
     }
 
-    // Filter by Selected Collection
-    if (selectedCollection && selectedCollection !== "all") {
-      result = result.filter((p) => {
-        const catSlug = p.category.toLowerCase().replace(/ & /g, "-").replace(/ /g, "-");
-        const tagMatch = p.tags?.some((t) => t.toLowerCase() === selectedCollection || t.toLowerCase() === `col-${selectedCollection}`);
-        const textMatch = p.category.toLowerCase().includes(selectedCollection.replace(/-/g, " "));
-        return catSlug === selectedCollection || tagMatch || textMatch;
-      });
-    }
+
 
     // Filter by Category
     if (selectedCategory && selectedCategory !== "all") {
@@ -404,10 +409,10 @@ function ProductsContent() {
           </div>
 
           {/* Grid of Dropdown Select Controls */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
             
-            {/* 1. COLLECTION DROPDOWN */}
-            <div className="space-y-1">
+            {/* 1. COLLECTION DROPDOWN (Hidden) */}
+            <div className="space-y-1 hidden">
               <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted flex items-center gap-1">
                 <Layers className="w-3 h-3 text-brand-red" /> Collection
               </label>
@@ -463,8 +468,8 @@ function ProductsContent() {
               </select>
             </div>
 
-            {/* 4. MOTORCYCLE / RIDER GARAGE DROPDOWN */}
-            <div className="space-y-1">
+            {/* 4. MOTORCYCLE / RIDER GARAGE DROPDOWN (Hidden) */}
+            <div className="space-y-1 hidden">
               <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted flex items-center gap-1">
                 <Bike className="w-3 h-3 text-brand-red" /> Bike Fitment
               </label>
@@ -544,15 +549,6 @@ function ProductsContent() {
                 Active Filters:
               </span>
               
-              {selectedCollection !== "all" && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-brand-red/10 text-brand-red text-[10px] font-bold rounded-full border border-brand-red/20 uppercase font-headings">
-                  Collection: {collections.find(c => c.handle === selectedCollection)?.title || selectedCollection}
-                  <button onClick={() => handleCollectionChange("all")} className="hover:text-black">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-
               {selectedCategory !== "all" && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-brand-red/10 text-brand-red text-[10px] font-bold rounded-full border border-brand-red/20 uppercase font-headings">
                   Category: {selectedCategory}
@@ -566,15 +562,6 @@ function ProductsContent() {
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-brand-red/10 text-brand-red text-[10px] font-bold rounded-full border border-brand-red/20 uppercase font-headings">
                   Brand: {selectedBrand}
                   <button onClick={() => setSelectedBrand("all")} className="hover:text-black">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-
-              {garageBike && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-800 text-[10px] font-bold rounded-full border border-emerald-200 uppercase font-headings">
-                  Bike: {garageBike.maker} {garageBike.model}
-                  <button onClick={handleClearGarage} className="hover:text-black">
                     <X className="w-3 h-3" />
                   </button>
                 </span>

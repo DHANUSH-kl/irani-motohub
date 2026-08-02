@@ -55,7 +55,7 @@ export default function PerformanceBanner() {
             className="pt-4"
           >
             <Link
-              href="/collections/engine-performance"
+              href="/products"
               className="bg-brand-red hover:bg-white hover:text-brand-primary text-white px-7 py-4 font-headings text-xs font-bold uppercase tracking-wider transition-all duration-300 inline-flex items-center gap-2 group"
             >
               Explore Performance Parts

@@ -351,11 +351,10 @@ export default function CollectionPage({
             </div>
           </div>
 
-          {/* Grid of Dropdown Select Controls */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
             
-            {/* 1. COLLECTION SWITCHER DROPDOWN */}
-            <div className="space-y-1">
+            {/* 1. COLLECTION SWITCHER DROPDOWN (Hidden) */}
+            <div className="space-y-1 hidden">
               <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted flex items-center gap-1">
                 <Layers className="w-3 h-3 text-brand-red" /> Collection
               </label>
@@ -411,8 +410,8 @@ export default function CollectionPage({
               </select>
             </div>
 
-            {/* 4. MOTORCYCLE FITMENT DROPDOWN */}
-            <div className="space-y-1">
+            {/* 4. MOTORCYCLE FITMENT DROPDOWN (Hidden) */}
+            <div className="space-y-1 hidden">
               <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted flex items-center gap-1">
                 <Bike className="w-3 h-3 text-brand-red" /> Bike Fitment
               </label>

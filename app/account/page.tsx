@@ -189,7 +189,7 @@ export default function AccountPage() {
                   You haven&apos;t placed any performance upgrades yet. Head over to our catalog to optimize your machine.
                 </p>
                 <Link
-                  href="/collections/performance-air-filters"
+                  href="/products"
                   className="inline-flex items-center gap-1 bg-brand-red text-white text-xs font-headings font-bold uppercase tracking-wider px-5 py-3 rounded hover:bg-red-700 transition-colors"
                 >
                   Explore Upgrades <ArrowRight className="w-3.5 h-3.5" />
@@ -234,24 +234,24 @@ export default function AccountPage() {
               <h3 className="text-sm font-bold uppercase tracking-wide text-white">Rider Quick Links</h3>
               <div className="flex flex-col gap-2.5 text-xs font-semibold text-gray-350 font-body">
                 <Link 
-                  href="/collections/performance-air-filters"
+                  href="/collections/exhaust-systems"
                   className="flex justify-between items-center p-3 rounded-lg bg-[#181818] border border-white/5 hover:border-white/15 hover:text-white transition-all group"
                 >
-                  <span>BMC Racing Filters</span>
+                  <span>Exhaust Systems Upgrade</span>
                   <ArrowRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-brand-red transition-colors" />
                 </Link>
                 <Link 
-                  href="/collections/engine-performance"
+                  href="/collections/chain-sprocket-kit"
                   className="flex justify-between items-center p-3 rounded-lg bg-[#181818] border border-white/5 hover:border-white/15 hover:text-white transition-all group"
                 >
-                  <span>Engine & Fuel Tuning</span>
+                  <span>Chain & Sprocket Tuning</span>
                   <ArrowRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-brand-red transition-colors" />
                 </Link>
                 <Link 
-                  href="/collections/touring-accessories"
+                  href="/collections/lights-electronics"
                   className="flex justify-between items-center p-3 rounded-lg bg-[#181818] border border-white/5 hover:border-white/15 hover:text-white transition-all group"
                 >
-                  <span>Touring Accessories</span>
+                  <span>Lights & Electronics</span>
                   <ArrowRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-brand-red transition-colors" />
                 </Link>
               </div>

@@ -593,7 +593,7 @@ export default function GaragePage() {
                       Explore the shop catalog and hit the heart icon on performance components or gear to add them to your custom builder.
                     </p>
                     <Link
-                      href="/collections/performance-air-filters"
+                      href="/products"
                       className="inline-block bg-[#1E1E1E] text-white hover:bg-brand-red text-xs font-bold font-headings py-2.5 px-5 uppercase tracking-wider transition-colors"
                     >
                       Explore Catalog

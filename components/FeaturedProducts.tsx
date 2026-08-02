@@ -7,14 +7,14 @@ import { motion } from "framer-motion";
 import { Heart, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react";
 import { getProducts, Product, isProductCompatible } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 
 export default function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const { addItem } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
   const [addingId, setAddingId] = useState<string | null>(null);
   
-  // Track wishlist items locally
-  const [wishlist, setWishlist] = useState<string[]>([]);
   const [garageBike, setGarageBike] = useState<{ maker: string; model: string; year?: string } | null>(null);
 
   // Slider navigation states
@@ -87,12 +87,10 @@ export default function FeaturedProducts() {
     }, 1000);
   };
 
-  const toggleWishlist = (e: React.MouseEvent, productId: string) => {
+  const handleToggleWishlist = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
     e.stopPropagation();
-    setWishlist((prev) =>
-      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
-    );
+    toggleWishlist(product);
   };
 
   // Filter products by garage bike (Limit to 8 to fit slider)
@@ -272,13 +270,13 @@ export default function FeaturedProducts() {
 
                     {/* Wishlist Heart Icon (Top-Right) */}
                     <button
-                      onClick={(e) => toggleWishlist(e, product.id)}
+                      onClick={(e) => handleToggleWishlist(e, product)}
                       className="absolute top-4 right-4 p-2 bg-white/80 hover:bg-white rounded-full text-brand-primary hover:text-brand-red shadow-sm transition-all duration-200 z-10"
                       aria-label="Add to wishlist"
                     >
                       <Heart 
                         className={`w-4 h-4 transition-colors ${
-                          wishlist.includes(product.id) ? "fill-brand-red text-brand-red" : "text-brand-primary"
+                          isInWishlist(product.id) ? "fill-brand-red text-brand-red" : "text-brand-primary"
                         }`} 
                       />
                     </button>

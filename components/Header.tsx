@@ -144,7 +144,7 @@ export default function Header() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/collections/performance-air-filters?search=${encodeURIComponent(searchQuery)}`);
+      router.push(`/products?search=${encodeURIComponent(searchQuery)}`);
       setIsSearchOpen(false);
     }
   };
@@ -255,17 +255,17 @@ export default function Header() {
               </Link>
 
               {/* Shop Link (Mega Menu Trigger) */}
-              <div className="group h-full flex items-center relative">
+              <div className="group h-full flex items-center relative pb-4 -mb-4">
                 <button className="flex items-center gap-1 font-body text-xs font-bold uppercase tracking-widest text-gray-850 hover:text-brand-red transition-colors h-full">
                   Shop Collections
                   <ChevronDown className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-300" />
                 </button>
                 
                 {/* Sliding active top border indicator */}
-                <span className="absolute bottom-0 left-0 w-0 group-hover:w-full h-[2px] bg-brand-red transition-all duration-300" />
+                <span className="absolute bottom-4 left-0 w-0 group-hover:w-full h-[2px] bg-brand-red transition-all duration-300" />
 
                 {/* Desktop Mega Menu Dropdown */}
-                <div className="absolute top-full left-0 pt-0 hidden group-hover:block w-[880px] z-50">
+                <div className="absolute top-full left-0 -mt-4 pt-4 hidden group-hover:block w-[880px] z-50">
                   <div className="bg-white/95 backdrop-blur-md border border-black/10 shadow-2xl p-8 grid grid-cols-12 gap-8 rounded-b-lg text-gray-900">
                     
                     {/* Catalog collections columns */}
@@ -277,7 +277,7 @@ export default function Header() {
                         <ul className="space-y-4 text-xs font-semibold text-gray-600">
                           {collections
                             .filter((col) =>
-                              ["performance-air-filters", "engine-performance", "ecu-tuners-piggybacks", "bike-care"].includes(col.handle)
+                              ["exhaust-systems", "chain-sprocket-kit", "suspension-upgrades", "brake-pads", "chain-lube-cleaner"].includes(col.handle)
                             )
                             .map((col) => (
                               <li key={col.id} className="group/item">
@@ -287,8 +287,10 @@ export default function Header() {
                                 >
                                   <span>{col.title}</span>
                                   <span className="block text-[10px] text-gray-500 font-normal mt-0.5 normal-case font-body">
-                                    {col.handle === "performance-air-filters" ? "BMC & K&N Italian high-flow race upgrades." : 
-                                     (col.handle === "engine-performance" || col.handle === "ecu-tuners-piggybacks") ? "FuelX ECU piggyback tuning maps." : "Premium lubricants & chain care sprays."}
+                                    {col.handle === "exhaust-systems" ? "High-performance slip-on & full system exhausts." : 
+                                     col.handle === "chain-sprocket-kit" ? "Heavy-duty brass & steel drive chains." : 
+                                     col.handle === "suspension-upgrades" ? "Adjustable rear monoshocks & front fork springs." :
+                                     col.handle === "brake-pads" ? "Sintered ceramic high-bite race pads." : "Premium synthetic chain lube & cleaners."}
                                   </span>
                                 </Link>
                               </li>
@@ -303,7 +305,7 @@ export default function Header() {
                         <ul className="space-y-4 text-xs font-semibold text-gray-600">
                           {collections
                             .filter((col) =>
-                              ["riding-gear", "technical-apparel-gear", "touring-accessories", "touring-gear"].includes(col.handle)
+                              ["lights-electronics", "phone-holder", "lever-protector", "paddock-stand", "tyre-hugger"].includes(col.handle)
                             )
                             .map((col) => (
                               <li key={col.id} className="group/item">
@@ -313,8 +315,10 @@ export default function Header() {
                                 >
                                   <span>{col.title}</span>
                                   <span className="block text-[10px] text-gray-500 font-normal mt-0.5 normal-case font-body">
-                                    {(col.handle === "riding-gear" || col.handle === "technical-apparel-gear") ? "Abrasion-resistant jackets, gloves and boots." :
-                                     "Viaterra adventure waterproof saddlebags."}
+                                    {col.handle === "lights-electronics" ? "High-intensity auxiliary pods & indicators." :
+                                     col.handle === "phone-holder" ? "Vibration-damped handlebar mounts." :
+                                     col.handle === "lever-protector" ? "CNC brake & clutch guard protection." :
+                                     col.handle === "paddock-stand" ? "Heavy-duty garage maintenance lifts." : "Rear tyre splash guards & mud protectors."}
                                   </span>
                                 </Link>
                               </li>
@@ -357,27 +361,7 @@ export default function Header() {
                 </div>
               </div>
 
-              <a
-                href="#brands-section"
-                onClick={(e) => {
-                  if (pathname === "/") {
-                    e.preventDefault();
-                    document.getElementById("brands-section")?.scrollIntoView({ behavior: "smooth" });
-                  }
-                }}
-                className="font-body text-xs font-bold uppercase tracking-widest text-gray-800 hover:text-brand-red transition-colors h-full flex items-center relative group"
-              >
-                Brands
-                <span className="absolute bottom-0 left-0 w-0 group-hover:w-full h-[2px] bg-brand-red transition-all duration-300" />
-              </a>
 
-              <Link
-                href="/about"
-                className="font-body text-xs font-bold uppercase tracking-widest text-gray-800 hover:text-brand-red transition-colors h-full flex items-center relative group"
-              >
-                About
-                <span className="absolute bottom-0 left-0 w-0 group-hover:w-full h-[2px] bg-brand-red transition-all duration-300" />
-              </Link>
 
               <a
                 href="#footer-section"
@@ -392,8 +376,8 @@ export default function Header() {
                 Contact
                 <span className="absolute bottom-0 left-0 w-0 group-hover:w-full h-[2px] bg-brand-red transition-all duration-300" />
               </a>
-            </nav>            {/* Middle/Right Box: Active Rider Garage Pill */}
-            <div className="hidden lg:flex items-center h-full px-6 border-l border-black/10 relative">
+            </nav>            {/* Middle/Right Box: Active Rider Garage Pill (Hidden) */}
+            <div className="hidden lg:hidden items-center h-full px-6 border-l border-black/10 relative">
               <button 
                 onClick={() => setIsGarageOpen(!isGarageOpen)}
                 className={`flex items-center gap-2.5 px-4 py-2 border rounded-full text-xs font-headings font-extrabold uppercase tracking-wider transition-all duration-300 ${
@@ -539,13 +523,13 @@ export default function Header() {
                 <Search className="w-4.5 h-4.5" />
               </button>
 
-              {/* Garage Build/Wishlist Icon Link */}
+              {/* Wishlist Icon Link */}
               <Link
-                href="/garage"
-                className="p-2 text-gray-700 hover:text-black transition-colors relative flex items-center"
-                aria-label="View Garage Dashboard"
+                href="/wishlist"
+                className="p-2 text-gray-700 hover:text-brand-red transition-colors relative flex items-center"
+                aria-label="View Wishlist"
               >
-                <Heart className="w-4.5 h-4.5" />
+                <Heart className={`w-4.5 h-4.5 ${wishlist.length > 0 ? 'fill-brand-red text-brand-red' : ''}`} />
                 {wishlist.length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-brand-red text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
                     {wishlist.length}
@@ -608,10 +592,10 @@ export default function Header() {
             <div className="max-w-2xl mx-auto w-full bg-[#181818] border border-white/10 rounded-lg shadow-2xl p-6 relative text-white">
               <button
                 onClick={() => setIsSearchOpen(false)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-white p-1"
+                className="absolute top-4 right-4 z-50 p-2 bg-white/15 hover:bg-white/25 text-gray-300 hover:text-white rounded-full transition-all duration-200 cursor-pointer flex items-center justify-center"
                 aria-label="Close search overlay"
               >
-                <X className="w-6 h-6" />
+                <X className="w-4 h-4" />
               </button>
 
               <form onSubmit={handleSearchSubmit} className="relative mt-2">
@@ -774,7 +758,7 @@ export default function Header() {
                           <button
                             onClick={() => {
                               setIsAccountOpen(false);
-                              router.push("/collections/performance-air-filters");
+                              router.push("/products");
                             }}
                             className="mt-3 text-[10px] font-bold text-brand-red uppercase tracking-wider hover:underline"
                           >
@@ -997,8 +981,8 @@ export default function Header() {
               </div>
 
               <div className="flex-grow overflow-y-auto p-6 space-y-6">
-                {/* Mobile Rider Garage select */}
-                <div className="border border-white/5 p-4 rounded-lg bg-[#181818] space-y-3.5">
+                {/* Mobile Rider Garage select (Hidden) */}
+                <div className="border border-white/5 p-4 rounded-lg bg-[#181818] space-y-3.5 hidden">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-headings font-bold uppercase tracking-wider text-brand-red flex items-center gap-1.5">
                       <Bike className="w-3.5 h-3.5" /> Mobile Garage
@@ -1121,24 +1105,7 @@ export default function Header() {
                     Rider Garage & Build Planner
                   </Link>
 
-                  <a
-                    href="#brands-section"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      if (pathname !== "/") router.push("/#brands-section");
-                      else document.getElementById("brands-section")?.scrollIntoView({ behavior: "smooth" });
-                    }}
-                    className="block text-gray-300 hover:text-white transition-colors"
-                  >
-                    BRANDS
-                  </a>
-                  <Link
-                    href="/about"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block text-gray-300 hover:text-white transition-colors"
-                  >
-                    ABOUT US
-                  </Link>
+
                   <a
                     href="#footer-section"
                     onClick={() => {
