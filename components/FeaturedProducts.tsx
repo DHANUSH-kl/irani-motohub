@@ -327,11 +327,6 @@ export default function FeaturedProducts() {
                   {/* Product Info (Left-Aligned, Spaced out) */}
                   <div className="flex-grow flex flex-col pt-4 pb-4">
                     
-                    {/* Brand name in Red Text */}
-                    <span className="text-[10px] font-extrabold text-brand-red uppercase tracking-widest mb-1.5">
-                      {product.brand}
-                    </span>
-
                     {/* Title */}
                     <h3 className="font-headings font-extrabold text-base text-brand-primary tracking-tight uppercase line-clamp-1 mb-1 group-hover:text-brand-red transition-colors">
                       <Link href={`/products/${product.handle}`} draggable={false}>

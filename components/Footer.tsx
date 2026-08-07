@@ -22,11 +22,11 @@ export default function Footer() {
             <div className="space-y-2.5 text-sm text-gray-400">
               <p className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-brand-red flex-shrink-0" />
-                <span>MG Road, Bengaluru, Karnataka, 560001</span>
+                <span>Mahim, Mumbai 400016</span>
               </p>
               <p className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-brand-red flex-shrink-0" />
-                <span>+91 98765 43210</span>
+                <span>+91 90823 73197</span>
               </p>
               <p className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-brand-red flex-shrink-0" />

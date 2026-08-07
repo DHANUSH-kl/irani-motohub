@@ -283,9 +283,6 @@ export default function NewArrivals() {
                 {/* Info Panel */}
                 <div className="p-5 flex-grow flex flex-col justify-between space-y-4">
                   <div className="space-y-1.5">
-                    <span className="text-[9px] font-headings font-extrabold text-brand-red uppercase tracking-widest block">
-                      {product.brand}
-                    </span>
                     <h3 className="font-headings font-extrabold text-sm text-white uppercase tracking-tight line-clamp-1 group-hover:text-brand-red transition-colors">
                       <Link href={`/products/${product.handle}`}>{product.title}</Link>
                     </h3>

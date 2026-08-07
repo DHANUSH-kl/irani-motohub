@@ -637,9 +637,6 @@ export default function GaragePage() {
                               </div>
 
                               <div className="min-w-0">
-                                <span className="text-[9px] font-bold text-brand-red uppercase tracking-wider block">
-                                  {item.brand}
-                                </span>
                                 <h4 className="font-headings font-extrabold text-sm text-brand-primary uppercase truncate group-hover:text-brand-red transition-colors">
                                   <Link href={`/products/${item.handle}`}>{item.title}</Link>
                                 </h4>
@@ -752,9 +749,6 @@ export default function GaragePage() {
                         </div>
                         
                         <div className="flex-grow flex flex-col">
-                          <span className="text-[8px] font-bold text-brand-red uppercase tracking-wider">
-                            {prod.brand}
-                          </span>
                           <h4 className="font-headings font-bold text-xs text-brand-primary line-clamp-1 group-hover:text-brand-red transition-colors mt-0.5">
                             <Link href={`/products/${prod.handle}`}>{prod.title}</Link>
                           </h4>

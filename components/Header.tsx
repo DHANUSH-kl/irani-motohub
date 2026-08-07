@@ -118,7 +118,6 @@ export default function Header() {
     }
     const filtered = allProducts.filter((product) =>
       product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.category.toLowerCase().includes(searchQuery.toLowerCase())
     );
     setSearchResults(filtered.slice(0, 5));
@@ -214,10 +213,12 @@ export default function Header() {
       <div className="fixed top-0 left-0 right-0 z-40 flex flex-col shadow-lg">
         
         {/* Top Ticker Banner */}
-        <div className="bg-[#0A0A0A] text-gray-300 py-2.5 px-4 text-[9px] font-headings font-extrabold uppercase tracking-[0.25em] text-center border-b border-white/5 flex items-center justify-center gap-6">
+        <div className="bg-[#0A0A0A] text-gray-300 py-2.5 px-4 text-[9px] font-headings font-extrabold uppercase tracking-[0.25em] text-center border-b border-white/5 flex items-center justify-center flex-wrap gap-4 sm:gap-6">
           <span>FREE SHIPPING ON ORDERS ₹999+</span>
           <span className="hidden sm:inline text-brand-red">•</span>
-          <span className="hidden sm:inline">CERTIFIED PERFORMANCE GUARANTEE</span>
+          <span>Mahim, Mumbai 400016</span>
+          <span className="hidden sm:inline text-brand-red">•</span>
+          <span>+91 90823 73197</span>
         </div>
 
         {/* Main Navigation Header (Premium Off-White Glassmorphic Panel) */}
@@ -633,9 +634,6 @@ export default function Header() {
                           />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-brand-red font-bold uppercase tracking-wider text-[9px] mb-0.5">
-                            {prod.brand}
-                          </p>
                           <h5 className="text-sm font-bold text-white truncate group-hover:text-brand-red transition-colors">
                             {prod.title}
                           </h5>

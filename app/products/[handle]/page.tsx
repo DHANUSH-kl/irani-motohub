@@ -4,7 +4,7 @@ import React, { useState, useEffect, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Star, ShoppingCart, ShieldCheck, Check, AlertTriangle, ArrowRight, Truck, RotateCcw, Wrench, Heart } from "lucide-react";
+import { Star, ShoppingCart, ShieldCheck, Check, AlertTriangle, ArrowRight, Truck, RotateCcw, Wrench, Heart, ChevronDown, ChevronUp } from "lucide-react";
 import { getProduct, getRelatedProducts, Product } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -30,6 +30,7 @@ export default function ProductPage({
   const [selectedVariantId, setSelectedVariantId] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [isDescExpanded, setIsDescExpanded] = useState(false);
 
   // Fitment Check States
   const [selectedMaker, setSelectedMaker] = useState("");
@@ -300,9 +301,27 @@ export default function ProductPage({
                 <h3 className="font-headings font-extrabold text-lg tracking-wider text-brand-primary uppercase pb-2 border-b border-brand-border">
                   PRODUCT DESCRIPTION
                 </h3>
-                <p className="text-brand-muted text-sm leading-relaxed font-body">
-                  {product.description}
-                </p>
+                <div className="relative font-body">
+                  <p className={`text-brand-muted text-sm leading-relaxed ${!isDescExpanded ? 'line-clamp-3' : ''}`}>
+                    {product.description}
+                  </p>
+                  {product.description && product.description.length > 150 && (
+                    <button
+                      onClick={() => setIsDescExpanded(!isDescExpanded)}
+                      className="mt-2 text-brand-red hover:text-brand-primary text-xs font-bold flex items-center gap-1 transition-colors focus:outline-none cursor-pointer"
+                    >
+                      {isDescExpanded ? (
+                        <>
+                          Show Less <ChevronUp className="w-3.5 h-3.5" />
+                        </>
+                      ) : (
+                        <>
+                          Show More <ChevronDown className="w-3.5 h-3.5" />
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Specifications Table */}
@@ -311,12 +330,14 @@ export default function ProductPage({
                   TECHNICAL SPECIFICATIONS
                 </h3>
                 <div className="border border-brand-border rounded overflow-hidden bg-brand-bg text-sm divide-y divide-brand-border font-body">
-                  {product.specifications.map((spec) => (
-                    <div key={spec.name} className="grid grid-cols-3 p-3.5">
-                      <span className="text-brand-muted font-bold col-span-1">{spec.name}</span>
-                      <span className="text-brand-primary font-medium col-span-2">{spec.value}</span>
-                    </div>
-                  ))}
+                  {product.specifications
+                    .filter((spec) => spec.name.toLowerCase() !== "brand")
+                    .map((spec) => (
+                      <div key={spec.name} className="grid grid-cols-3 p-3.5">
+                        <span className="text-brand-muted font-bold col-span-1">{spec.name}</span>
+                        <span className="text-brand-primary font-medium col-span-2">{spec.value}</span>
+                      </div>
+                    ))}
                 </div>
               </div>
             </div>
@@ -331,9 +352,6 @@ export default function ProductPage({
               
               {/* Heading / Brand block */}
               <div>
-                <span className="text-[10px] font-bold text-brand-red uppercase tracking-widest block mb-1">
-                  {product.brand}
-                </span>
                 <h1 className="text-lg sm:text-xl font-headings font-extrabold tracking-tight text-brand-primary leading-tight uppercase">
                   {product.title}
                 </h1>
@@ -506,9 +524,6 @@ export default function ProductPage({
 
                   {/* Info */}
                   <div className="flex-grow flex flex-col">
-                    <span className="text-[9px] font-bold text-brand-red uppercase tracking-wider block mb-1">
-                      {p.brand}
-                    </span>
                     <h3 className="font-headings font-extrabold text-sm text-brand-primary hover:text-brand-red transition-colors line-clamp-1 mb-2">
                       <Link href={`/products/${p.handle}`}>{p.title}</Link>
                     </h3>

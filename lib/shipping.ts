@@ -1,6 +1,6 @@
 /** Unified shipping rules — must match Shopify Admin shipping configuration. */
 export const FREE_SHIPPING_THRESHOLD = 999;
-export const STANDARD_SHIPPING_FEE = 149;
+export const STANDARD_SHIPPING_FEE = 200;
 
 export function calculateEstimatedShipping(subtotal: number): number {
   if (subtotal <= 0) return 0;

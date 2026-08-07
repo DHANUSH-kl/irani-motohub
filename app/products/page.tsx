@@ -203,7 +203,6 @@ function ProductsContent() {
       result = result.filter(
         (p) =>
           p.title.toLowerCase().includes(q) ||
-          p.brand.toLowerCase().includes(q) ||
           p.category.toLowerCase().includes(q) ||
           p.compatibility.some((c) => c.toLowerCase().includes(q))
       );
@@ -444,7 +443,7 @@ function ProductsContent() {
           </div>
 
           {/* Grid of Dropdown Select Controls */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
             
             {/* 1. COLLECTION DROPDOWN (Hidden) */}
             <div className="space-y-1 hidden">
@@ -484,24 +483,6 @@ function ProductsContent() {
               </select>
             </div>
 
-            {/* 3. BRAND DROPDOWN */}
-            <div className="space-y-1">
-              <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-brand-muted flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-brand-red" /> Brand
-              </label>
-              <select
-                value={selectedBrand}
-                onChange={(e) => setSelectedBrand(e.target.value)}
-                className="w-full bg-brand-bg border border-brand-border hover:border-brand-red rounded-lg p-2.5 text-xs font-semibold text-brand-primary focus:outline-none focus:border-brand-red cursor-pointer transition-colors"
-              >
-                <option value="all">All Brands</option>
-                {uniqueBrands.map((brand) => (
-                  <option key={brand} value={brand}>
-                    {brand}
-                  </option>
-                ))}
-              </select>
-            </div>
 
             {/* 4. MOTORCYCLE / RIDER GARAGE DROPDOWN (Hidden) */}
             <div className="space-y-1 hidden">
@@ -593,14 +574,6 @@ function ProductsContent() {
                 </span>
               )}
 
-              {selectedBrand !== "all" && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-brand-red/10 text-brand-red text-[10px] font-bold rounded-full border border-brand-red/20 uppercase font-headings">
-                  Brand: {selectedBrand}
-                  <button onClick={() => setSelectedBrand("all")} className="hover:text-black">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
 
               {priceRangeFilter !== "all" && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-brand-red/10 text-brand-red text-[10px] font-bold rounded-full border border-brand-red/20 uppercase font-headings">
@@ -679,10 +652,6 @@ function ProductsContent() {
 
                     {/* Product details info */}
                     <div className="flex-grow flex flex-col p-4">
-                      {/* Brand */}
-                      <span className="text-[10px] font-extrabold text-brand-red uppercase tracking-widest mb-1 font-headings">
-                        {product.brand}
-                      </span>
 
                       {/* Title */}
                       <h3 className="font-headings font-extrabold text-xs sm:text-sm text-brand-primary tracking-tight uppercase line-clamp-2 mb-2 min-h-[36px] group-hover:text-brand-red transition-colors">

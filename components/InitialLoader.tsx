@@ -25,7 +25,7 @@ export default function InitialLoader() {
       // Unlock scrolling after loading slide-up completes
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
-    }, 2000);
+    }, 800);
 
     return () => {
       document.documentElement.style.overflow = "";
@@ -40,7 +40,7 @@ export default function InitialLoader() {
         <motion.div
           initial={{ y: 0 }}
           exit={{ y: "-100%" }}
-          transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
+          transition={{ duration: 0.4, ease: [0.76, 0, 0.24, 1] }}
           className="fixed inset-0 bg-[#221A14] z-50 flex flex-col justify-center items-center text-white"
         >
           {/* Subtle background precision grids */}
@@ -52,7 +52,7 @@ export default function InitialLoader() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.4 }}
-              transition={{ delay: 0.1 }}
+              transition={{ delay: 0.05 }}
               className="text-[9px] font-bold uppercase tracking-[0.3em] text-gray-400"
             >
               System Booting • RPM Stable
@@ -62,7 +62,7 @@ export default function InitialLoader() {
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="flex items-center justify-center gap-1.5"
             >
               <h1 className="font-headings font-extrabold text-3xl sm:text-4xl tracking-tighter">
@@ -76,7 +76,7 @@ export default function InitialLoader() {
               <motion.div
                 initial={{ left: "-100%" }}
                 animate={{ left: "100%" }}
-                transition={{ duration: 1.6, ease: "easeInOut" }}
+                transition={{ duration: 0.6, ease: "easeInOut" }}
                 className="absolute inset-y-0 w-2/3 bg-brand-red shadow-[0_0_8px_#B91C1C]"
               />
             </div>

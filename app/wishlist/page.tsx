@@ -222,11 +222,6 @@ export default function WishlistPage() {
 
                     {/* Product Details */}
                     <div className="p-4 flex flex-col flex-1">
-                      {/* Brand */}
-                      <span className="text-[9px] font-headings font-extrabold uppercase tracking-[0.2em] text-brand-red mb-1">
-                        {product.brand}
-                      </span>
-
                       {/* Title */}
                       <Link href={`/products/${product.handle}`}>
                         <h3 className="font-headings font-extrabold text-sm text-gray-900 leading-tight mb-2 line-clamp-2 hover:text-brand-red transition-colors">

@@ -34,12 +34,13 @@ export default function CartDrawer() {
         // Must be absolute URL
         if (!parsedUrl.protocol || !parsedUrl.hostname) return false;
 
-        // Must belong to configured Shopify store or standard Shopify domains
+        // Must belong to configured Shopify store, standard Shopify domains, or the custom domain
         const shopifyDomain = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN || "";
         const isShopifyDomain =
           parsedUrl.hostname === shopifyDomain ||
           parsedUrl.hostname.endsWith(".myshopify.com") ||
-          parsedUrl.hostname.endsWith("shopify.com");
+          parsedUrl.hostname.endsWith("shopify.com") ||
+          parsedUrl.hostname === "iranimotohub.in";
 
         if (!isShopifyDomain) return false;
 
@@ -134,8 +135,13 @@ export default function CartDrawer() {
 
     // 4. Execute checkout redirection
     if (isUrlValid && checkoutUrl) {
-      console.log("[Checkout] Redirecting browser to Shopify Checkout:", checkoutUrl);
-      window.location.href = checkoutUrl;
+      let finalCheckoutUrl = checkoutUrl;
+      const shopifyDomain = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
+      if (shopifyDomain && finalCheckoutUrl.includes(shopifyDomain)) {
+        finalCheckoutUrl = finalCheckoutUrl.replace(shopifyDomain, "iranimotohub.in");
+      }
+      console.log("[Checkout] Redirecting browser to Shopify Checkout:", finalCheckoutUrl);
+      window.location.href = finalCheckoutUrl;
     } else {
       console.error("[Checkout] Redirect aborted: Invalid URL and recovery failed.");
       alert("We encountered an issue directing you to the checkout screen. Please refresh the page or try again.");
