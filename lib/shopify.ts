@@ -564,8 +564,17 @@ const MOCK_PRODUCTS: Product[] = [
 const DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
 const ACCESS_TOKEN = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
+let hasLoggedConfigWarning = false;
 const isShopifyConfigured = (): boolean => {
-  return typeof DOMAIN === "string" && DOMAIN.length > 0 && typeof ACCESS_TOKEN === "string" && ACCESS_TOKEN.length > 0;
+  const configured = typeof DOMAIN === "string" && DOMAIN.length > 0 && typeof ACCESS_TOKEN === "string" && ACCESS_TOKEN.length > 0;
+  if (!configured && !hasLoggedConfigWarning) {
+    hasLoggedConfigWarning = true;
+    console.warn("[ShopifyClient] Shopify Storefront API credentials are not fully configured. Using mock data engine fallbacks.", {
+      hasDomain: typeof DOMAIN === "string" && DOMAIN.length > 0,
+      hasToken: typeof ACCESS_TOKEN === "string" && ACCESS_TOKEN.length > 0
+    });
+  }
+  return configured;
 };
 
 /** Mock auth is only allowed in local development when Shopify is not configured. */
@@ -2498,6 +2507,25 @@ export async function getReviews(): Promise<Review[]> {
       quote: "Viaterra saddlebags stayed bone dry through a heavy 4-hour monsoon downpour. Mount straps are incredibly secure and fit the stock rear frame of my 390 perfectly."
     }
   ];
+}
+
+export function getOptimizedImageUrl(url: string, width: number): string {
+  if (!url) return url;
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.hostname.includes("cdn.shopify.com")) {
+      urlObj.searchParams.set("width", width.toString());
+      return urlObj.toString();
+    }
+    if (urlObj.hostname.includes("unsplash.com")) {
+      urlObj.searchParams.set("w", width.toString());
+      urlObj.searchParams.set("q", "80");
+      return urlObj.toString();
+    }
+  } catch (e) {
+    // fallback if invalid URL
+  }
+  return url;
 }
 
 

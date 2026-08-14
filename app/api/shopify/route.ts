@@ -35,6 +35,7 @@ export async function POST(request: Request) {
         "X-Shopify-Storefront-Access-Token": ACCESS_TOKEN,
       },
       body: JSON.stringify({ query, variables }),
+      next: { revalidate: 60 }
     });
 
     if (!response.ok) {
