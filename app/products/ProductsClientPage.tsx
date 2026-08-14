@@ -421,7 +421,7 @@ export default function ProductsClientPage({ initialProducts, initialCollections
             <div className="h-px bg-brand-border" />
 
             {/* Lower: Detailed Filters & Rider Garage Plan */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
               
               {/* Collection Dropdown */}
               <div className="space-y-1.5">
@@ -437,42 +437,6 @@ export default function ProductsClientPage({ initialProducts, initialCollections
                   <option value="all">All Collections</option>
                   {collections.map((col) => (
                     <option key={col.id} value={col.handle}>{col.title}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Category Dropdown */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-brand-muted flex items-center gap-1">
-                  <Tag className="w-3 h-3 text-brand-primary" />
-                  Category
-                </label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full bg-brand-bg border border-brand-border text-brand-primary rounded p-3 text-xs font-semibold focus:outline-none"
-                >
-                  <option value="all">All Categories</option>
-                  {uniqueCategories.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Brand Dropdown */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-brand-muted flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-brand-primary" />
-                  Brand
-                </label>
-                <select
-                  value={selectedBrand}
-                  onChange={(e) => setSelectedBrand(e.target.value)}
-                  className="w-full bg-brand-bg border border-brand-border text-brand-primary rounded p-3 text-xs font-semibold focus:outline-none"
-                >
-                  <option value="all">All Brands</option>
-                  {uniqueBrands.map((brand) => (
-                    <option key={brand} value={brand}>{brand}</option>
                   ))}
                 </select>
               </div>
@@ -495,64 +459,6 @@ export default function ProductsClientPage({ initialProducts, initialCollections
                   <option value="5k-10k">₹5,000 - ₹10,000</option>
                   <option value="above-10k">Over ₹10,000</option>
                 </select>
-              </div>
-
-              {/* Garage compatibility filter */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-brand-muted flex items-center gap-1">
-                  <Bike className="w-3 h-3 text-brand-primary" />
-                  Fitted to Bike
-                </label>
-                {garageBike ? (
-                  <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 text-emerald-800 rounded p-2 text-xs font-bold shadow-inner">
-                    <span className="truncate pr-1">✓ {garageBike.maker} {garageBike.model}</span>
-                    <button
-                      onClick={handleClearGarage}
-                      className="text-emerald-800 hover:text-brand-red focus:outline-none"
-                      title="Clear Fitted Bike"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-1.5">
-                    <select
-                      value={selectedMaker}
-                      onChange={(e) => {
-                        setSelectedMaker(e.target.value);
-                        setSelectedModel("");
-                      }}
-                      className="flex-grow bg-brand-bg border border-brand-border text-brand-primary rounded p-2 text-[10px] font-bold focus:outline-none"
-                    >
-                      <option value="">Maker</option>
-                      {motorcycles.map((m) => (
-                        <option key={m.maker} value={m.maker}>{m.maker}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={selectedModel}
-                      onChange={(e) => {
-                        setSelectedModel(e.target.value);
-                      }}
-                      disabled={!selectedMaker}
-                      className="flex-grow bg-brand-bg border border-brand-border text-brand-primary rounded p-2 text-[10px] font-bold focus:outline-none disabled:opacity-50"
-                    >
-                      <option value="">Model</option>
-                      {selectedMaker &&
-                        motorcycles.find((m) => m.maker === selectedMaker)?.models.map((mod) => (
-                          <option key={mod} value={mod}>{mod}</option>
-                        ))}
-                    </select>
-                    {selectedMaker && selectedModel && (
-                      <button
-                        onClick={handleSaveGarage}
-                        className="bg-brand-primary text-white p-2 rounded hover:bg-brand-red transition-all cursor-pointer font-bold text-xs"
-                      >
-                        Fit
-                      </button>
-                    )}
-                  </div>
-                )}
               </div>
 
             </div>
