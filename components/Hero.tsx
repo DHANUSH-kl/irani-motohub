@@ -7,6 +7,8 @@ import { ShieldCheck, Truck, RotateCcw, Headset, ArrowRight } from "lucide-react
 
 import { Product } from "@/lib/shopify";
 
+import Image from "next/image";
+
 export default function Hero({ product }: { product: Product | null }) {
   const trustIndicators = [
     { icon: <Truck className="w-4 h-4 text-brand-red" />, text: "Free Shipping India-Wide" },
@@ -46,15 +48,18 @@ export default function Hero({ product }: { product: Product | null }) {
     <section className="relative min-h-screen flex flex-col justify-between bg-[#121212] text-white overflow-hidden pt-20">
       
       {/* Background Image with Cinematic Dark Gradient Overlay */}
-      <div 
-        className="absolute inset-0 bg-cover bg-no-repeat bg-[position:80%_40%] sm:bg-[position:center_40%]"
-        style={{ 
-          backgroundImage: "url('/hero-image.jpeg')"
-        }}
-      >
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/hero-image.jpeg"
+          alt="Golden hour riding track"
+          fill
+          priority
+          quality={85}
+          className="object-cover object-[80%_40%] sm:object-[center_40%]"
+        />
         {/* Multipoint mask overlay: left gradient for readability, bottom gradient to merge with the dark background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/70 to-black/30 md:from-black/90 md:via-black/50 md:to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-transparent opacity-95" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/70 to-black/30 md:from-black/90 md:via-black/50 md:to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-transparent opacity-95 z-10" />
       </div>
 
       {/* Grid overlay for a tech/precision look */}

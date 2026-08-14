@@ -2,23 +2,26 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
 export default function PerformanceBanner() {
   return (
-    <section className="relative h-[480px] lg:h-[540px] flex items-center bg-brand-footer text-white overflow-hidden">
+    <section className="relative h-[480px] lg:h-[540px] flex items-center bg-brand-footer text-white overflow-hidden group">
       
       {/* Background Image with Dark Heat Overlay */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 ease-out hover:scale-105"
-        style={{ 
-          backgroundImage: "url('/pro-tuning-segment.jpeg')" 
-        }}
-      >
+      <div className="absolute inset-0 transition-transform duration-1000 ease-out group-hover:scale-105 z-0">
+        <Image
+          src="/pro-tuning-segment.jpeg"
+          alt="Professional tuning track"
+          fill
+          quality={80}
+          className="object-cover object-center"
+        />
         {/* Gradients */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/25" />
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-footer via-transparent to-transparent opacity-80" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/25 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-brand-footer via-transparent to-transparent opacity-80 z-10" />
       </div>
 
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10">
