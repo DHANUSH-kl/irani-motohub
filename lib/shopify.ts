@@ -1293,6 +1293,77 @@ export async function getProduct(handle: string): Promise<Product | null> {
   };
 }
 
+export async function getProductLightweight(handle: string): Promise<Product | null> {
+  if (!isShopifyConfigured()) {
+    return MOCK_PRODUCTS.find(p => p.handle === handle) || null;
+  }
+
+  const query = `
+    query GetProductLightweight($handle: String!) {
+      product(handle: $handle) {
+        id
+        handle
+        title
+        priceRange {
+          minVariantPrice {
+            amount
+            currencyCode
+          }
+        }
+        images(first: 1) {
+          edges {
+            node {
+              url
+              altText
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const result = await shopifyFetch<any>(query, { handle });
+    if (result?.data?.product) {
+      const p = result.data.product;
+      const images = p.images?.edges.map((edge: any) => ({
+        url: edge.node.url,
+        altText: edge.node.altText || p.title,
+      })) || [];
+
+      return {
+        id: p.id,
+        handle: p.handle,
+        title: p.title,
+        description: "",
+        priceRange: p.priceRange,
+        images: images.length ? images : [{ url: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=600", altText: p.title }],
+        variants: [
+          {
+            id: `var-light-${p.handle}`,
+            title: "Standard",
+            price: {
+              amount: p.priceRange.minVariantPrice.amount,
+              currencyCode: p.priceRange.minVariantPrice.currencyCode
+            },
+            availableForSale: true
+          }
+        ],
+        brand: "MotoHub",
+        category: "Accessories",
+        compatibility: ["All Motorcycles"],
+        specifications: [],
+        reviews: [],
+        rating: 4.8
+      };
+    }
+  } catch (error) {
+    console.error("Error in getProductLightweight:", error);
+  }
+
+  return MOCK_PRODUCTS.find(p => p.handle === handle) || null;
+}
+
 /**
  * Fetch a small set of related products by category, without loading the entire catalog.
  * Uses the in-memory cache if already populated, otherwise fetches a limited batch.

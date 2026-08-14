@@ -5,7 +5,9 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ShieldCheck, Truck, RotateCcw, Headset, ArrowRight } from "lucide-react";
 
-export default function Hero() {
+import { Product } from "@/lib/shopify";
+
+export default function Hero({ product }: { product: Product | null }) {
   const trustIndicators = [
     { icon: <Truck className="w-4 h-4 text-brand-red" />, text: "Free Shipping India-Wide" },
     { icon: <ShieldCheck className="w-4 h-4 text-brand-red" />, text: "100% Genuine Guarantee" },
@@ -79,6 +81,14 @@ export default function Hero() {
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 Garage Profile Active: {activeBike}
               </span>
+            )}
+            {product && (
+              <Link 
+                href={`/products/${product.handle}`}
+                className="bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[9px] font-bold py-1 px-2.5 rounded-full uppercase tracking-wider flex items-center gap-1.5 ml-2 transition-all"
+              >
+                🔥 Trending: {product.title} @ ₹{parseInt(product.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
+              </Link>
             )}
           </motion.div>
 

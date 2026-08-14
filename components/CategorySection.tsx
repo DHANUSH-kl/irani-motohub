@@ -15,26 +15,8 @@ interface Category {
   count: string;
 }
 
-export default function CategorySection() {
-  const [categories, setCategories] = useState<Category[]>([]);
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const collections = await getCollections();
-        const mapped = collections.map((col, idx) => ({
-          title: col.title,
-          handle: col.handle,
-          imageUrl: col.image?.url || "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=600",
-          count: String(idx + 1).padStart(2, "0")
-        }));
-        setCategories(mapped);
-      } catch (e) {
-        console.error("Failed to load collections:", e);
-      }
-    };
-    fetchCategories();
-  }, []);
+export default function CategorySection({ initialCategories }: { initialCategories: Category[] }) {
+  const [categories] = useState<Category[]>(initialCategories);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);

@@ -9,8 +9,8 @@ import { getProducts, Product, isProductCompatible } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 
-export default function NewArrivals() {
-  const [products, setProducts] = useState<Product[]>([]);
+export default function NewArrivals({ initialProducts }: { initialProducts: Product[] }) {
+  const [products, setProducts] = useState<Product[]>(initialProducts);
   const { addItem } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   
@@ -27,12 +27,6 @@ export default function NewArrivals() {
   const gap = 24;
 
   useEffect(() => {
-    const fetchProds = async () => {
-      const allProds = await getProducts();
-      setProducts(allProds);
-    };
-    fetchProds();
-
     // Load active bike from garage cache
     const saved = localStorage.getItem("rider_garage");
     if (saved) {
@@ -60,7 +54,7 @@ export default function NewArrivals() {
     return () => {
       window.removeEventListener("garage-updated", syncGarage);
     };
-  }, []);
+  }, [initialProducts]);
 
   // Auto-play interval for carousel when not hovered
   useEffect(() => {

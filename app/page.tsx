@@ -1,27 +1,40 @@
-import React from "react";
-import Hero from "@/components/Hero";
-import CategorySection from "@/components/CategorySection";
-import FeaturedProducts from "@/components/FeaturedProducts";
-import NewArrivals from "@/components/NewArrivals";
+import React, { Suspense } from "react";
+import HeroSection from "@/components/HeroSection";
+import CategorySectionSection from "@/components/CategorySectionSection";
+import FeaturedProductsSection from "@/components/FeaturedProductsSection";
+import NewArrivalsSection from "@/components/NewArrivalsSection";
 import PerformanceBanner from "@/components/PerformanceBanner";
 import FeaturedBrands from "@/components/FeaturedBrands";
 import ReviewsCarousel from "@/components/ReviewsCarousel";
 import Newsletter from "@/components/Newsletter";
+import { 
+  CategorySkeleton, 
+  FeaturedProductsSkeleton, 
+  NewArrivalsSkeleton 
+} from "@/components/Skeletons";
+
+export const revalidate = 60; // Edge/CDN ISR revalidation window of 60 seconds
 
 export default function Home() {
   return (
     <main className="flex-1 w-full bg-brand-bg">
-      {/* Cinematic Hero section */}
-      <Hero />
+      {/* Cinematic Hero Section - Streams above the fold instantly, targeted product fetch */}
+      <HeroSection />
 
-      {/* Grid of collections */}
-      <CategorySection />
+      {/* Grid of collections - Streams independently */}
+      <Suspense fallback={<CategorySkeleton />}>
+        <CategorySectionSection />
+      </Suspense>
 
-      {/* Curated list of items with quick-add */}
-      <FeaturedProducts />
+      {/* Curated list of items with quick-add - Streams independently */}
+      <Suspense fallback={<FeaturedProductsSkeleton />}>
+        <FeaturedProductsSection />
+      </Suspense>
 
-      {/* Carousel of newest products */}
-      <NewArrivals />
+      {/* Carousel of newest products - Streams independently */}
+      <Suspense fallback={<NewArrivalsSkeleton />}>
+        <NewArrivalsSection />
+      </Suspense>
 
       {/* Dynamic performance spotlight banner */}
       <PerformanceBanner />

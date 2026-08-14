@@ -9,9 +9,9 @@ import { getProducts, Product, isProductCompatible } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 
-export default function FeaturedProducts() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export default function FeaturedProducts({ initialProducts }: { initialProducts: Product[] }) {
+  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [isLoading, setIsLoading] = useState(false);
   const { addItem } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [addingId, setAddingId] = useState<string | null>(null);
@@ -38,14 +38,6 @@ export default function FeaturedProducts() {
 
 
   useEffect(() => {
-    const fetchProds = async () => {
-      setIsLoading(true);
-      const allProds = await getProducts();
-      setProducts(allProds);
-      setIsLoading(false);
-    };
-    fetchProds();
-
     // Load active bike from garage cache
     const saved = localStorage.getItem("rider_garage");
     if (saved) {
@@ -73,7 +65,7 @@ export default function FeaturedProducts() {
     return () => {
       window.removeEventListener("garage-updated", syncGarage);
     };
-  }, []);
+  }, [initialProducts]);
 
   const handleQuickAdd = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
