@@ -2,7 +2,7 @@ import { MetadataRoute } from "next";
 import { getProducts, getCollections } from "@/lib/shopify";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://iranimotohub.com";
+  const baseUrl = "https://iranimotohub.in";
 
   // Static root URL
   const routes = [

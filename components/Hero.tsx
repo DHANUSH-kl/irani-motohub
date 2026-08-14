@@ -47,10 +47,9 @@ export default function Hero({ product }: { product: Product | null }) {
       
       {/* Background Image with Cinematic Dark Gradient Overlay */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className="absolute inset-0 bg-cover bg-no-repeat bg-[position:80%_40%] sm:bg-[position:center_40%]"
         style={{ 
-          backgroundImage: "url('/hero-image.jpeg')",
-          backgroundPosition: "center 40%"
+          backgroundImage: "url('/hero-image.jpeg')"
         }}
       >
         {/* Multipoint mask overlay: left gradient for readability, bottom gradient to merge with the dark background */}

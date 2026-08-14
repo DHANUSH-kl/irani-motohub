@@ -27,11 +27,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Irani MotoHub | Premium Motorcycle Accessories & Performance Parts",
   description: "India's destination for high-performance motorcycle upgrades, racing air filters, technical riding gear, and touring accessories.",
-  metadataBase: new URL("https://iranimotohub.com"),
+  metadataBase: new URL("https://iranimotohub.in"),
   openGraph: {
     title: "Irani MotoHub | Premium Performance Store",
     description: "Shop racing air filters, fuel piggybacks, and technical riding gear from BMC, K&N, Motul, Liqui Moly, and more.",
-    url: "https://iranimotohub.com",
+    url: "https://iranimotohub.in",
     siteName: "Irani MotoHub",
     images: [
       {

@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/checkout", "/account/private"],
     },
-    sitemap: "https://iranimotohub.com/sitemap.xml",
+    sitemap: "https://iranimotohub.in/sitemap.xml",
   };
 }

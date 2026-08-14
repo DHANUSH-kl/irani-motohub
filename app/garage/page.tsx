@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Rider Garage & Project Build Planner | Irani MotoHub",
     description: "Virtual garage mapping. Configure your Royal Enfield or KTM project bike, check part compatibility, and analyze estimated horsepower boosts and weight metrics dynamically.",
-    url: "https://iranimotohub.com/garage",
+    url: "https://iranimotohub.in/garage",
     siteName: "Irani MotoHub",
     images: [
       {

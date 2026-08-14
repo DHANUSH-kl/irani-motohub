@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "About Our Tuning & Performance Lab | Irani MotoHub",
     description: "Founded by mechanical engineers and dyno-tuners, Irani MotoHub delivers high-performance motorcycle air filters, ECU tuners, and premium riding gear certified via real-world diagnostics.",
-    url: "https://iranimotohub.com/about",
+    url: "https://iranimotohub.in/about",
     siteName: "Irani MotoHub",
     images: [
       {
