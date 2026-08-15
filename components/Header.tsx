@@ -26,6 +26,7 @@ export default function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isGarageOpen, setIsGarageOpen] = useState(false);
+  const [isMobileCollectionsOpen, setIsMobileCollectionsOpen] = useState(false);
 
   // Auth form states inside the drawer
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
@@ -975,83 +976,9 @@ export default function Header() {
               </div>
 
               <div className="flex-grow overflow-y-auto p-6 space-y-6">
-                {/* Mobile Rider Garage select (Hidden) */}
-                <div className="border border-white/5 p-4 rounded-lg bg-[#181818] space-y-3.5 hidden">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-headings font-bold uppercase tracking-wider text-brand-red flex items-center gap-1.5">
-                      <Bike className="w-3.5 h-3.5" /> Mobile Garage
-                    </span>
-                    {garageBike && (
-                      <button 
-                        onClick={handleClearGarage}
-                        className="text-[9px] uppercase tracking-wider text-gray-500 hover:text-white font-bold"
-                      >
-                        Reset
-                      </button>
-                    )}
-                                    <div className="space-y-2">
-                    <select
-                      value={selectedMaker}
-                      onChange={(e) => {
-                        setSelectedMaker(e.target.value);
-                        setSelectedModel("");
-                        setSelectedYear("");
-                      }}
-                      className="w-full bg-[#121212] border border-white/10 rounded px-2 py-1.5 text-xs font-semibold text-white focus:outline-none"
-                    >
-                      <option value="">Select Maker</option>
-                      {motorcycles.map((m) => (
-                        <option key={m.maker} value={m.maker}>{m.maker}</option>
-                      ))}
-                    </select>
- 
-                    <select
-                      value={selectedModel}
-                      disabled={!selectedMaker}
-                      onChange={(e) => {
-                        setSelectedModel(e.target.value);
-                        setSelectedYear("");
-                        const savedBike = { maker: selectedMaker, model: e.target.value };
-                        setGarageBike(savedBike);
-                        localStorage.setItem("rider_garage", JSON.stringify(savedBike));
-                        window.dispatchEvent(new Event("garage-updated"));
-                      }}
-                      className="w-full bg-[#121212] border border-white/10 rounded px-2 py-1.5 text-xs font-semibold text-white disabled:opacity-40 focus:outline-none"
-                    >
-                      <option value="">Select Model</option>
-                      {motorcycles.find((m) => m.maker === selectedMaker)?.models.map((mod) => (
-                        <option key={mod} value={mod}>{mod}</option>
-                      ))}
-                    </select>
- 
-                    <select
-                      value={selectedYear}
-                      disabled={!selectedModel}
-                      onChange={(e) => {
-                        setSelectedYear(e.target.value);
-                        const savedBike = { maker: selectedMaker, model: selectedModel, year: e.target.value || undefined };
-                        setGarageBike(savedBike);
-                        localStorage.setItem("rider_garage", JSON.stringify(savedBike));
-                        window.dispatchEvent(new Event("garage-updated"));
-                      }}
-                      className="w-full bg-[#121212] border border-white/10 rounded px-2 py-1.5 text-xs font-semibold text-white disabled:opacity-40 focus:outline-none"
-                    >
-                      <option value="">Select Year (Optional)</option>
-                      {years.map((y) => (
-                        <option key={y} value={y}>{y}</option>
-                      ))}
-                    </select>
-                  </div>
- </div>
-                  {garageBike && (
-                    <p className="text-[9px] text-emerald-500 font-semibold text-center italic">
-                      ✓ Garage profile is synchronized across catalog!
-                    </p>
-                  )}
-                </div>
 
                 {/* Collections block */}
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <h4 className="font-headings font-extrabold text-[10px] tracking-wider text-brand-red uppercase">
                     CATALOG & COLLECTIONS
                   </h4>
@@ -1065,7 +992,8 @@ export default function Header() {
                         ⚡ ALL PRODUCTS CATALOG
                       </Link>
                     </li>
-                    {collections.map((col) => (
+                    {/* Show first 4 collections directly */}
+                    {collections.slice(0, 4).map((col) => (
                       <li key={col.id}>
                         <Link
                           href={`/collections/${col.handle}`}
@@ -1077,6 +1005,34 @@ export default function Header() {
                       </li>
                     ))}
                   </ul>
+
+                  {/* Show rest in a collapsible dropdown */}
+                  {collections.length > 4 && (
+                    <div className="pt-2">
+                      <button
+                        onClick={() => setIsMobileCollectionsOpen(!isMobileCollectionsOpen)}
+                        className="w-full flex justify-between items-center text-left font-headings font-extrabold text-[10px] tracking-wider text-brand-red uppercase cursor-pointer focus:outline-none"
+                      >
+                        <span>MORE COLLECTIONS</span>
+                        <ChevronDown className={`w-3.5 h-3.5 text-brand-red transition-transform duration-200 ${isMobileCollectionsOpen ? "rotate-180" : ""}`} />
+                      </button>
+                      {isMobileCollectionsOpen && (
+                        <ul className="space-y-3.5 text-sm font-semibold pl-2 mt-4">
+                          {collections.slice(4).map((col) => (
+                            <li key={col.id}>
+                              <Link
+                                href={`/collections/${col.handle}`}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="text-gray-300 hover:text-white transition-colors block py-1 font-body"
+                              >
+                                {col.title}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Secondary navigation */}
@@ -1090,15 +1046,6 @@ export default function Header() {
                   >
                     {user ? `Rider: ${user.firstName}` : "Sign In / Register"}
                   </button>
-
-                  <Link
-                    href="/garage"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block text-brand-red hover:text-white transition-colors"
-                  >
-                    Rider Garage & Build Planner
-                  </Link>
-
 
                   <a
                     href="#footer-section"

@@ -522,10 +522,6 @@ export default function ProductsClientPage({ initialProducts, initialCollections
                         />
                       </Link>
                       
-                      {/* Brand Label Overlay */}
-                      <span className="absolute top-2.5 left-2.5 bg-brand-primary text-white text-[8px] font-extrabold px-2 py-1 uppercase tracking-widest rounded-sm">
-                        {product.brand}
-                      </span>
                     </div>
 
                     {/* Details Info Block */}

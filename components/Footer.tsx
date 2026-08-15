@@ -6,7 +6,7 @@ export default function Footer() {
   return (
     <footer id="footer-section" className="bg-brand-footer text-white pt-16 pb-8 border-t border-[#3a3028]">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-6 mb-12">
           
           {/* Brand & Location Info */}
           <div className="space-y-5">
@@ -17,7 +17,7 @@ export default function Footer() {
               <span className="w-1.5 h-1.5 bg-brand-red rounded-full self-end mb-2" />
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed max-w-sm">
-              India&apos;s premium performance motorcycle parts and riding gear destination. Engineered for riders who demand unmatched reliability and power.
+              Your destination for quality accessories and performance upgrades. From everyday essentials to premium components, everything your motorcycle needs, all in one place.
             </p>
             <div className="space-y-2.5 text-sm text-gray-400">
               <p className="flex items-center gap-2">
@@ -35,31 +35,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Column 1: Shop */}
-          <div>
-            <h4 className="font-headings font-extrabold text-xs tracking-widest text-brand-red uppercase mb-5">
-              SHOP PERFORMANCE
-            </h4>
-            <ul className="space-y-3 text-sm">
-              <li>
-                <Link href="/collections/exhaust-systems" className="text-gray-400 hover:text-white transition-colors duration-200 block">
-                  Exhaust Systems
-                </Link>
-              </li>
-              <li>
-                <Link href="/collections/chain-sprocket-kit" className="text-gray-400 hover:text-white transition-colors duration-200 block">
-                  Chain & Sprocket Kits
-                </Link>
-              </li>
-              <li>
-                <Link href="/collections/lights-electronics" className="text-gray-400 hover:text-white transition-colors duration-200 block">
-                  Lights & Electronics
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 2: Company & Policies */}
+          {/* Column 1: Company & Policies */}
           <div>
             <h4 className="font-headings font-extrabold text-xs tracking-widest text-brand-red uppercase mb-5">
               SUPPORT & POLICIES
@@ -68,11 +44,6 @@ export default function Footer() {
               <li>
                 <Link href="/about" className="text-gray-400 hover:text-white transition-colors duration-200 block">
                   About Us
-                </Link>
-              </li>
-              <li>
-                <Link href="/#contact-section" className="text-gray-400 hover:text-white transition-colors duration-200 block">
-                  Contact Support
                 </Link>
               </li>
               <li>
@@ -117,15 +88,6 @@ export default function Footer() {
                   aria-label="Facebook"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-white"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
-                </a>
-                <a
-                  href="https://youtube.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-full bg-[#2d231b] flex items-center justify-center hover:bg-brand-red transition-all duration-200"
-                  aria-label="YouTube"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-white"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17z"/><path d="m10 15 5-3-5-3z"/></svg>
                 </a>
               </div>
             </div>

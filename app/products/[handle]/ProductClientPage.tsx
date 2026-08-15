@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Star, ShoppingCart, ShieldCheck, Check, AlertTriangle, ArrowRight, Truck, RotateCcw, Wrench, Heart, ChevronDown, ChevronUp } from "lucide-react";
+import { Star, ShoppingCart, ShieldCheck, Check, AlertTriangle, ArrowRight, Truck, RotateCcw, Wrench, Heart, ChevronDown, ChevronUp, CreditCard } from "lucide-react";
 import { Product, getOptimizedImageUrl } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -165,97 +165,45 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
         {/* Product Page Columns Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           
-          {/* LEFT COLUMN: Gallery, Specifications, Description & Reviews */}
-          <div className="lg:col-span-6 space-y-12">
+          {/* Gallery Wrapper */}
+          <div className="lg:col-span-6 lg:col-start-1 lg:row-start-1 space-y-4">
+            <div className="relative aspect-square w-full bg-white border border-brand-border rounded-xl overflow-hidden shadow-sm flex items-center justify-center">
+              <Image
+                src={getOptimizedImageUrl(product.images[activeImageIndex]?.url, 800)}
+                alt={product.images[activeImageIndex]?.altText || product.title}
+                fill
+                className="object-contain p-6"
+                priority
+                sizes="(max-w-768px) 100vw, 50vw"
+              />
+            </div>
             
-            {/* Gallery Wrapper */}
-            <div className="space-y-4">
-              <div className="relative aspect-square w-full bg-white border border-brand-border rounded-xl overflow-hidden shadow-sm flex items-center justify-center">
-                <Image
-                  src={getOptimizedImageUrl(product.images[activeImageIndex]?.url, 800)}
-                  alt={product.images[activeImageIndex]?.altText || product.title}
-                  fill
-                  className="object-contain p-6"
-                  priority
-                  sizes="(max-w-768px) 100vw, 50vw"
-                />
+            {/* Image Thumbnails list */}
+            {product.images.length > 1 && (
+              <div className="flex gap-4">
+                {product.images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImageIndex(idx)}
+                    className={`w-20 h-20 relative bg-white border rounded overflow-hidden p-1 transition-all ${
+                      idx === activeImageIndex ? "border-brand-primary ring-2 ring-brand-primary/10" : "border-brand-border hover:border-brand-muted"
+                    }`}
+                  >
+                    <Image
+                      src={getOptimizedImageUrl(img.url, 150)}
+                      alt={`Thumbnail ${idx + 1}`}
+                      fill
+                      className="object-contain"
+                      sizes="80px"
+                    />
+                  </button>
+                ))}
               </div>
-              
-              {/* Image Thumbnails list */}
-              {product.images.length > 1 && (
-                <div className="flex gap-4">
-                  {product.images.map((img, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setActiveImageIndex(idx)}
-                      className={`w-20 h-20 relative bg-white border rounded overflow-hidden p-1 transition-all ${
-                        idx === activeImageIndex ? "border-brand-primary ring-2 ring-brand-primary/10" : "border-brand-border hover:border-brand-muted"
-                      }`}
-                    >
-                      <Image
-                        src={getOptimizedImageUrl(img.url, 150)}
-                        alt={`Thumbnail ${idx + 1}`}
-                        fill
-                        className="object-contain"
-                        sizes="80px"
-                      />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Description & Specs Tabs */}
-            <div className="bg-white border border-brand-border p-6 md:p-8 rounded-xl space-y-8 shadow-sm">
-              <div className="space-y-4">
-                <h3 className="font-headings font-extrabold text-lg tracking-wider text-brand-primary uppercase pb-2 border-b border-brand-border">
-                  PRODUCT DESCRIPTION
-                </h3>
-                <div className="relative font-body">
-                  <p className={`text-brand-muted text-sm leading-relaxed ${!isDescExpanded ? 'line-clamp-3' : ''}`}>
-                    {product.description}
-                  </p>
-                  {product.description && product.description.length > 150 && (
-                    <button
-                      onClick={() => setIsDescExpanded(!isDescExpanded)}
-                      className="mt-2 text-brand-red hover:text-brand-primary text-xs font-bold flex items-center gap-1 transition-colors focus:outline-none cursor-pointer"
-                    >
-                      {isDescExpanded ? (
-                        <>
-                          Show Less <ChevronUp className="w-3.5 h-3.5" />
-                        </>
-                      ) : (
-                        <>
-                          Show More <ChevronDown className="w-3.5 h-3.5" />
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Specifications Table */}
-              <div className="space-y-4 pt-4">
-                <h3 className="font-headings font-extrabold text-lg tracking-wider text-brand-primary uppercase pb-2 border-b border-brand-border">
-                  TECHNICAL SPECIFICATIONS
-                </h3>
-                <div className="border border-brand-border rounded overflow-hidden bg-brand-bg text-sm divide-y divide-brand-border font-body">
-                  {product.specifications
-                    .filter((spec) => spec.name.toLowerCase() !== "brand")
-                    .map((spec) => (
-                      <div key={spec.name} className="grid grid-cols-3 p-3.5">
-                        <span className="text-brand-muted font-bold col-span-1">{spec.name}</span>
-                        <span className="text-brand-primary font-medium col-span-2">{spec.value}</span>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            </div>
-
+            )}
           </div>
 
           {/* RIGHT COLUMN: Product buy block (Sticky) */}
-          <div className="lg:col-span-6 lg:sticky lg:top-24 space-y-6">
+          <div className="lg:col-span-6 lg:col-start-7 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-24 space-y-6">
             <div className="bg-white border border-brand-border p-6 md:p-8 rounded-xl shadow-sm space-y-6">
               
               {/* Heading / Brand block */}
@@ -441,13 +389,61 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
                   <span>Certified Product</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
-                  <RotateCcw className="w-5 h-5 text-brand-primary" />
-                  <span>Easy Returns</span>
+                  <CreditCard className="w-5 h-5 text-brand-primary" />
+                  <span>Secure Payments</span>
                 </div>
               </div>
 
             </div>
           </div>
+
+          {/* Description & Specs Tabs */}
+          <div className="lg:col-span-6 lg:col-start-1 lg:row-start-2 bg-white border border-brand-border p-6 md:p-8 rounded-xl space-y-8 shadow-sm">
+            <div className="space-y-4">
+              <h3 className="font-headings font-extrabold text-lg tracking-wider text-brand-primary uppercase pb-2 border-b border-brand-border">
+                PRODUCT DESCRIPTION
+              </h3>
+              <div className="relative font-body">
+                <p className={`text-brand-muted text-sm leading-relaxed ${!isDescExpanded ? 'line-clamp-3' : ''}`}>
+                  {product.description}
+                </p>
+                {product.description && product.description.length > 150 && (
+                  <button
+                    onClick={() => setIsDescExpanded(!isDescExpanded)}
+                    className="mt-2 text-brand-red hover:text-brand-primary text-xs font-bold flex items-center gap-1 transition-colors focus:outline-none cursor-pointer"
+                  >
+                    {isDescExpanded ? (
+                      <>
+                        Show Less <ChevronUp className="w-3.5 h-3.5" />
+                      </>
+                    ) : (
+                      <>
+                        Show More <ChevronDown className="w-3.5 h-3.5" />
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Specifications Table */}
+            <div className="space-y-4 pt-4">
+              <h3 className="font-headings font-extrabold text-lg tracking-wider text-brand-primary uppercase pb-2 border-b border-brand-border">
+                TECHNICAL SPECIFICATIONS
+              </h3>
+              <div className="border border-brand-border rounded overflow-hidden bg-brand-bg text-sm divide-y divide-brand-border font-body">
+                {product.specifications
+                  .filter((spec) => spec.name.toLowerCase() !== "brand")
+                  .map((spec) => (
+                    <div key={spec.name} className="grid grid-cols-3 p-3.5">
+                      <span className="text-brand-muted font-bold col-span-1">{spec.name}</span>
+                      <span className="text-brand-primary font-medium col-span-2">{spec.value}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+
         </div>
 
         {/* RELATED PRODUCTS SECTION */}

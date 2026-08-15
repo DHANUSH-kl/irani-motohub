@@ -24,12 +24,17 @@ export default function Newsletter() {
             </div>
             
             <h2 className="text-3xl sm:text-4xl font-headings font-extrabold tracking-tight text-white uppercase leading-none">
-              JOIN THE MOTO-COMMUNITY
+              JOIN THE MOTOHUB COMMUNITY
             </h2>
             
-            <p className="text-gray-400 text-xs sm:text-sm leading-relaxed max-w-lg font-body">
-              Connect with fellow riders, get real-time build updates, race-track tuning tips, and exclusive early access to certified product drops directly on WhatsApp.
-            </p>
+            <div className="space-y-3 font-body text-gray-400 text-xs sm:text-sm leading-relaxed max-w-lg">
+              <p>
+                Get early access to product updates, new arrivals, exclusive offers, and important announcements — before anyone else.
+              </p>
+              <p>
+                Join the community and stay one step ahead.
+              </p>
+            </div>
           </div>
 
           {/* Right Column: Premium WhatsApp Community Card */}
