@@ -73,6 +73,51 @@ export default function RootLayout({
       className={`${manrope.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-brand-bg text-brand-primary">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "Organization",
+                  "@id": "https://iranimotohub.in/#organization",
+                  "name": "Irani MotoHub",
+                  "url": "https://iranimotohub.in",
+                  "logo": {
+                    "@type": "ImageObject",
+                    "url": "https://iranimotohub.in/imhlogo.png",
+                    "caption": "Irani MotoHub"
+                  },
+                  "sameAs": [
+                    "https://instagram.com",
+                    "https://facebook.com"
+                  ]
+                },
+                {
+                  "@type": "WebSite",
+                  "@id": "https://iranimotohub.in/#website",
+                  "url": "https://iranimotohub.in",
+                  "name": "Irani MotoHub",
+                  "description": "Premium Motorcycle Accessories & Performance Store",
+                  "publisher": {
+                    "@id": "https://iranimotohub.in/#organization"
+                  },
+                  "potentialAction": [
+                    {
+                      "@type": "SearchAction",
+                      "target": {
+                        "@type": "EntryPoint",
+                        "urlTemplate": "https://iranimotohub.in/products?search={search_term_string}"
+                      },
+                      "query-input": "required name=search_term_string"
+                    }
+                  ]
+                }
+              ]
+            })
+          }}
+        />
         <AuthProvider>
           <CartProvider>
             <WishlistProvider>

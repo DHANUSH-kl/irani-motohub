@@ -24,6 +24,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${col.title} | Premium Performance | Irani MotoHub`,
     description: col.description || `Browse our exclusive collection of ${col.title} on Irani MotoHub.`,
+    alternates: {
+      canonical: `https://iranimotohub.in/collections/${resolvedParams.handle}`
+    },
     openGraph: {
       title: `${col.title} | Premium Performance | Irani MotoHub`,
       description: col.description || `Browse our exclusive collection of ${col.title} on Irani MotoHub.`,
@@ -42,12 +45,45 @@ export default async function CollectionPage({ params }: Props) {
     getProducts({ collectionHandle: handle })
   ]);
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://iranimotohub.in"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": initialCollection?.title || handle,
+        "item": `https://iranimotohub.in/collections/${handle}`
+      }
+    ]
+  };
+
   return (
-    <CollectionClientPage
-      handle={handle}
-      initialCollection={initialCollection}
-      initialCollections={initialCollections}
-      initialProducts={initialProducts}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <CollectionClientPage
+        handle={handle}
+        initialCollection={initialCollection}
+        initialCollections={initialCollections}
+        initialProducts={initialProducts}
+      />
+    </>
   );
+}
+
+// Pre-render collections at build time
+export async function generateStaticParams() {
+  const collections = await getCollections();
+  return collections.map((col) => ({
+    handle: col.handle,
+  }));
 }

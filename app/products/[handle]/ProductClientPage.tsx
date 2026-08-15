@@ -225,53 +225,7 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
                 </div>
               </div>
 
-              {/* Rider Garage Fitment Check Tool */}
-              <div className="border border-brand-border rounded-xl p-5 bg-brand-bg space-y-4 shadow-inner">
-                <div className="flex items-center gap-2">
-                  <Wrench className="w-4 h-4 text-brand-red animate-pulse" />
-                  <span className="font-headings font-extrabold text-[10px] uppercase tracking-wider text-brand-primary">
-                    Compatibility Engine
-                  </span>
-                </div>
-                
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <select
-                    value={selectedMaker}
-                    onChange={(e) => {
-                      setSelectedMaker(e.target.value);
-                      setSelectedModel("");
-                    }}
-                    className="flex-grow bg-white border border-brand-border text-brand-primary rounded p-2.5 text-xs font-semibold focus:outline-none"
-                  >
-                    <option value="">Select Maker</option>
-                    {MOTORCYCLES.map((m) => (
-                      <option key={m.maker} value={m.maker}>{m.maker}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={selectedModel}
-                    onChange={(e) => handleFitmentCheck(selectedMaker, e.target.value)}
-                    disabled={!selectedMaker}
-                    className="flex-grow bg-white border border-brand-border text-brand-primary rounded p-2.5 text-xs font-semibold focus:outline-none disabled:opacity-50"
-                  >
-                    <option value="">Select Model</option>
-                    {selectedMaker &&
-                      MOTORCYCLES.find((m) => m.maker === selectedMaker)?.models.map((mod) => (
-                        <option key={mod} value={mod}>{mod}</option>
-                      ))}
-                  </select>
-                </div>
 
-                {fitmentResult.msg && (
-                  <div className={`p-3 rounded-lg border text-xs font-bold transition-all ${
-                    fitmentResult.status === "fits" || fitmentResult.status === "universal"
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                      : "border-brand-red/20 bg-brand-red/5 text-brand-red"
-                  }`}>
-                    {fitmentResult.msg}
-                  </div>
-                )}
-              </div>
 
               {/* Pricing */}
               <div className="flex items-baseline gap-3 pt-2 border-t border-brand-border">

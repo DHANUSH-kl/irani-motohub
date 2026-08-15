@@ -1,7 +1,7 @@
 import React from "react";
 import { Metadata } from "next";
 import Link from "next/link";
-import { getProduct, getRelatedProducts } from "@/lib/shopify";
+import { getProduct, getProducts, getRelatedProducts } from "@/lib/shopify";
 import ProductClientPage from "./ProductClientPage";
 
 export const revalidate = 60; // Revalidate cache every 60 seconds (ISR)
@@ -25,6 +25,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${product.title} | Irani MotoHub`,
     description: product.description || `Buy ${product.title} premium motorcycle accessories on Irani MotoHub.`,
+    alternates: {
+      canonical: `https://iranimotohub.in/products/${resolvedParams.handle}`
+    },
     openGraph: {
       title: `${product.title} | Irani MotoHub`,
       description: product.description || `Buy ${product.title} premium motorcycle accessories on Irani MotoHub.`,
@@ -52,5 +55,70 @@ export default async function ProductPage({ params }: Props) {
   // Fetch only related products of same category (on the server)
   const relatedProducts = await getRelatedProducts(product.id, product.category, 4);
 
-  return <ProductClientPage product={product} relatedProducts={relatedProducts} />;
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.title,
+    "image": product.images.map((img) => img.url),
+    "description": product.description,
+    "sku": product.variants[0]?.id || product.id,
+    "brand": {
+      "@type": "Brand",
+      "name": product.brand || "Irani MotoHub"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": product.variants[0]?.price.amount || product.priceRange.minVariantPrice.amount,
+      "priceCurrency": "INR",
+      "availability": product.variants[0]?.availableForSale ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      "url": `https://iranimotohub.in/products/${product.handle}`
+    }
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://iranimotohub.in"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": product.category,
+        "item": `https://iranimotohub.in/collections/${product.category.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-')}`
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": product.title,
+        "item": `https://iranimotohub.in/products/${product.handle}`
+      }
+    ]
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <ProductClientPage product={product} relatedProducts={relatedProducts} />
+    </>
+  );
+}
+
+// Pre-render top-selling catalog products at build time (limit to top 30)
+export async function generateStaticParams() {
+  const products = await getProducts({ limit: 30 });
+  return products.map((prod) => ({
+    handle: prod.handle,
+  }));
 }
