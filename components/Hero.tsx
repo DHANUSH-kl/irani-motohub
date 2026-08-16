@@ -11,7 +11,7 @@ import Image from "next/image";
 
 export default function Hero({ product }: { product: Product | null }) {
   const trustIndicators = [
-    { icon: <Truck className="w-4 h-4 text-brand-red" />, text: "Fast and reliable shipping" },
+    { icon: <Truck className="w-4 h-4 text-brand-red" />, text: "Pan India delivery" },
     { icon: <ShieldCheck className="w-4 h-4 text-brand-red" />, text: "100% Genuine Guarantee" },
     { icon: <Users className="w-4 h-4 text-brand-red" />, text: "Trusted by riders" },
     { icon: <Headset className="w-4 h-4 text-brand-red" />, text: "Engineer-Backed Support" }

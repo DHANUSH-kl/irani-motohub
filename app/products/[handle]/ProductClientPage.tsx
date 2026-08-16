@@ -336,7 +336,7 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
               <div className="grid grid-cols-3 gap-2.5 text-[10px] text-brand-muted uppercase font-bold tracking-wider pt-4 border-t border-brand-border text-center">
                 <div className="flex flex-col items-center gap-1">
                   <Truck className="w-5 h-5 text-brand-primary" />
-                  <span>Free Shipping</span>
+                  <span>Shipping across India</span>
                 </div>
                 <div className="flex flex-col items-center gap-1 border-x border-brand-border">
                   <ShieldCheck className="w-5 h-5 text-brand-primary" />

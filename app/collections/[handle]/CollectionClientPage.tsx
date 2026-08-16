@@ -492,29 +492,16 @@ export default function CollectionClientPage({
           )}
 
           {/* SEO Optimized Collection Description Block */}
-          <div className="mt-8 bg-white border border-brand-border rounded-xl p-6 md:p-8 shadow-sm">
-            <h2 className="font-headings font-extrabold text-sm uppercase tracking-wider text-brand-primary mb-3">
-              About our {currentCollection?.title || "Performance Collection"} range
-            </h2>
-            {currentCollection?.description && currentCollection.description.length > 100 ? (
+          {currentCollection?.description && (
+            <div className="mt-8 bg-white border border-brand-border rounded-xl p-6 md:p-8 shadow-sm">
+              <h2 className="font-headings font-extrabold text-sm uppercase tracking-wider text-brand-primary mb-3">
+                About our {currentCollection.title || "Performance Collection"} range
+              </h2>
               <p className="text-brand-muted text-xs sm:text-sm leading-relaxed font-body">
                 {currentCollection.description}
               </p>
-            ) : (
-              <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-lg text-xs font-semibold space-y-2">
-                <p className="font-bold uppercase tracking-wider">⚠️ [SEO COPY WARNING] NEEDS SEO COPY BLOCK</p>
-                <p>
-                  This collection (<code>{handle}</code>) does not have a comprehensive SEO-optimized description block (150–300 words).
-                  Please update the description field in your Shopify Collection settings to target the primary keywords.
-                </p>
-                {currentCollection?.description && (
-                  <p className="italic mt-1 text-amber-900/70">
-                    Current short description: &quot;{currentCollection.description}&quot;
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </main>
 
       </div>
