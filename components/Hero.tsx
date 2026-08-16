@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ShieldCheck, Truck, RotateCcw, Headset, ArrowRight } from "lucide-react";
+import { ShieldCheck, Truck, Users, Headset, ArrowRight } from "lucide-react";
 
 import { Product } from "@/lib/shopify";
 
@@ -11,9 +11,9 @@ import Image from "next/image";
 
 export default function Hero({ product }: { product: Product | null }) {
   const trustIndicators = [
-    { icon: <Truck className="w-4 h-4 text-brand-red" />, text: "Free Shipping India-Wide" },
+    { icon: <Truck className="w-4 h-4 text-brand-red" />, text: "Fast and reliable shipping" },
     { icon: <ShieldCheck className="w-4 h-4 text-brand-red" />, text: "100% Genuine Guarantee" },
-    { icon: <RotateCcw className="w-4 h-4 text-brand-red" />, text: "Easy Returns & Exchanges" },
+    { icon: <Users className="w-4 h-4 text-brand-red" />, text: "Trusted by riders" },
     { icon: <Headset className="w-4 h-4 text-brand-red" />, text: "Engineer-Backed Support" }
   ];
 

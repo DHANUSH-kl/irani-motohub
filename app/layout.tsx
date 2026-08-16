@@ -26,11 +26,16 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Irani MotoHub | Premium Motorcycle Accessories & Performance Parts",
-  description: "India's destination for high-performance motorcycle upgrades, racing air filters, technical riding gear, and touring accessories.",
+  description: "Premium Motorcycle accessories and performance upgrades",
   metadataBase: new URL("https://iranimotohub.in"),
+  icons: {
+    icon: "/imhlogo.png",
+    shortcut: "/imhlogo.png",
+    apple: "/imhlogo.png",
+  },
   openGraph: {
     title: "Irani MotoHub | Premium Performance Store",
-    description: "Shop racing air filters, fuel piggybacks, and technical riding gear from BMC, K&N, Motul, Liqui Moly, and more.",
+    description: "Premium Motorcycle accessories and performance upgrades",
     url: "https://iranimotohub.in",
     siteName: "Irani MotoHub",
     images: [
@@ -47,7 +52,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Irani MotoHub | Premium Motorcycle Performance Parts",
-    description: "Unlock better engine performance and ride safety with technical apparel, engine care products, and performance upgrades.",
+    description: "Premium Motorcycle accessories and performance upgrades",
     images: ["/hero-bg.png"],
   },
   alternates: {
