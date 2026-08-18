@@ -215,7 +215,7 @@ export default function Header() {
         
         {/* Top Ticker Banner */}
         <div className="bg-[#0A0A0A] text-gray-300 py-2.5 px-4 text-[9px] font-headings font-extrabold uppercase tracking-[0.25em] text-center border-b border-white/5 flex items-center justify-center flex-wrap gap-4 sm:gap-6">
-          <span>FREE SHIPPING ON ORDERS ₹999+</span>
+          <span>FREE SHIPPING ON ORDERS ABOVE ₹999</span>
         </div>
 
         {/* Main Navigation Header (Premium Off-White Glassmorphic Panel) */}

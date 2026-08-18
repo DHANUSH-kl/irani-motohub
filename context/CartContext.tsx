@@ -210,9 +210,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         });
       }
 
+      const subtotal = newLines.reduce((acc, line) => {
+        const price = parseFloat(line.selectedVariant.price.amount || "0");
+        return acc + price * line.quantity;
+      }, 0);
+
       return {
         ...prevCart,
-        lines: newLines
+        lines: newLines,
+        subtotalAmount: {
+          ...prevCart.subtotalAmount,
+          amount: subtotal.toFixed(2)
+        }
       };
     });
     // Open cart drawer on addition
@@ -224,9 +233,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const newLines = prevCart.lines.filter(
         (line) => line.selectedVariant.id !== variantId
       );
+      const subtotal = newLines.reduce((acc, line) => {
+        const price = parseFloat(line.selectedVariant.price.amount || "0");
+        return acc + price * line.quantity;
+      }, 0);
       return {
         ...prevCart,
-        lines: newLines
+        lines: newLines,
+        subtotalAmount: {
+          ...prevCart.subtotalAmount,
+          amount: subtotal.toFixed(2)
+        }
       };
     });
   };
@@ -244,9 +261,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
         return line;
       });
+      const subtotal = newLines.reduce((acc, line) => {
+        const price = parseFloat(line.selectedVariant.price.amount || "0");
+        return acc + price * line.quantity;
+      }, 0);
       return {
         ...prevCart,
-        lines: newLines
+        lines: newLines,
+        subtotalAmount: {
+          ...prevCart.subtotalAmount,
+          amount: subtotal.toFixed(2)
+        }
       };
     });
   };
@@ -254,12 +279,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clearCart = () => {
     setCart((prevCart) => ({
       ...prevCart,
-      lines: []
+      lines: [],
+      subtotalAmount: {
+        ...prevCart.subtotalAmount,
+        amount: "0.00"
+      }
     }));
   };
 
   const cartCount = cart.lines.reduce((acc, line) => acc + line.quantity, 0);
-  const cartSubtotal = parseFloat(cart.subtotalAmount.amount);
+  const cartSubtotal = cart.lines.reduce((acc, line) => {
+    const price = parseFloat(line.selectedVariant.price.amount || "0");
+    return acc + price * line.quantity;
+  }, 0);
 
   return (
     <CartContext.Provider

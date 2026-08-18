@@ -2636,5 +2636,65 @@ export function getOptimizedImageUrl(url: string, width: number): string {
   return url;
 }
 
+export interface ShopPolicy {
+  title: string;
+  body: string;
+}
+
+export const getShopPolicy = cache(async (handle: string): Promise<ShopPolicy | null> => {
+  if (!isShopifyConfigured()) {
+    const mockPolicies: Record<string, ShopPolicy> = {
+      "privacy-policy": {
+        title: "Privacy Policy",
+        body: "Privacy Policy. Your personal data is secure with Irani MotoHub. We do not sell or share your data."
+      },
+      "refund-policy": {
+        title: "Return & Refund Policy",
+        body: "Return & Refund Policy. We accept returns within 7 days of delivery. Parts must be in original packaging and unused."
+      },
+      "shipping-policy": {
+        title: "Shipping Policy",
+        body: "Shipping Policy. We ship pan-India. Orders are usually processed within 24-48 hours. Free shipping applies for orders above ₹999."
+      },
+      "terms-of-service": {
+        title: "Terms & Conditions",
+        body: "Terms & Conditions. By using our website, you agree to comply with our terms and guidelines."
+      }
+    };
+    return mockPolicies[handle] || null;
+  }
+
+  const policyFieldMap: Record<string, string> = {
+    "privacy-policy": "privacyPolicy",
+    "refund-policy": "refundPolicy",
+    "shipping-policy": "shippingPolicy",
+    "terms-of-service": "termsOfService"
+  };
+
+  const field = policyFieldMap[handle];
+  if (!field) return null;
+
+  const query = `
+    query getPolicy {
+      shop {
+        ${field} {
+          title
+          body
+        }
+      }
+    }
+  `;
+
+  const res = await shopifyFetch<{ shop: any }>(query);
+  if (!res?.data?.shop) return null;
+  const policy = res.data.shop[field];
+  if (!policy) return null;
+
+  return {
+    title: policy.title,
+    body: policy.body
+  };
+});
+
 
 

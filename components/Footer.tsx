@@ -35,7 +35,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Column 1: Company & Policies */}
+                  {/* Column 1: Company & Policies */}
           <div>
             <h4 className="font-headings font-extrabold text-xs tracking-widest text-brand-red uppercase mb-5">
               SUPPORT & POLICIES
@@ -47,17 +47,17 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/#shipping" className="text-gray-400 hover:text-white transition-colors duration-200 block">
+                <Link href="/policies/shipping-policy" className="text-gray-400 hover:text-white transition-colors duration-200 block">
                   Shipping Policy
                 </Link>
               </li>
               <li>
-                <Link href="/#replacement-policy" className="text-gray-400 hover:text-white transition-colors duration-200 block">
-                  Return & Support Policy
+                <Link href="/policies/refund-policy" className="text-gray-400 hover:text-white transition-colors duration-200 block">
+                  Return & Refund Policy
                 </Link>
               </li>
               <li>
-                <Link href="/#privacy" className="text-gray-400 hover:text-white transition-colors duration-200 block">
+                <Link href="/policies/privacy-policy" className="text-gray-400 hover:text-white transition-colors duration-200 block">
                   Privacy Policy
                 </Link>
               </li>
@@ -81,7 +81,7 @@ export default function Footer() {
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-white"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
                 </a>
                 <a
-                  href="https://facebook.com"
+                  href="https://www.facebook.com/share/1EoZenzbZp/?mibextid=wwXIfr"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-10 h-10 rounded-full bg-[#2d231b] flex items-center justify-center hover:bg-brand-red transition-all duration-200"
@@ -100,7 +100,7 @@ export default function Footer() {
         <div className="border-t border-[#3a3028] pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500">
           <p>© {new Date().getFullYear()} Irani MotoHub. All rights reserved.</p>
           <div className="flex space-x-6">
-            <span className="hover:text-white cursor-pointer transition-colors">Terms of Service</span>
+            <Link href="/policies/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
             <span className="hover:text-white cursor-pointer transition-colors">Sitemap</span>
           </div>
         </div>

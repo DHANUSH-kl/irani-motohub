@@ -40,7 +40,9 @@ export default function CartDrawer() {
           parsedUrl.hostname === shopifyDomain ||
           parsedUrl.hostname.endsWith(".myshopify.com") ||
           parsedUrl.hostname.endsWith("shopify.com") ||
-          parsedUrl.hostname === "iranimotohub.in";
+          parsedUrl.hostname === "iranimotohub.in" ||
+          parsedUrl.hostname === "checkout.iranimotohub.in" ||
+          parsedUrl.hostname === window.location.hostname;
 
         if (!isShopifyDomain) return false;
 
@@ -138,7 +140,14 @@ export default function CartDrawer() {
       let finalCheckoutUrl = checkoutUrl;
       const shopifyDomain = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
       if (shopifyDomain && finalCheckoutUrl.includes(shopifyDomain)) {
-        finalCheckoutUrl = finalCheckoutUrl.replace(shopifyDomain, "iranimotohub.in");
+        try {
+          const urlObj = new URL(finalCheckoutUrl);
+          urlObj.protocol = "https:";
+          urlObj.host = "checkout.iranimotohub.in";
+          finalCheckoutUrl = urlObj.toString();
+        } catch (e) {
+          finalCheckoutUrl = finalCheckoutUrl.replace(shopifyDomain, "checkout.iranimotohub.in");
+        }
       }
       console.log("[Checkout] Redirecting browser to Shopify Checkout:", finalCheckoutUrl);
       window.location.href = finalCheckoutUrl;
