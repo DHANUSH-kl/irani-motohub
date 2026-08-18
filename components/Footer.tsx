@@ -82,7 +82,7 @@ export default function Footer() {
               </h4>
               <div className="flex space-x-4">
                 <a
-                  href="https://instagram.com"
+                  href="https://www.instagram.com/iranimotohub.in?igsh=aTVwamMxMHJ4czdh"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-10 h-10 rounded-full bg-[#2d231b] flex items-center justify-center hover:bg-brand-red transition-all duration-200"
