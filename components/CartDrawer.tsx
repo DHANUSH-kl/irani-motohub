@@ -137,20 +137,8 @@ export default function CartDrawer() {
 
     // 4. Execute checkout redirection
     if (isUrlValid && checkoutUrl) {
-      let finalCheckoutUrl = checkoutUrl;
-      const shopifyDomain = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
-      if (shopifyDomain && finalCheckoutUrl.includes(shopifyDomain)) {
-        try {
-          const urlObj = new URL(finalCheckoutUrl);
-          urlObj.protocol = "https:";
-          urlObj.host = "checkout.iranimotohub.in";
-          finalCheckoutUrl = urlObj.toString();
-        } catch (e) {
-          finalCheckoutUrl = finalCheckoutUrl.replace(shopifyDomain, "checkout.iranimotohub.in");
-        }
-      }
-      console.log("[Checkout] Redirecting browser to Shopify Checkout:", finalCheckoutUrl);
-      window.location.href = finalCheckoutUrl;
+      console.log("[Checkout] Redirecting browser to Shopify Checkout:", checkoutUrl);
+      window.location.href = checkoutUrl;
     } else {
       console.error("[Checkout] Redirect aborted: Invalid URL and recovery failed.");
       alert("We encountered an issue directing you to the checkout screen. Please refresh the page or try again.");
