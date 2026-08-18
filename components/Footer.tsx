@@ -57,6 +57,16 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <a 
+                  href="https://wa.me/919082373197" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-gray-400 hover:text-white transition-colors duration-200 block"
+                >
+                  Return Request
+                </a>
+              </li>
+              <li>
                 <Link href="/policies/privacy-policy" className="text-gray-400 hover:text-white transition-colors duration-200 block">
                   Privacy Policy
                 </Link>
