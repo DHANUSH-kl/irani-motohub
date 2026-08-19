@@ -113,14 +113,21 @@ export default function Header() {
 
   // Real-time search filter
   useEffect(() => {
-    if (searchQuery.trim() === "") {
+    const query = searchQuery.toLowerCase().trim();
+    if (query === "") {
       setSearchResults([]);
       return;
     }
-    const filtered = allProducts.filter((product) =>
-      product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filtered = allProducts.filter((product) => {
+      const titleMatch = product.title?.toLowerCase().includes(query);
+      const categoryMatch = product.category?.toLowerCase().includes(query);
+      const brandMatch = product.brand?.toLowerCase().includes(query);
+      const descMatch = product.description?.toLowerCase().includes(query);
+      const tagMatch = product.tags?.some(tag => tag.toLowerCase().includes(query));
+      const compMatch = product.compatibility?.some(comp => comp.toLowerCase().includes(query));
+      
+      return titleMatch || categoryMatch || brandMatch || descMatch || tagMatch || compMatch;
+    });
     setSearchResults(filtered.slice(0, 5));
   }, [searchQuery, allProducts]);
 
@@ -608,6 +615,27 @@ export default function Header() {
                 <Search className="w-5 h-5 text-gray-500 absolute left-4 top-1/2 -translate-y-1/2" />
               </form>
 
+              {/* Popular Search Suggestions when empty */}
+              {searchQuery.trim() === "" && (
+                <div className="mt-6 space-y-3">
+                  <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                    Popular Searches
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {["Filters", "Exhausts", "Chain Kits", "Mirrors", "Duke 390", "Himalayan", "Lubricants", "Gears"].map((keyword) => (
+                      <button
+                        key={keyword}
+                        type="button"
+                        onClick={() => setSearchQuery(keyword)}
+                        className="bg-white/5 hover:bg-brand-red/10 border border-white/10 hover:border-brand-red/30 text-xs text-gray-300 hover:text-white px-3.5 py-1.5 rounded-full transition-all duration-200 cursor-pointer"
+                      >
+                        {keyword}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Instant Product Match Previews */}
               {searchResults.length > 0 && (
                 <div className="mt-6 space-y-4 border-t border-white/10 pt-4">
@@ -633,15 +661,39 @@ export default function Header() {
                           />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h5 className="text-sm font-bold text-white truncate group-hover:text-brand-red transition-colors">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-bold text-brand-red uppercase tracking-wider">
+                              {prod.brand || "Premium"}
+                            </span>
+                            <span className="text-[9px] text-gray-500">•</span>
+                            <span className="text-[9px] text-gray-400">
+                              {prod.category}
+                            </span>
+                          </div>
+                          <h5 className="text-sm font-bold text-white truncate group-hover:text-brand-red transition-colors mt-0.5 leading-tight uppercase">
                             {prod.title}
                           </h5>
+                          {prod.compatibility && prod.compatibility.length > 0 && (
+                            <p className="text-[9px] text-gray-500 truncate mt-0.5 font-body">
+                              Fits: {prod.compatibility.join(", ")}
+                            </p>
+                          )}
                         </div>
-                        <span className="text-sm font-semibold text-white">
+                        <span className="text-sm font-semibold text-white flex-shrink-0">
                           ₹{parseInt(prod.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
                         </span>
                       </Link>
                     ))}
+                  </div>
+                  
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      onClick={handleSearchSubmit}
+                      className="w-full text-center bg-brand-red hover:bg-white hover:text-black py-2.5 text-xs font-bold uppercase tracking-wider transition-all duration-300 rounded cursor-pointer mt-1"
+                    >
+                      View All Results for &quot;{searchQuery}&quot;
+                    </button>
                   </div>
                 </div>
               )}
