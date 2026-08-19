@@ -2,7 +2,6 @@ import React, { Suspense } from "react";
 import HeroSection from "@/components/HeroSection";
 import CategorySectionSection from "@/components/CategorySectionSection";
 import BestsellersSection from "@/components/BestsellersSection";
-import FeaturedProductsSection from "@/components/FeaturedProductsSection";
 import NewArrivalsSection from "@/components/NewArrivalsSection";
 import PerformanceBanner from "@/components/PerformanceBanner";
 import FeaturedBrands from "@/components/FeaturedBrands";
@@ -30,11 +29,6 @@ export default function Home() {
       {/* Dedicated Bestsellers Section */}
       <Suspense fallback={<FeaturedProductsSkeleton />}>
         <BestsellersSection />
-      </Suspense>
-
-      {/* Curated list of items with quick-add - Streams independently */}
-      <Suspense fallback={<FeaturedProductsSkeleton />}>
-        <FeaturedProductsSection />
       </Suspense>
 
       {/* Carousel of newest products - Streams independently */}

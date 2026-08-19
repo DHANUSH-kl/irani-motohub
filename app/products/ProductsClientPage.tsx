@@ -244,16 +244,76 @@ export default function ProductsClientPage({ initialProducts, initialCollections
     // Filter by Search Query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      result = result.filter((p) => {
-        const titleMatch = p.title?.toLowerCase().includes(q);
-        const categoryMatch = p.category?.toLowerCase().includes(q);
-        const brandMatch = p.brand?.toLowerCase().includes(q);
-        const descMatch = p.description?.toLowerCase().includes(q);
-        const tagMatch = p.tags?.some((t) => t.toLowerCase().includes(q));
-        const compMatch = p.compatibility?.some((c) => c.toLowerCase().includes(q));
-        
-        return titleMatch || categoryMatch || brandMatch || descMatch || tagMatch || compMatch;
+      const keywords = q.split(/\s+/).filter(Boolean);
+
+      const itemsWithScores = result.map((p) => {
+        let score = 0;
+        let matchesAllKeywords = true;
+
+        for (const keyword of keywords) {
+          const singularKeyword = keyword.endsWith("s") && keyword.length > 3 
+            ? keyword.slice(0, -1) 
+            : keyword;
+
+          const title = p.title?.toLowerCase() || "";
+          const category = p.category?.toLowerCase() || "";
+          const brand = p.brand?.toLowerCase() || "";
+          const description = p.description?.toLowerCase() || "";
+          const tags = p.tags?.map(t => t.toLowerCase()) || [];
+          const compatibility = p.compatibility?.map(c => c.toLowerCase()) || [];
+
+          let keywordMatched = false;
+
+          if (title.includes(keyword)) {
+            score += 15;
+            keywordMatched = true;
+          } else if (title.includes(singularKeyword)) {
+            score += 10;
+            keywordMatched = true;
+          }
+
+          if (category.includes(keyword) || category.includes(singularKeyword)) {
+            score += 8;
+            keywordMatched = true;
+          }
+
+          if (compatibility.some(c => c.includes(keyword) || c.includes(singularKeyword))) {
+            score += 6;
+            keywordMatched = true;
+          }
+
+          if (tags.some(t => t.includes(keyword) || t.includes(singularKeyword))) {
+            score += 4;
+            keywordMatched = true;
+          }
+
+          if (brand.includes(keyword) || brand.includes(singularKeyword)) {
+            score += 2;
+            keywordMatched = true;
+          }
+
+          if (description.includes(keyword) || description.includes(singularKeyword)) {
+            score += 1;
+            keywordMatched = true;
+          }
+
+          if (!keywordMatched) {
+            matchesAllKeywords = false;
+            break;
+          }
+        }
+
+        return { product: p, score, matchesAllKeywords };
       });
+
+      const matchedItems = itemsWithScores.filter(item => item.matchesAllKeywords);
+      
+      // If default sorting is selected, sort by query relevance score!
+      if (sortBy === "default") {
+        matchedItems.sort((a, b) => b.score - a.score);
+      }
+
+      result = matchedItems.map(item => item.product);
     }
 
     // Filter by Category

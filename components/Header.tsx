@@ -118,17 +118,81 @@ export default function Header() {
       setSearchResults([]);
       return;
     }
-    const filtered = allProducts.filter((product) => {
-      const titleMatch = product.title?.toLowerCase().includes(query);
-      const categoryMatch = product.category?.toLowerCase().includes(query);
-      const brandMatch = product.brand?.toLowerCase().includes(query);
-      const descMatch = product.description?.toLowerCase().includes(query);
-      const tagMatch = product.tags?.some(tag => tag.toLowerCase().includes(query));
-      const compMatch = product.compatibility?.some(comp => comp.toLowerCase().includes(query));
-      
-      return titleMatch || categoryMatch || brandMatch || descMatch || tagMatch || compMatch;
+
+    const keywords = query.split(/\s+/).filter(Boolean);
+
+    const filteredWithScores = allProducts.map((product) => {
+      let score = 0;
+      let matchesAllKeywords = true;
+
+      for (const keyword of keywords) {
+        const singularKeyword = keyword.endsWith("s") && keyword.length > 3 
+          ? keyword.slice(0, -1) 
+          : keyword;
+
+        const title = product.title?.toLowerCase() || "";
+        const category = product.category?.toLowerCase() || "";
+        const brand = product.brand?.toLowerCase() || "";
+        const description = product.description?.toLowerCase() || "";
+        const tags = product.tags?.map(t => t.toLowerCase()) || [];
+        const compatibility = product.compatibility?.map(c => c.toLowerCase()) || [];
+
+        let keywordMatched = false;
+
+        // Title match (highest weight)
+        if (title.includes(keyword)) {
+          score += 15;
+          keywordMatched = true;
+        } else if (title.includes(singularKeyword)) {
+          score += 10;
+          keywordMatched = true;
+        }
+
+        // Category match
+        if (category.includes(keyword) || category.includes(singularKeyword)) {
+          score += 8;
+          keywordMatched = true;
+        }
+
+        // Compatibility match
+        if (compatibility.some(c => c.includes(keyword) || c.includes(singularKeyword))) {
+          score += 6;
+          keywordMatched = true;
+        }
+
+        // Tags match
+        if (tags.some(t => t.includes(keyword) || t.includes(singularKeyword))) {
+          score += 4;
+          keywordMatched = true;
+        }
+
+        // Brand match
+        if (brand.includes(keyword) || brand.includes(singularKeyword)) {
+          score += 2;
+          keywordMatched = true;
+        }
+
+        // Description match
+        if (description.includes(keyword) || description.includes(singularKeyword)) {
+          score += 1;
+          keywordMatched = true;
+        }
+
+        if (!keywordMatched) {
+          matchesAllKeywords = false;
+          break;
+        }
+      }
+
+      return { product, score, matchesAllKeywords };
     });
-    setSearchResults(filtered.slice(0, 5));
+
+    const sortedResults = filteredWithScores
+      .filter(item => item.matchesAllKeywords)
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.product);
+
+    setSearchResults(sortedResults.slice(0, 5));
   }, [searchQuery, allProducts]);
 
   // Reset overlay panels on page change

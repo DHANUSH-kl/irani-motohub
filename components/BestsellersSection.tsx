@@ -51,8 +51,8 @@ export default async function BestsellersSection() {
           </Link>
         </div>
 
-        {/* 4-Column Product Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* 4-Column Product Grid / Carousel on Mobile */}
+        <div className="flex sm:grid overflow-x-auto sm:overflow-x-visible pb-4 sm:pb-0 scrollbar-none snap-x snap-mandatory sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {validProducts.map((product) => {
             const hasDiscount = false; // standard catalog price
             const rating = 4.8;
@@ -60,7 +60,7 @@ export default async function BestsellersSection() {
             return (
               <div 
                 key={product.id}
-                className="group flex flex-col bg-[#141414] border border-white/5 rounded-lg p-4 hover:border-brand-red/30 hover:shadow-2xl transition-all duration-300 relative"
+                className="group flex flex-col bg-[#141414] border border-white/5 rounded-lg p-4 hover:border-brand-red/30 hover:shadow-2xl transition-all duration-300 relative min-w-[280px] sm:min-w-0 w-[280px] sm:w-auto snap-start flex-shrink-0"
               >
                 {/* Image Box */}
                 <div className="relative aspect-square w-full bg-[#f6f6f6] overflow-hidden rounded-md mb-4 flex items-center justify-center p-4">
