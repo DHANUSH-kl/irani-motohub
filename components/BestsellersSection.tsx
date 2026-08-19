@@ -71,7 +71,7 @@ export default async function BestsellersSection() {
                       fill
                       className="object-contain p-2 transition-transform duration-700 ease-out group-hover:scale-105"
                       sizes="(max-w-768px) 100vw, 25vw"
-                      loader={product.images[0]?.url?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
+                      unoptimized={product.images[0]?.url?.includes("cdn.shopify.com")}
                     />
                   </Link>
                   <span className="absolute top-3 left-3 bg-[#1c1c1c] border border-white/10 text-white text-[8px] font-headings font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-sm">
