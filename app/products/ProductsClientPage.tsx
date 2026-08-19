@@ -222,10 +222,10 @@ export default function ProductsClientPage({ initialProducts, initialCollections
 
   // Update local filter state if URL params change
   useEffect(() => {
-    if (urlSearchQuery) setSearchQuery(urlSearchQuery);
-    if (urlCollection) setSelectedCollection(urlCollection);
-    if (urlCategory) setSelectedCategory(urlCategory);
-    if (urlBrand) setSelectedBrand(urlBrand);
+    setSearchQuery(urlSearchQuery);
+    setSelectedCollection(urlCollection || "all");
+    setSelectedCategory(urlCategory || "all");
+    setSelectedBrand(urlBrand || "all");
   }, [urlSearchQuery, urlCollection, urlCategory, urlBrand]);
 
   // Extract unique brands & categories for filter options
@@ -244,12 +244,16 @@ export default function ProductsClientPage({ initialProducts, initialCollections
     // Filter by Search Query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      result = result.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q) ||
-          p.compatibility.some((c) => c.toLowerCase().includes(q))
-      );
+      result = result.filter((p) => {
+        const titleMatch = p.title?.toLowerCase().includes(q);
+        const categoryMatch = p.category?.toLowerCase().includes(q);
+        const brandMatch = p.brand?.toLowerCase().includes(q);
+        const descMatch = p.description?.toLowerCase().includes(q);
+        const tagMatch = p.tags?.some((t) => t.toLowerCase().includes(q));
+        const compMatch = p.compatibility?.some((c) => c.toLowerCase().includes(q));
+        
+        return titleMatch || categoryMatch || brandMatch || descMatch || tagMatch || compMatch;
+      });
     }
 
     // Filter by Category

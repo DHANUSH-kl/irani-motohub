@@ -86,14 +86,6 @@ export default function Hero({ product }: { product: Product | null }) {
                 Garage Profile Active: {activeBike}
               </span>
             )}
-            {product && (
-              <Link 
-                href={`/products/${product.handle}`}
-                className="bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[9px] font-bold py-1 px-2.5 rounded-full uppercase tracking-wider flex items-center gap-1.5 ml-2 transition-all"
-              >
-                🔥 Trending: {product.title} @ ₹{parseInt(product.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
-              </Link>
-            )}
           </motion.div>
 
           {/* Luxury Alternating Heading */}

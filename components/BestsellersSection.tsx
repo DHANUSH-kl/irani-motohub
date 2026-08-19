@@ -82,7 +82,7 @@ export default async function BestsellersSection() {
                 {/* Details */}
                 <div className="flex-grow flex flex-col">
                   <span className="text-[9px] font-bold text-brand-red uppercase tracking-wider block mb-1 font-body">
-                    {product.brand || "MTOHUB"}
+                    {product.category}
                   </span>
                   
                   <h3 className="font-headings font-extrabold text-sm text-white hover:text-brand-red transition-colors line-clamp-1 mb-2 uppercase leading-tight">

@@ -663,10 +663,6 @@ export default function Header() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-[9px] font-bold text-brand-red uppercase tracking-wider">
-                              {prod.brand || "Premium"}
-                            </span>
-                            <span className="text-[9px] text-gray-500">•</span>
-                            <span className="text-[9px] text-gray-400">
                               {prod.category}
                             </span>
                           </div>
