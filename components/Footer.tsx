@@ -38,7 +38,7 @@ export default function Footer() {
                   {/* Column 1: Company & Policies */}
           <div>
             <h4 className="font-headings font-extrabold text-xs tracking-widest text-brand-red uppercase mb-5">
-              SUPPORT & POLICIES
+              INFORMATION
             </h4>
             <ul className="space-y-3 text-sm">
               <li>
@@ -78,7 +78,7 @@ export default function Footer() {
           <div className="space-y-6">
             <div>
               <h4 className="font-headings font-extrabold text-xs tracking-widest text-brand-red uppercase mb-4">
-                FOLLOW OUR RIDE
+                OUR SOCIALS
               </h4>
               <div className="flex space-x-4">
                 <a
