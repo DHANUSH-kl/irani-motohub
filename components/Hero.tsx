@@ -5,11 +5,11 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ShieldCheck, Truck, Users, Headset, ArrowRight } from "lucide-react";
 
-import { Product } from "@/lib/shopify";
+import { Product, shopifyLoader } from "@/lib/shopify";
 
 import Image from "next/image";
 
-export default function Hero({ product }: { product: Product | null }) {
+export default function Hero({ product, bestsellers = [] }: { product: Product | null, bestsellers?: Product[] }) {
   const trustIndicators = [
     { icon: <Truck className="w-4 h-4 text-brand-red" />, text: "Pan India delivery" },
     { icon: <ShieldCheck className="w-4 h-4 text-brand-red" />, text: "100% Genuine Guarantee" },
@@ -67,84 +67,158 @@ export default function Hero({ product }: { product: Product | null }) {
 
       {/* Main Content Area */}
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 flex-grow flex items-center py-16 lg:py-24">
-        <div className="max-w-2xl md:max-w-3xl text-left space-y-6 md:space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center w-full">
           
-          {/* Small Label & Active Garage Alert */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-wrap items-center gap-3"
-          >
-            <span className="w-8 h-[1px] bg-brand-red" />
-            <span className="text-[9px] sm:text-xs font-bold uppercase tracking-[0.25em] text-brand-red font-headings flex items-center gap-2">
-              RACE-PROVEN • PRECISION-ENGINEERED
-            </span>
-            {activeBike && (
-              <span className="bg-brand-red/10 border border-brand-red/30 text-white text-[9px] font-bold py-1 px-2.5 rounded-full uppercase tracking-wider flex items-center gap-1.5 ml-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Garage Profile Active: {activeBike}
-              </span>
-            )}
-            {product && (
-              <Link 
-                href={`/products/${product.handle}`}
-                className="bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[9px] font-bold py-1 px-2.5 rounded-full uppercase tracking-wider flex items-center gap-1.5 ml-2 transition-all"
-              >
-                🔥 Trending: {product.title} @ ₹{parseInt(product.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
-              </Link>
-            )}
-          </motion.div>
-
-          {/* Luxury Alternating Heading */}
-          <div className="space-y-3">
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="text-3xl sm:text-5xl lg:text-6xl font-headings font-extrabold tracking-tight leading-[1.05] text-white flex flex-col"
+          {/* Left Column: Hero Text Copy */}
+          <div className="lg:col-span-7 text-left space-y-6 md:space-y-8">
+            
+            {/* Small Label & Active Garage Alert */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-wrap items-center gap-3"
             >
-              <span className="block text-white">
-                Everything Your Motorcycle Needs,
+              <span className="w-8 h-[1px] bg-brand-red" />
+              <span className="text-[9px] sm:text-xs font-bold uppercase tracking-[0.25em] text-brand-red font-headings flex items-center gap-2">
+                RACE-PROVEN • PRECISION-ENGINEERED
               </span>
-              <span className="block mt-1">
-                All in <span className="text-brand-red">One Place.</span>
-              </span>
-            </motion.h1>
+              {activeBike && (
+                <span className="bg-brand-red/10 border border-brand-red/30 text-white text-[9px] font-bold py-1 px-2.5 rounded-full uppercase tracking-wider flex items-center gap-1.5 ml-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Garage Profile Active: {activeBike}
+                </span>
+              )}
+              {product && (
+                <Link 
+                  href={`/products/${product.handle}`}
+                  className="bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[9px] font-bold py-1 px-2.5 rounded-full uppercase tracking-wider flex items-center gap-1.5 ml-2 transition-all"
+                >
+                  🔥 Trending: {product.title} @ ₹{parseInt(product.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
+                </Link>
+              )}
+            </motion.div>
+
+            {/* Heading */}
+            <div className="space-y-3">
+              <motion.h1
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                className="text-3xl sm:text-5xl lg:text-6xl font-headings font-extrabold tracking-tight leading-[1.05] text-white flex flex-col"
+              >
+                <span className="block text-white">
+                  Everything Your Motorcycle Needs,
+                </span>
+                <span className="block mt-1">
+                  All in <span className="text-brand-red">One Place.</span>
+                </span>
+              </motion.h1>
+            </div>
+
+            {/* Elevated Descriptive Copywriting */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="text-gray-300 font-body text-sm sm:text-base md:text-lg max-w-2xl leading-relaxed font-normal"
+            >
+              From performance upgrades like air filters to bike care products and touring essentials, shop authentic motorcycle accessories designed to improve every ride.
+            </motion.p>
+
+            {/* CTA Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-wrap items-center gap-4 pt-4"
+            >
+              <Link
+                href="/products"
+                className="bg-brand-red hover:bg-white hover:text-[#121212] text-white px-8 py-4 font-headings text-xs font-bold uppercase tracking-widest transition-all duration-300 shadow-xl hover:shadow-2xl flex items-center gap-2 group rounded-sm"
+              >
+                All Products
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              
+              <a
+                href="#categories-section"
+                className="border border-white/20 hover:border-white hover:bg-white/5 text-white px-8 py-4 font-headings text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-sm"
+              >
+                Explore Collections
+              </a>
+            </motion.div>
+
           </div>
 
-          {/* Elevated Descriptive Copywriting */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="text-gray-300 font-body text-sm sm:text-base md:text-lg max-w-2xl leading-relaxed font-normal"
-          >
-            From performance upgrades like air filters to bike care products and touring essentials, shop authentic motorcycle accessories designed to improve every ride.
-          </motion.p>
+          {/* Right Column: Bestsellers List */}
+          {bestsellers && bestsellers.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="lg:col-span-5 w-full bg-white/5 backdrop-blur-md border border-white/10 p-6 sm:p-8 rounded-xl shadow-2xl relative overflow-hidden group"
+            >
+              {/* Highlight header */}
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
+                <div>
+                  <h3 className="font-headings font-extrabold text-xs uppercase tracking-wider text-brand-red">
+                    BEST SELLERS
+                  </h3>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">
+                    Top Upgrades This Week
+                  </p>
+                </div>
+                <span className="text-[10px] bg-brand-red/10 border border-brand-red/20 text-brand-red py-1 px-2.5 rounded font-bold uppercase tracking-wider">
+                  HOT DEALS
+                </span>
+              </div>
 
-          {/* CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-wrap items-center gap-4 pt-4"
-          >
-            <Link
-              href="/products"
-              className="bg-brand-red hover:bg-white hover:text-[#121212] text-white px-8 py-4 font-headings text-xs font-bold uppercase tracking-widest transition-all duration-300 shadow-xl hover:shadow-2xl flex items-center gap-2 group rounded-sm"
-            >
-              All Products
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            
-            <a
-              href="#categories-section"
-              className="border border-white/20 hover:border-white hover:bg-white/5 text-white px-8 py-4 font-headings text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-sm"
-            >
-              Explore Collections
-            </a>
-          </motion.div>
+              {/* Bestseller Stack */}
+              <div className="space-y-4">
+                {bestsellers.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/products/${item.handle}`}
+                    className="flex items-center gap-4 p-3 bg-white/[0.02] border border-white/[0.05] rounded-lg hover:bg-white/[0.06] hover:border-brand-red/30 transition-all duration-300 group/item"
+                  >
+                    {/* Image */}
+                    <div className="relative w-14 h-14 bg-[#181818] border border-white/5 rounded overflow-hidden flex-shrink-0 flex items-center justify-center p-1 group-hover/item:scale-105 transition-transform duration-300">
+                      <Image
+                        src={item.images[0]?.url}
+                        alt={item.title}
+                        fill
+                        className="object-contain p-1.5"
+                        sizes="56px"
+                        loader={item.images[0]?.url?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
+                      />
+                    </div>
+
+                    {/* Details */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-headings font-extrabold text-xs text-white uppercase tracking-wide truncate group-hover/item:text-brand-red transition-colors">
+                        {item.title}
+                      </h4>
+                      <p className="text-[10px] text-gray-400 mt-1 font-body">
+                        {item.category || "Premium Accessories"}
+                      </p>
+                    </div>
+
+                    {/* Price & Arrow */}
+                    <div className="text-right flex flex-col items-end gap-1 flex-shrink-0">
+                      <span className="text-xs font-headings font-extrabold text-white">
+                        ₹{parseInt(item.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
+                      </span>
+                      <span className="text-[9px] text-brand-red font-bold uppercase tracking-wider flex items-center gap-1 hover:gap-1.5 transition-all">
+                        Buy <ArrowRight className="w-2.5 h-2.5" />
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
         </div>
       </div>
 
