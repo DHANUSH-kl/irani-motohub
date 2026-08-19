@@ -12,7 +12,7 @@ import {
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useAuth } from "@/context/AuthContext";
-import { getCollections, getProducts, Collection, Product, getActiveMotorcycleGroups, getActiveYears } from "@/lib/shopify";
+import { getCollections, getProducts, Collection, Product, getActiveMotorcycleGroups, getActiveYears, getOptimizedImageUrl, shopifyLoader } from "@/lib/shopify";
 
 export default function Header() {
   const { setIsOpen: openCart, cartCount, clearCart } = useCart();
@@ -624,10 +624,12 @@ export default function Header() {
                       >
                         <div className="w-12 h-12 relative bg-[#121212] rounded overflow-hidden flex-shrink-0 border border-white/5">
                           <Image
-                            src={prod.images[0]?.url}
+                            src={getOptimizedImageUrl(prod.images[0]?.url, 150)}
                             alt={prod.title}
                             fill
                             className="object-cover group-hover:scale-105 transition-transform"
+                            sizes="48px"
+                            loader={prod.images[0]?.url?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
                           />
                         </div>
                         <div className="flex-1 min-w-0">

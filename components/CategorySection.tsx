@@ -6,7 +6,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
-import { getCollections } from "@/lib/shopify";
+import { getCollections, shopifyLoader } from "@/lib/shopify";
 
 interface Category {
   title: string;
@@ -163,6 +163,7 @@ export default function CategorySection({ initialCategories }: { initialCategori
                   className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                   sizes="(max-w-768px) 100vw, 33vw"
                   draggable={false}
+                  loader={cat.imageUrl?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
                 />
                 {/* Dark Cinematic Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/10 transition-opacity duration-300 group-hover:opacity-95" />

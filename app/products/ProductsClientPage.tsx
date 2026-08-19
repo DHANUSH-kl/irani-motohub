@@ -11,7 +11,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   getProducts, Product, Collection, 
-  isProductCompatible, getActiveMotorcycleGroups, getActiveYears, getOptimizedImageUrl 
+  isProductCompatible, getActiveMotorcycleGroups, getActiveYears, getOptimizedImageUrl, shopifyLoader 
 } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -519,6 +519,7 @@ export default function ProductsClientPage({ initialProducts, initialCollections
                           fill
                           className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
                           sizes="(max-w-768px) 100vw, 25vw"
+                          loader={product.images[0]?.url?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
                         />
                       </Link>
                       

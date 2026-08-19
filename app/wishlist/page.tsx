@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useWishlist } from "@/context/WishlistContext";
 import { useCart } from "@/context/CartContext";
-import { Product } from "@/lib/shopify";
+import { Product, getOptimizedImageUrl, shopifyLoader } from "@/lib/shopify";
 
 export default function WishlistPage() {
   const { wishlist, removeFromWishlist, clearWishlist } = useWishlist();
@@ -206,10 +206,11 @@ export default function WishlistPage() {
                     >
                       {product.images[0] ? (
                         <Image
-                          src={product.images[0].url}
+                          src={getOptimizedImageUrl(product.images[0].url, 400)}
                           alt={product.title}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                          loader={product.images[0].url?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">

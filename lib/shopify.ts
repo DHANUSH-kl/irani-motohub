@@ -2636,6 +2636,22 @@ export function getOptimizedImageUrl(url: string, width: number): string {
   return url;
 }
 
+export function shopifyLoader({ src, width, quality }: { src: string; width: number; quality?: number }): string {
+  try {
+    const urlObj = new URL(src);
+    if (urlObj.hostname.includes("cdn.shopify.com")) {
+      urlObj.searchParams.set("width", width.toString());
+      if (quality) {
+        urlObj.searchParams.set("quality", quality.toString());
+      }
+      return urlObj.toString();
+    }
+  } catch (e) {
+    // fallback if invalid URL
+  }
+  return src;
+}
+
 export interface ShopPolicy {
   title: string;
   body: string;

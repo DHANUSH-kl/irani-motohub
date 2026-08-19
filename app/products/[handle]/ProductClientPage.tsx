@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Star, ShoppingCart, ShieldCheck, Check, AlertTriangle, ArrowRight, Truck, RotateCcw, Wrench, Heart, ChevronDown, ChevronUp, CreditCard } from "lucide-react";
-import { Product, getOptimizedImageUrl } from "@/lib/shopify";
+import { Product, getOptimizedImageUrl, shopifyLoader } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 
@@ -175,6 +175,7 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
                 className="object-contain p-6"
                 priority
                 sizes="(max-w-768px) 100vw, 50vw"
+                loader={product.images[activeImageIndex]?.url?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
               />
             </div>
             
@@ -195,6 +196,7 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
                       fill
                       className="object-contain"
                       sizes="80px"
+                      loader={img.url?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
                     />
                   </button>
                 ))}
@@ -426,6 +428,7 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
                       fill
                       className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
                       sizes="200px"
+                      loader={p.images[0]?.url?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
                     />
                   </div>
 

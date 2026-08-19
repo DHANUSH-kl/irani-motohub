@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, ShieldCheck, Truck } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { getOptimizedImageUrl, shopifyLoader } from "@/lib/shopify";
 import {
   calculateEstimatedShipping,
   calculateEstimatedTotal,
@@ -207,11 +208,12 @@ export default function CartDrawer() {
                     {/* Image */}
                     <div className="w-20 h-20 relative bg-brand-bg border border-brand-border overflow-hidden flex-shrink-0 group rounded">
                       <Image
-                        src={line.product.images[0]?.url || "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=300"}
+                        src={getOptimizedImageUrl(line.product.images[0]?.url, 150) || "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=300"}
                         alt={line.product.images[0]?.altText || line.product.title}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                         sizes="80px"
+                        loader={line.product.images[0]?.url?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
                       />
                     </div>
 

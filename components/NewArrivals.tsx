@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Heart, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react";
-import { getProducts, Product, isProductCompatible } from "@/lib/shopify";
+import { getProducts, Product, isProductCompatible, getOptimizedImageUrl, shopifyLoader } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 
@@ -242,12 +242,13 @@ export default function NewArrivals({ initialProducts }: { initialProducts: Prod
                 <div className="relative aspect-[4/5] w-full bg-[#f6f6f6] overflow-hidden flex items-center justify-center p-4">
                   <Link href={`/products/${product.handle}`} className="relative w-full h-full block" draggable={false}>
                     <Image
-                      src={product.images[0]?.url}
+                      src={getOptimizedImageUrl(product.images[0]?.url, 400)}
                       alt={product.images[0]?.altText || product.title}
                       fill
                       className="object-contain p-4 transition-transform duration-700 ease-out group-hover:scale-105"
                       sizes="(max-w-768px) 100vw, 25vw"
                       draggable={false}
+                      loader={product.images[0]?.url?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
                     />
                   </Link>
 

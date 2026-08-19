@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useWishlist } from "@/context/WishlistContext";
 import { useCart } from "@/context/CartContext";
-import { Product, ProductVariant, isProductCompatible as checkProductCompatibility, MASTER_MOTORCYCLES, getActiveYears, BikeProfile } from "@/lib/shopify";
+import { Product, ProductVariant, isProductCompatible as checkProductCompatibility, MASTER_MOTORCYCLES, getActiveYears, BikeProfile, getOptimizedImageUrl, shopifyLoader } from "@/lib/shopify";
 import { 
   Bike, Heart, Trash2, ShoppingCart, Plus, Check, 
   ArrowRight, ShieldCheck, Wrench, Sparkles, HelpCircle, Info, Flame, AlertCircle, ArrowUpRight
@@ -617,11 +617,12 @@ export default function GarageClient() {
                             <div className="flex gap-4 min-w-0">
                               <div className="relative w-16 h-16 bg-[#F3F3F0] rounded overflow-hidden flex-shrink-0 border border-brand-border">
                                 <Image
-                                  src={item.images[0]?.url || "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=300"}
+                                  src={getOptimizedImageUrl(item.images[0]?.url, 150) || "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=300"}
                                   alt={item.title}
                                   fill
                                   className="object-contain p-2"
                                   sizes="64px"
+                                  loader={item.images[0]?.url?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
                                 />
                               </div>
 
@@ -729,11 +730,12 @@ export default function GarageClient() {
                       >
                         <div className="relative aspect-square w-full bg-white rounded overflow-hidden border border-brand-border mb-3">
                            <Image
-                            src={prod.images[0]?.url}
+                            src={getOptimizedImageUrl(prod.images[0]?.url, 400)}
                             alt={prod.title}
                             fill
                             className="object-contain p-3 transition-transform group-hover:scale-105"
                             sizes="120px"
+                            loader={prod.images[0]?.url?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
                           />
                         </div>
                         
