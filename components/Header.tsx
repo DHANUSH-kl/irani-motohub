@@ -275,7 +275,7 @@ export default function Header() {
                         <ul className="space-y-4 text-xs font-semibold text-gray-600">
                           {collections
                             .filter((col) =>
-                              ["exhaust-systems", "chain-sprocket-kit", "suspension-upgrades", "brake-pads", "chain-lube-cleaner"].includes(col.handle)
+                              ["air-filters", "exhausts", "chain-kits", "brakes", "lubricants"].includes(col.handle)
                             )
                             .map((col) => (
                               <li key={col.id} className="group/item">
@@ -285,10 +285,10 @@ export default function Header() {
                                 >
                                   <span>{col.title}</span>
                                   <span className="block text-[10px] text-gray-500 font-normal mt-0.5 normal-case font-body">
-                                    {col.handle === "exhaust-systems" ? "High-performance slip-on & full system exhausts." : 
-                                     col.handle === "chain-sprocket-kit" ? "Heavy-duty brass & steel drive chains." : 
-                                     col.handle === "suspension-upgrades" ? "Adjustable rear monoshocks & front fork springs." :
-                                     col.handle === "brake-pads" ? "Sintered ceramic high-bite race pads." : "Premium synthetic chain lube & cleaners."}
+                                    {col.handle === "air-filters" ? "High-flow intake & replacement air filters." : 
+                                     col.handle === "exhausts" ? "Premium exhaust slip-ons & full systems." : 
+                                     col.handle === "chain-kits" ? "Heavy-duty drive chains & sprocket kits." :
+                                     col.handle === "brakes" ? "High-bite sintered brake pads & disc rotors." : "Premium synthetic engine oils & chain lubes."}
                                   </span>
                                 </Link>
                               </li>
@@ -303,7 +303,7 @@ export default function Header() {
                         <ul className="space-y-4 text-xs font-semibold text-gray-600">
                           {collections
                             .filter((col) =>
-                              ["lights-electronics", "phone-holder", "lever-protector", "paddock-stand", "tyre-hugger"].includes(col.handle)
+                              ["riding-gears", "auxiliary-lights", "phone-holders", "crash-guards", "touring-accessories"].includes(col.handle)
                             )
                             .map((col) => (
                               <li key={col.id} className="group/item">
@@ -313,10 +313,10 @@ export default function Header() {
                                 >
                                   <span>{col.title}</span>
                                   <span className="block text-[10px] text-gray-500 font-normal mt-0.5 normal-case font-body">
-                                    {col.handle === "lights-electronics" ? "High-intensity auxiliary pods & indicators." :
-                                     col.handle === "phone-holder" ? "Vibration-damped handlebar mounts." :
-                                     col.handle === "lever-protector" ? "CNC brake & clutch guard protection." :
-                                     col.handle === "paddock-stand" ? "Heavy-duty garage maintenance lifts." : "Rear tyre splash guards & mud protectors."}
+                                    {col.handle === "riding-gears" ? "Technical riding gear, jackets, and gloves." :
+                                     col.handle === "auxiliary-lights" ? "High-intensity auxiliary lights & fog pods." :
+                                     col.handle === "phone-holders" ? "Vibration-dampened mobile holders & mounts." :
+                                     col.handle === "crash-guards" ? "Premium engine guards & frame sliders." : "Luggage, tail bags, and touring essentials."}
                                   </span>
                                 </Link>
                               </li>
