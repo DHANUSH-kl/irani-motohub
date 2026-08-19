@@ -22,7 +22,7 @@ export default function CatalogLoading() {
             <div className="h-4 w-32 bg-gray-100 rounded animate-pulse ml-auto" />
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="bg-white border border-brand-border rounded-lg overflow-hidden p-4 space-y-4">
               <div className="aspect-square w-full bg-gray-100 rounded animate-pulse" />

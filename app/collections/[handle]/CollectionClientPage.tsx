@@ -362,7 +362,7 @@ export default function CollectionClientPage({
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 py-8">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 py-8">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="bg-white border border-brand-border rounded-lg overflow-hidden">
                   <div className="aspect-[4/5] w-full bg-gray-100 animate-pulse" />
@@ -400,7 +400,7 @@ export default function CollectionClientPage({
             <div className="space-y-10">
               
               {/* Catalog Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                 {filteredProducts.slice(0, visibleCount).map((product) => (
                   <div
                     key={product.id}
