@@ -83,6 +83,59 @@ export default function CategorySection({ initialCategories }: { initialCategori
     };
   }, [categories]);
 
+  // Autoplay effect
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    let isPaused = false;
+
+    const startAutoplay = () => {
+      intervalId = setInterval(() => {
+        if (!isPaused && containerRef.current) {
+          const { scrollLeft, scrollWidth, clientWidth } = containerRef.current;
+          const maxScroll = scrollWidth - clientWidth;
+          
+          if (maxScroll <= 0) return;
+
+          // If close to the end, scroll back to start
+          if (scrollLeft >= maxScroll - 15) {
+            containerRef.current.scrollTo({ left: 0, behavior: "smooth" });
+          } else {
+            containerRef.current.scrollBy({ left: cardWidth + gap, behavior: "smooth" });
+          }
+        }
+      }, 4000); // Scroll every 4 seconds
+    };
+
+    const handleMouseEnter = () => { isPaused = true; };
+    const handleMouseLeave = () => { isPaused = false; };
+    const handleTouchStart = () => { isPaused = true; };
+    const handleTouchEnd = () => {
+      setTimeout(() => {
+        isPaused = false;
+      }, 2000);
+    };
+
+    const el = containerRef.current;
+    if (el) {
+      el.addEventListener("mouseenter", handleMouseEnter);
+      el.addEventListener("mouseleave", handleMouseLeave);
+      el.addEventListener("touchstart", handleTouchStart);
+      el.addEventListener("touchend", handleTouchEnd);
+    }
+
+    startAutoplay();
+
+    return () => {
+      clearInterval(intervalId);
+      if (el) {
+        el.removeEventListener("mouseenter", handleMouseEnter);
+        el.removeEventListener("mouseleave", handleMouseLeave);
+        el.removeEventListener("touchstart", handleTouchStart);
+        el.removeEventListener("touchend", handleTouchEnd);
+      }
+    };
+  }, [cardWidth, gap, categories]);
+
   // Handle navigation click
   const handlePrev = () => {
     if (containerRef.current) {

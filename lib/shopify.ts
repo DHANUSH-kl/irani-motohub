@@ -2712,5 +2712,82 @@ export const getShopPolicy = cache(async (handle: string): Promise<ShopPolicy | 
   };
 });
 
+export async function searchProducts(searchTerm: string, limit: number = 10): Promise<Product[]> {
+  if (!isShopifyConfigured()) {
+    // Fallback to filtering mock products
+    const q = searchTerm.toLowerCase().trim();
+    return MOCK_PRODUCTS.filter(p => 
+      p.title.toLowerCase().includes(q) ||
+      p.category.toLowerCase().includes(q) ||
+      p.compatibility.some(c => c.toLowerCase().includes(q))
+    ).slice(0, limit);
+  }
+
+  const queryCorrect = `
+    query SearchProducts($query: String!, $first: Int!) {
+      products(first: $first, query: $query) {
+        edges {
+          node {
+            id
+            handle
+            title
+            description
+            vendor
+            productType
+            tags
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+            images(first: 5) {
+              edges {
+                node {
+                  url
+                  altText
+                }
+              }
+            }
+            variants(first: 5) {
+              edges {
+                node {
+                  id
+                  title
+                  price {
+                    amount
+                    currencyCode
+                  }
+                  compareAtPrice {
+                    amount
+                    currencyCode
+                  }
+                  availableForSale
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const res = await shopifyFetch<{ products: any }>(queryCorrect, {
+      query: searchTerm,
+      first: limit
+    });
+
+    if (!res?.data?.products?.edges) {
+      return [];
+    }
+
+    return res.data.products.edges.map((edge: any) => formatShopifyProduct(edge.node));
+  } catch (error) {
+    console.error("Error searching products on Shopify:", error);
+    return [];
+  }
+}
+
 
 

@@ -58,14 +58,41 @@ export default function NewArrivals({ initialProducts }: { initialProducts: Prod
 
   // Auto-play interval for carousel when not hovered
   useEffect(() => {
-    if (isHovered || maxIndex === 0) return;
+    let isPaused = false;
 
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
-    }, 4500);
+      if (!isPaused && maxIndex > 0) {
+        setCurrentIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
+      }
+    }, 4000); // Autoplay every 4s
 
-    return () => clearInterval(interval);
-  }, [isHovered, maxIndex, currentIndex]);
+    const handleMouseEnter = () => { isPaused = true; };
+    const handleMouseLeave = () => { isPaused = false; };
+    const handleTouchStart = () => { isPaused = true; };
+    const handleTouchEnd = () => {
+      setTimeout(() => {
+        isPaused = false;
+      }, 2000);
+    };
+
+    const el = containerRef.current;
+    if (el) {
+      el.addEventListener("mouseenter", handleMouseEnter);
+      el.addEventListener("mouseleave", handleMouseLeave);
+      el.addEventListener("touchstart", handleTouchStart);
+      el.addEventListener("touchend", handleTouchEnd);
+    }
+
+    return () => {
+      clearInterval(interval);
+      if (el) {
+        el.removeEventListener("mouseenter", handleMouseEnter);
+        el.removeEventListener("mouseleave", handleMouseLeave);
+        el.removeEventListener("touchstart", handleTouchStart);
+        el.removeEventListener("touchend", handleTouchEnd);
+      }
+    };
+  }, [maxIndex]);
 
   // Sort products by ID descending to get the latest additions first, limiting to 8 items
   const latestProducts = products
@@ -213,10 +240,6 @@ export default function NewArrivals({ initialProducts }: { initialProducts: Prod
         {/* Slider viewport */}
         <div 
           ref={containerRef}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          onPointerEnter={() => setIsHovered(true)}
-          onPointerLeave={() => setIsHovered(false)}
           className="overflow-visible select-none cursor-grab active:cursor-grabbing"
         >
           <motion.div

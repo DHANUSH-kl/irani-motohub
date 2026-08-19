@@ -12,7 +12,7 @@ import {
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useAuth } from "@/context/AuthContext";
-import { getCollections, getProducts, Collection, Product, getActiveMotorcycleGroups, getActiveYears, getOptimizedImageUrl, shopifyLoader } from "@/lib/shopify";
+import { getCollections, getProducts, searchProducts, Collection, Product, getActiveMotorcycleGroups, getActiveYears, getOptimizedImageUrl, shopifyLoader } from "@/lib/shopify";
 
 export default function Header() {
   const { setIsOpen: openCart, cartCount, clearCart } = useCart();
@@ -42,6 +42,7 @@ export default function Header() {
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   // Rider Garage states
   const [garageBike, setGarageBike] = useState<{ maker: string; model: string; year?: string } | null>(null);
@@ -54,12 +55,12 @@ export default function Header() {
   ]);
   const [years, setYears] = useState<string[]>(["2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"]);
 
-  // Fetch collections & products
+  // Fetch collections & products (limit to 250 to avoid connection timeouts)
   useEffect(() => {
     const loadData = async () => {
       const cols = await getCollections();
       setCollections(cols);
-      const prods = await getProducts();
+      const prods = await getProducts({ limit: 250 });
       setAllProducts(prods);
       setMotorcycles(getActiveMotorcycleGroups(prods));
       setYears(getActiveYears(prods));
@@ -111,89 +112,59 @@ export default function Header() {
     };
   }, []);
 
-  // Real-time search filter
+  // Dynamic debounced search query fetch from Shopify Storefront API index
   useEffect(() => {
-    const query = searchQuery.toLowerCase().trim();
+    const query = searchQuery.trim();
     if (query === "") {
       setSearchResults([]);
       return;
     }
 
-    const keywords = query.split(/\s+/).filter(Boolean);
+    const delayDebounce = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const results = await searchProducts(searchQuery, 10);
+        
+        // Apply our custom keyword scoring and sorting to ensure the highest-relevance matches come first
+        const keywords = query.toLowerCase().split(/\s+/).filter(Boolean);
+        const scoredResults = results.map((product) => {
+          let score = 0;
+          const title = product.title?.toLowerCase() || "";
+          const category = product.category?.toLowerCase() || "";
+          const brand = product.brand?.toLowerCase() || "";
+          const description = product.description?.toLowerCase() || "";
+          const tags = product.tags?.map(t => t.toLowerCase()) || [];
+          const compatibility = product.compatibility?.map(c => c.toLowerCase()) || [];
 
-    const filteredWithScores = allProducts.map((product) => {
-      let score = 0;
-      let matchesAllKeywords = true;
+          for (const keyword of keywords) {
+            const singularKeyword = keyword.endsWith("s") && keyword.length > 3 
+              ? keyword.slice(0, -1) 
+              : keyword;
 
-      for (const keyword of keywords) {
-        const singularKeyword = keyword.endsWith("s") && keyword.length > 3 
-          ? keyword.slice(0, -1) 
-          : keyword;
+            if (title.includes(keyword)) score += 15;
+            else if (title.includes(singularKeyword)) score += 10;
 
-        const title = product.title?.toLowerCase() || "";
-        const category = product.category?.toLowerCase() || "";
-        const brand = product.brand?.toLowerCase() || "";
-        const description = product.description?.toLowerCase() || "";
-        const tags = product.tags?.map(t => t.toLowerCase()) || [];
-        const compatibility = product.compatibility?.map(c => c.toLowerCase()) || [];
+            if (category.includes(keyword) || category.includes(singularKeyword)) score += 8;
+            if (compatibility.some(c => c.includes(keyword) || c.includes(singularKeyword))) score += 6;
+            if (tags.some(t => t.includes(keyword) || t.includes(singularKeyword))) score += 4;
+            if (brand.includes(keyword) || brand.includes(singularKeyword)) score += 2;
+            if (description.includes(keyword) || description.includes(singularKeyword)) score += 1;
+          }
 
-        let keywordMatched = false;
+          return { product, score };
+        });
 
-        // Title match (highest weight)
-        if (title.includes(keyword)) {
-          score += 15;
-          keywordMatched = true;
-        } else if (title.includes(singularKeyword)) {
-          score += 10;
-          keywordMatched = true;
-        }
-
-        // Category match
-        if (category.includes(keyword) || category.includes(singularKeyword)) {
-          score += 8;
-          keywordMatched = true;
-        }
-
-        // Compatibility match
-        if (compatibility.some(c => c.includes(keyword) || c.includes(singularKeyword))) {
-          score += 6;
-          keywordMatched = true;
-        }
-
-        // Tags match
-        if (tags.some(t => t.includes(keyword) || t.includes(singularKeyword))) {
-          score += 4;
-          keywordMatched = true;
-        }
-
-        // Brand match
-        if (brand.includes(keyword) || brand.includes(singularKeyword)) {
-          score += 2;
-          keywordMatched = true;
-        }
-
-        // Description match
-        if (description.includes(keyword) || description.includes(singularKeyword)) {
-          score += 1;
-          keywordMatched = true;
-        }
-
-        if (!keywordMatched) {
-          matchesAllKeywords = false;
-          break;
-        }
+        scoredResults.sort((a, b) => b.score - a.score);
+        setSearchResults(scoredResults.map(item => item.product).slice(0, 5));
+      } catch (err) {
+        console.error("Search fetch failed:", err);
+      } finally {
+        setSearchLoading(false);
       }
+    }, 250); // 250ms debounce window
 
-      return { product, score, matchesAllKeywords };
-    });
-
-    const sortedResults = filteredWithScores
-      .filter(item => item.matchesAllKeywords)
-      .sort((a, b) => b.score - a.score)
-      .map(item => item.product);
-
-    setSearchResults(sortedResults.slice(0, 5));
-  }, [searchQuery, allProducts]);
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery]);
 
   // Reset overlay panels on page change
   useEffect(() => {
@@ -676,7 +647,11 @@ export default function Header() {
                   className="w-full bg-[#121212] border border-white/10 rounded-lg py-3.5 pl-11 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-brand-red text-sm font-body"
                   autoFocus
                 />
-                <Search className="w-5 h-5 text-gray-500 absolute left-4 top-1/2 -translate-y-1/2" />
+                {searchLoading ? (
+                  <div className="w-4 h-4 rounded-full border-2 border-brand-red border-t-transparent animate-spin absolute left-4 top-1/2 -translate-y-1/2" />
+                ) : (
+                  <Search className="w-5 h-5 text-gray-500 absolute left-4 top-1/2 -translate-y-1/2" />
+                )}
               </form>
 
               {/* Popular Search Suggestions when empty */}
