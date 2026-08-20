@@ -62,6 +62,11 @@ export async function getSession(sessionId: string): Promise<SessionData | null>
     }
   }
 
+  if (process.env.NODE_ENV === "production") {
+    console.error("[Auth] Fatal: Redis environment variables are missing in Vercel production. Session retrieval failed.");
+    return null;
+  }
+
   return memoryStore.get(sessionId) || null;
 }
 
@@ -116,6 +121,11 @@ export async function setSession(sessionId: string, data: SessionData): Promise<
     }
   }
 
+  if (process.env.NODE_ENV === "production") {
+    console.error("[Auth] Fatal: Redis environment variables are missing in Vercel production. Session persistence failed.");
+    return false;
+  }
+
   console.warn("[Auth] Redis env variables missing. Falling back to dev in-memory store.");
   memoryStore.set(sessionId, data);
   return true;
@@ -149,6 +159,11 @@ export async function deleteSession(sessionId: string): Promise<boolean> {
       console.error(`[Auth] Redis DEL network error: ${error?.message || error}`);
       return false;
     }
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    console.error("[Auth] Fatal: Redis environment variables are missing in Vercel production. Session deletion failed.");
+    return false;
   }
 
   return memoryStore.delete(sessionId);
