@@ -45,6 +45,7 @@ export async function GET(request: Request) {
     // Build the authorization redirect URL using discovered endpoint
     const authUrl = new URL(metadata.authorization_endpoint);
     authUrl.searchParams.set("client_id", CLIENT_ID);
+    authUrl.searchParams.set("response_type", "code");
     authUrl.searchParams.set("scope", "openid email customer-account-api:full");
     authUrl.searchParams.set("redirect_uri", redirectUri);
     authUrl.searchParams.set("state", state);
