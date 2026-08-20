@@ -27,16 +27,23 @@ export async function getDiscoveryMetadata(): Promise<DiscoveryMetadata> {
   const timeoutId = setTimeout(() => {
     console.warn(`[OAuthDiscovery] Request timed out for domain: ${cleanDomain}. Aborting...`);
     controller.abort();
-  }, 3000); // 3 seconds timeout
+  }, 5000); // 5 seconds timeout
 
   try {
+    const headers = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept": "application/json"
+    };
+
     const [oidcRes, customerApiRes] = await Promise.all([
       fetch(`https://${cleanDomain}/.well-known/openid-configuration`, { 
         signal: controller.signal,
+        headers,
         cache: "no-store"
       }),
       fetch(`https://${cleanDomain}/.well-known/customer-account-api`, { 
         signal: controller.signal,
+        headers,
         cache: "no-store"
       })
     ]);
@@ -64,13 +71,12 @@ export async function getDiscoveryMetadata(): Promise<DiscoveryMetadata> {
     clearTimeout(timeoutId);
     console.error(`[OAuthDiscovery] Discovery request failed: ${error?.message || error}. Falling back to default URI schemes.`);
     
-    // Fallback: If cleanDomain is checkout.iranimotohub.in, the Customer Account client utilizes the shopify.com/auth routes.
-    // However, the customer account auth base requires the shop ID (e.g. shopify.com/101206196541/auth/oauth/authorize).
-    // If the Shop ID is not resolved, standard sub-routing uses cleanDomain as fallback for dynamic endpoints.
+    // Fallback: Use account.iranimotohub.in if cleanDomain is storefront, as resolved by OIDC
+    const authHost = cleanDomain.includes("checkout") ? "account.iranimotohub.in" : cleanDomain;
     return {
-      authorization_endpoint: `https://${cleanDomain}/auth/oauth/authorize`,
-      token_endpoint: `https://${cleanDomain}/auth/oauth/token`,
-      end_session_endpoint: `https://${cleanDomain}/auth/oauth/logout`,
+      authorization_endpoint: `https://${authHost}/authentication/oauth/authorize`,
+      token_endpoint: `https://${authHost}/authentication/oauth/token`,
+      end_session_endpoint: `https://${authHost}/authentication/logout`,
       graphql_api_endpoint: `https://shopify.com/authentication/api/graphql`
     };
   }
