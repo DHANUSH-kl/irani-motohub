@@ -14,7 +14,7 @@ async function fetchCustomerProfile(endpoint: string, accessToken: string) {
         firstName
         lastName
         emailAddress {
-          address
+          emailAddress
         }
       }
     }
@@ -105,7 +105,7 @@ export async function GET() {
         id: customer.id,
         firstName: customer.firstName || "",
         lastName: customer.lastName || "",
-        email: customer.emailAddress?.address || "",
+        email: customer.emailAddress?.emailAddress || "",
         phone: "",
         orders: [],
       };
