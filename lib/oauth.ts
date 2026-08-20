@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 
-const DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
-const CLIENT_ID = process.env.SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID;
-const CLIENT_SECRET = process.env.SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET;
+const DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN?.replace(/['"]/g, "");
+const CLIENT_ID = process.env.SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID?.replace(/['"]/g, "");
+const CLIENT_SECRET = process.env.SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET?.replace(/['"]/g, "");
 
 export interface DiscoveryMetadata {
   authorization_endpoint: string;
