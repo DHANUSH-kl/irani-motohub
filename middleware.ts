@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const COOKIE_NAME = "irani_motohub_access_token";
+const SESSION_COOKIE = "iranimotohub_session_id";
 
-export function proxy(request: NextRequest) {
-  const hasToken = request.cookies.has(COOKIE_NAME);
+export function middleware(request: NextRequest) {
+  const hasSession = request.cookies.has(SESSION_COOKIE);
 
-  if (!hasToken) {
+  // If session ID cookie is absent, intercept request and redirect to login portal
+  if (!hasSession) {
     const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);
   }
