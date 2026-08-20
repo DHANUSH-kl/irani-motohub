@@ -18,9 +18,9 @@ export default function AccountPage() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/login");
+      window.location.href = "/api/auth/login";
     }
-  }, [user, loading, router]);
+  }, [user, loading]);
 
   if (loading) {
     return (

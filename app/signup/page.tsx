@@ -7,9 +7,9 @@ export default function SignupPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Unify authentication under passwordless login
-    router.replace("/login");
-  }, [router]);
+    // Automatically redirect signup visitors to the secure OIDC initialization route
+    window.location.href = "/api/auth/login";
+  }, []);
 
   return null;
 }

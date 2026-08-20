@@ -93,9 +93,9 @@ export default function OrdersHistoryPage() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/login");
+      window.location.href = "/api/auth/login";
     }
-  }, [user, loading, router]);
+  }, [user, loading]);
 
   const loadTracking = async (order: CustomerOrder) => {
     setTrackingLoading(true);

@@ -15,9 +15,9 @@ export function middleware(request: NextRequest) {
 
   const hasSession = request.cookies.has(SESSION_COOKIE);
 
-  // If session ID cookie is absent, intercept request and redirect to login portal
+  // If session ID cookie is absent, intercept request and redirect directly to Shopify portal
   if (!hasSession) {
-    const loginUrl = new URL("/login", request.url);
+    const loginUrl = new URL("/api/auth/login", request.url);
     return NextResponse.redirect(loginUrl);
   }
 
