@@ -44,7 +44,7 @@ export default function AccountPage() {
   };
 
   return (
-    <main className="flex-1 bg-[#090909] text-white py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <main className="flex-1 bg-[#090909] text-white pt-32 pb-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-brand-red/5 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-500/3 rounded-full blur-[120px] pointer-events-none" />
@@ -53,8 +53,9 @@ export default function AccountPage() {
         {/* Header Profile Dashboard banner */}
         <div className="bg-[#121212] border border-white/10 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-full bg-brand-red text-white flex items-center justify-center font-headings font-extrabold text-2xl shadow-xl shadow-brand-red/25 border border-brand-red/20">
-              {user.firstName[0]}{user.lastName[0]}
+            <div className="w-16 h-16 rounded-full bg-brand-red text-white flex items-center justify-center font-headings font-extrabold text-2xl shadow-xl shadow-brand-red/25 border border-brand-red/20 uppercase">
+              {user.firstName ? user.firstName[0] : (user.email ? user.email[0] : "R")}
+              {user.lastName ? user.lastName[0] : ""}
             </div>
             <div className="space-y-1">
               <span className="bg-brand-red/10 border border-brand-red/30 text-brand-red text-[9px] font-headings font-bold uppercase tracking-widest px-2 py-0.5 rounded-full">
@@ -200,34 +201,6 @@ export default function AccountPage() {
 
           {/* Right Column: Motorcycle Garage profile (4 cols) */}
           <aside className="lg:col-span-4 space-y-6">
-            <h2 className="text-md font-headings font-extrabold uppercase tracking-wider text-gray-300 pb-2 border-b border-white/10">
-              Active Rider Garage
-            </h2>
-
-            {/* Configured motorcycle profile */}
-            <div className="bg-[#121212] border border-white/10 rounded-xl p-5 space-y-4">
-              <div className="flex justify-between items-start">
-                <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-brand-red">
-                  <Bike className="w-5 h-5" />
-                </div>
-                <Link 
-                  href="/garage"
-                  className="text-[9px] font-bold text-brand-red uppercase tracking-wider hover:underline flex items-center gap-0.5"
-                >
-                  Configure <Wrench className="w-3 h-3" />
-                </Link>
-              </div>
-
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold uppercase tracking-wide text-white">Garage Designation</h3>
-                <p className="text-xs text-gray-400 font-body">
-                  The motorcycle profile active in your session. Fits and compatibility recommendations are synced to this vehicle.
-                </p>
-              </div>
-
-              {/* Display loaded bike info or call-to-action */}
-              <GarageBikeStatus />
-            </div>
 
             {/* Quick Links card */}
             <div className="bg-[#121212] border border-white/10 rounded-xl p-5 space-y-4">
