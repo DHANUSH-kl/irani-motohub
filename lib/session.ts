@@ -50,11 +50,20 @@ export async function getSession(sessionId: string): Promise<SessionData | null>
 }
 
 export async function setSession(sessionId: string, data: SessionData): Promise<boolean> {
-  if (!sessionId) return false;
+  if (!sessionId) {
+    console.error("[SessionStore] Failed: Session ID is empty.");
+    return false;
+  }
+
+  const hasEmail = !!data.customerMetadata?.email;
+  console.log(`[SessionStore] setSession started. Session ID generated: true. Customer email exists: ${hasEmail}`);
 
   const expireSeconds = 60 * 60 * 24 * 30; // 30 days
 
   if (REDIS_URL && REDIS_TOKEN) {
+    const maskedUrl = REDIS_URL.startsWith("http") ? REDIS_URL.split("@").pop() : REDIS_URL;
+    console.log(`[SessionStore] Connecting to Redis URL: ${maskedUrl}`);
+
     try {
       const response = await fetch(`${REDIS_URL}`, {
         method: "POST",
@@ -73,18 +82,26 @@ export async function setSession(sessionId: string, data: SessionData): Promise<
       });
 
       if (!response.ok) {
-        console.error("Upstash Redis setSession failed:", response.statusText);
+        const errBody = await response.text().catch(() => "");
+        console.error(`[SessionStore] Upstash Redis setSession failed. Status: ${response.status} ${response.statusText}. Response: ${errBody}`);
         return false;
       }
 
       const resData = await response.json();
-      return resData && !resData.error;
-    } catch (error) {
-      console.error("Error writing session to Redis:", error);
+      if (resData && resData.error) {
+        console.error(`[SessionStore] Upstash Redis returned API error: ${resData.error}`);
+        return false;
+      }
+
+      console.log("[SessionStore] Session successfully persisted to Upstash Redis.");
+      return true;
+    } catch (error: any) {
+      console.error(`[SessionStore] Network error writing session to Redis: ${error?.message || error}`);
       return false;
     }
   }
 
+  console.log("[SessionStore] Redis env variables missing. Falling back to dev in-memory store.");
   // Fallback
   memoryStore.set(sessionId, data);
   return true;
