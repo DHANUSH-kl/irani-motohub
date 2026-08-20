@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   Filter, SlidersHorizontal, Star, ShoppingBag, RotateCcw, Heart, 
-  Search, Bike, Wrench, ChevronDown, X, Sparkles, Layers, Tag, DollarSign 
+  Search, Bike, Wrench, ChevronDown, X, Sparkles, Layers, Tag, IndianRupee, 
+  DollarSign
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
