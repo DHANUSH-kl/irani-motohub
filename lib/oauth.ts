@@ -63,7 +63,7 @@ export async function getDiscoveryMetadata(): Promise<DiscoveryMetadata> {
       authorization_endpoint: oidcConfig.authorization_endpoint,
       token_endpoint: oidcConfig.token_endpoint,
       end_session_endpoint: oidcConfig.end_session_endpoint,
-      graphql_api_endpoint: customerApiConfig.api_endpoint || `https://shopify.com/authentication/api/graphql`
+      graphql_api_endpoint: customerApiConfig.graphql_api || `https://shopify.com/authentication/api/graphql`
     };
 
     return cachedMetadata;

@@ -20,26 +20,37 @@ async function fetchCustomerProfile(endpoint: string, accessToken: string) {
     }
   `;
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: accessToken, // Shopify Customer Account API expects raw token directly
-    },
-    body: JSON.stringify({ query }),
-    cache: "no-store",
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 seconds timeout
 
-  if (!response.ok) {
-    throw new Error(`Shopify Customer Account API responded with: ${response.status}`);
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: accessToken, // Shopify Customer Account API expects raw token directly
+      },
+      body: JSON.stringify({ query }),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`Shopify Customer Account API responded with: ${response.status}`);
+    }
+
+    const payload = await response.json();
+    if (payload.errors && payload.errors.length > 0) {
+      throw new Error(payload.errors[0].message);
+    }
+
+    return payload.data?.customer;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
   }
-
-  const payload = await response.json();
-  if (payload.errors && payload.errors.length > 0) {
-    throw new Error(payload.errors[0].message);
-  }
-
-  return payload.data?.customer;
 }
 
 export async function GET() {
