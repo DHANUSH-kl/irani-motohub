@@ -579,8 +579,14 @@ export default function Header() {
 
               {/* Account Toggle */}
               <button
-                onClick={() => setIsAccountOpen(true)}
-                className="p-1 text-gray-700 hover:text-black transition-colors hidden sm:flex items-center justify-center"
+                onClick={() => {
+                  if (user) {
+                    setIsAccountOpen(true);
+                  } else {
+                    signIn();
+                  }
+                }}
+                className="p-1 text-gray-700 hover:text-black transition-colors hidden sm:flex items-center justify-center cursor-pointer"
                 aria-label="Open Account Portal"
               >
                 {user ? (
@@ -1129,7 +1135,11 @@ export default function Header() {
                   <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);
-                      setIsAccountOpen(true);
+                      if (user) {
+                        setIsAccountOpen(true);
+                      } else {
+                        signIn();
+                      }
                     }}
                     className="block w-full text-left text-gray-300 hover:text-white transition-colors uppercase font-bold text-sm tracking-wider cursor-pointer"
                   >
