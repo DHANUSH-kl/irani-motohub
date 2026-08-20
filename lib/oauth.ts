@@ -21,19 +21,36 @@ export async function getDiscoveryMetadata(): Promise<DiscoveryMetadata> {
   }
 
   const cleanDomain = DOMAIN.replace(/^https?:\/\//, "");
+  console.log(`[OAuthDiscovery] Resolving metadata for domain: ${cleanDomain}`);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    console.warn(`[OAuthDiscovery] Request timed out for domain: ${cleanDomain}. Aborting...`);
+    controller.abort();
+  }, 3000); // 3 seconds timeout
 
   try {
     const [oidcRes, customerApiRes] = await Promise.all([
-      fetch(`https://${cleanDomain}/.well-known/openid-configuration`),
-      fetch(`https://${cleanDomain}/.well-known/customer-account-api`)
+      fetch(`https://${cleanDomain}/.well-known/openid-configuration`, { 
+        signal: controller.signal,
+        cache: "no-store"
+      }),
+      fetch(`https://${cleanDomain}/.well-known/customer-account-api`, { 
+        signal: controller.signal,
+        cache: "no-store"
+      })
     ]);
 
+    clearTimeout(timeoutId);
+
     if (!oidcRes.ok || !customerApiRes.ok) {
-      throw new Error(`Failed to discover endpoints from Shopify domain: ${cleanDomain}`);
+      throw new Error(`Non-ok status returned. OIDC: ${oidcRes.status}, Customer API: ${customerApiRes.status}`);
     }
 
     const oidcConfig = await oidcRes.json();
     const customerApiConfig = await customerApiRes.json();
+
+    console.log("[OAuthDiscovery] Shopify metadata resolved successfully.");
 
     cachedMetadata = {
       authorization_endpoint: oidcConfig.authorization_endpoint,
@@ -43,9 +60,13 @@ export async function getDiscoveryMetadata(): Promise<DiscoveryMetadata> {
     };
 
     return cachedMetadata;
-  } catch (error) {
-    console.error("Shopify OAuth discovery failed:", error);
-    // Dynamic fallback based on standard Shopify patterns if discovery has transient network issues
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    console.error(`[OAuthDiscovery] Discovery request failed: ${error?.message || error}. Falling back to default URI schemes.`);
+    
+    // Fallback: If cleanDomain is checkout.iranimotohub.in, the Customer Account client utilizes the shopify.com/auth routes.
+    // However, the customer account auth base requires the shop ID (e.g. shopify.com/101206196541/auth/oauth/authorize).
+    // If the Shop ID is not resolved, standard sub-routing uses cleanDomain as fallback for dynamic endpoints.
     return {
       authorization_endpoint: `https://${cleanDomain}/auth/oauth/authorize`,
       token_endpoint: `https://${cleanDomain}/auth/oauth/token`,
