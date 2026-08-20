@@ -28,6 +28,9 @@ export async function GET() {
           id
           firstName
           lastName
+          emailAddress {
+            address
+          }
         }
       }
     `;
