@@ -16,6 +16,33 @@ async function fetchCustomerProfile(endpoint: string, accessToken: string) {
         emailAddress {
           emailAddress
         }
+        orders(first: 20) {
+          edges {
+            node {
+              id
+              name
+              processedAt
+              financialStatus
+              fulfillmentStatus
+              totalPrice {
+                amount
+                currencyCode
+              }
+              lineItems(first: 50) {
+                edges {
+                  node {
+                    title
+                    quantity
+                    price {
+                      amount
+                      currencyCode
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
   `;
@@ -107,7 +134,32 @@ export async function GET() {
         lastName: customer.lastName || "",
         email: customer.emailAddress?.emailAddress || "",
         phone: "",
-        orders: [],
+        orders: customer.orders?.edges?.map((edge: any) => {
+          const node = edge.node;
+          return {
+            id: node.id,
+            orderNumber: node.name ? node.name.replace("#", "") : "",
+            processedAt: node.processedAt,
+            financialStatus: node.financialStatus,
+            fulfillmentStatus: node.fulfillmentStatus,
+            totalPrice: {
+              amount: node.totalPrice?.amount || "0",
+              currencyCode: node.totalPrice?.currencyCode || "INR",
+            },
+            lineItems: node.lineItems?.edges?.map((itemEdge: any) => {
+              const itemNode = itemEdge.node;
+              return {
+                title: itemNode.title,
+                quantity: itemNode.quantity,
+                price: {
+                  amount: itemNode.price?.amount || "0",
+                  currencyCode: itemNode.price?.currencyCode || "INR",
+                },
+              };
+            }) || [],
+            successfulFulfillments: [],
+          };
+        }) || [],
       };
 
       return NextResponse.json({ user: formattedUser });
