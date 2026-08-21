@@ -4,7 +4,7 @@ import Link from "next/link";
 import { getProduct, getProducts, getRelatedProducts } from "@/lib/shopify";
 import ProductClientPage from "./ProductClientPage";
 
-export const revalidate = 60; // Revalidate cache every 60 seconds (ISR)
+export const revalidate = 3600; // Revalidate cache every hour (ISR)
 
 interface Props {
   params: Promise<{ handle: string }>;
