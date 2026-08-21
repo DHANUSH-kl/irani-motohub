@@ -11,8 +11,8 @@ export default function Footer() {
           {/* Brand & Location Info */}
           <div className="space-y-5">
             <Link href="/" className="flex items-center gap-1.5">
-              <span className="font-headings font-extrabold text-2xl tracking-tighter text-white">
-                IRANI <span className="text-brand-red">MOTOHUB</span>
+              <span className="font-headings font-extrabold text-2xl tracking-tighter text-brand-red">
+                IRANI <span className="text-white">MOTOHUB</span>
               </span>
               <span className="w-1.5 h-1.5 bg-brand-red rounded-full self-end mb-2" />
             </Link>
