@@ -112,12 +112,7 @@ export default function BestsellersCarousel({ products }: { products: Product[] 
                 <Link href={`/products/${product.handle}`}>{product.title}</Link>
               </h3>
 
-              {/* Rating */}
-              <div className="flex items-center gap-1 text-[10px] mb-3 text-amber-500">
-                <Star className="w-3.5 h-3.5 fill-current" />
-                <span className="font-bold text-white mt-0.5">{rating}</span>
-                <span className="text-gray-500 font-normal mt-0.5">(Verified)</span>
-              </div>
+
 
               {/* Pricing and Action */}
               <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">

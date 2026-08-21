@@ -441,14 +441,7 @@ export default function CollectionClientPage({
                           <Link href={`/products/${product.handle}`}>{product.title}</Link>
                         </h3>
 
-                        {/* Rating summary */}
-                        <div className="flex items-center gap-1 text-[11px] mb-3">
-                          <div className="flex text-amber-500">
-                            <Star className="w-3.5 h-3.5 fill-current" />
-                          </div>
-                          <span className="font-bold text-brand-primary">{product.rating}</span>
-                          <span className="text-brand-muted">({product.reviews.length})</span>
-                        </div>
+
 
                         {/* Pricing + Quick add */}
                         <div className="mt-auto pt-3 border-t border-brand-border space-y-3">

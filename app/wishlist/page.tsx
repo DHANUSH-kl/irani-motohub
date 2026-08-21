@@ -242,26 +242,7 @@ export default function WishlistPage() {
                         </h3>
                       </Link>
 
-                      {/* Rating */}
-                      {product.rating > 0 && (
-                        <div className="flex items-center gap-1 mb-3">
-                          <div className="flex">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`w-3 h-3 ${
-                                  i < Math.round(product.rating)
-                                    ? "text-amber-400 fill-amber-400"
-                                    : "text-gray-200"
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-[10px] text-gray-400 font-body">
-                            ({product.reviews.length})
-                          </span>
-                        </div>
-                      )}
+
 
                       {/* Spacer */}
                       <div className="flex-1" />

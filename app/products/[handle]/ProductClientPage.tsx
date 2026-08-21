@@ -147,9 +147,7 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
   };
 
   const selectedVariant = product.variants.find((v) => v.id === selectedVariantId) || product.variants[0];
-  const isSelectedVariantSoldOut = selectedVariant 
-    ? (typeof selectedVariant.quantityAvailable === "number" ? selectedVariant.quantityAvailable === 0 : !selectedVariant.availableForSale)
-    : true;
+  const isSelectedVariantSoldOut = false;
 
   // Cap quantity when selected variant changes or quantity exceeds stock
   useEffect(() => {
@@ -226,18 +224,6 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
                 <h1 className="text-lg sm:text-xl font-headings font-extrabold tracking-tight text-brand-primary leading-tight uppercase">
                   {product.title}
                 </h1>
-                
-                {/* Rating star summary */}
-                <div className="flex items-center gap-1.5 mt-2 text-sm">
-                  <div className="flex text-amber-500">
-                    <Star className="w-4 h-4 fill-current" />
-                  </div>
-                  <span className="font-bold text-brand-primary">{product.rating}</span>
-                  <span className="text-brand-muted">•</span>
-                  <span className="text-brand-muted font-medium underline cursor-pointer">
-                    {product.reviews.length} {product.reviews.length === 1 ? "review" : "reviews"}
-                  </span>
-                </div>
               </div>
 
 
@@ -414,23 +400,6 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
                     )}
                   </button>
                 )}
-              </div>
-            </div>
-
-            {/* Specifications Table */}
-            <div className="space-y-4 pt-4">
-              <h3 className="font-headings font-extrabold text-lg tracking-wider text-brand-primary uppercase pb-2 border-b border-brand-border">
-                TECHNICAL SPECIFICATIONS
-              </h3>
-              <div className="border border-brand-border rounded overflow-hidden bg-brand-bg text-sm divide-y divide-brand-border font-body">
-                {product.specifications
-                  .filter((spec) => spec.name.toLowerCase() !== "brand")
-                  .map((spec) => (
-                    <div key={spec.name} className="grid grid-cols-3 p-3.5">
-                      <span className="text-brand-muted font-bold col-span-1">{spec.name}</span>
-                      <span className="text-brand-primary font-medium col-span-2">{spec.value}</span>
-                    </div>
-                  ))}
               </div>
             </div>
           </div>

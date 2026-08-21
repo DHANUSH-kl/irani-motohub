@@ -69,8 +69,7 @@ export interface Product {
 }
 
 export function isProductSoldOut(product: Product): boolean {
-  if (product.inventoryTracked === false) return true;
-  if (product.inventoryQuantity === 0) return true;
+  // Temporarily bypass sold out checks
   return false;
 }
 
