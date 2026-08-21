@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useWishlist } from "@/context/WishlistContext";
 import { useCart } from "@/context/CartContext";
-import { Product, getOptimizedImageUrl, shopifyLoader } from "@/lib/shopify";
+import { Product, getOptimizedImageUrl, shopifyLoader, isProductSoldOut } from "@/lib/shopify";
 
 export default function WishlistPage() {
   const { wishlist, removeFromWishlist, clearWishlist } = useWishlist();
@@ -149,6 +149,7 @@ export default function WishlistPage() {
               {wishlist.map((product, index) => {
                 const isAdded = addedIds.has(product.id);
                 const isRemoving = removingId === product.id;
+                const soldOut = isProductSoldOut(product);
                 const price = parseInt(
                   product.priceRange.minVariantPrice.amount
                 );
@@ -172,7 +173,9 @@ export default function WishlistPage() {
                     }}
                     exit={{ opacity: 0, scale: 0.9, y: -10 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="group bg-white border border-black/5 rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 relative flex flex-col"
+                    className={`group bg-white border border-black/5 rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 relative flex flex-col ${
+                      soldOut ? "opacity-65 grayscale-[40%]" : ""
+                    }`}
                   >
                     {/* Remove Button */}
                     <button
@@ -190,8 +193,17 @@ export default function WishlistPage() {
                       </div>
                     </div>
 
+                    {/* Sold Out Badge */}
+                    {soldOut && (
+                      <div className="absolute top-3 left-14 z-10">
+                        <span className="bg-brand-red text-white text-[9px] font-headings font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                          SOLD OUT
+                        </span>
+                      </div>
+                    )}
+
                     {/* Discount Badge */}
-                    {discount && (
+                    {discount && !soldOut && (
                       <div className="absolute top-3 left-14 z-10">
                         <span className="bg-emerald-500 text-white text-[9px] font-headings font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
                           {discount}% Off
@@ -268,14 +280,16 @@ export default function WishlistPage() {
                         </div>
                         <button
                           onClick={() => handleAddToCart(product)}
-                          disabled={isAdded}
-                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-headings font-bold uppercase tracking-wider transition-all duration-300 ${
+                          disabled={isAdded || soldOut}
+                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-headings font-bold uppercase tracking-wider transition-all duration-300 disabled:opacity-50 ${
                             isAdded
                               ? "bg-emerald-500 text-white"
-                              : "bg-gray-900 hover:bg-brand-red text-white"
+                              : "bg-gray-900 hover:bg-brand-red text-white disabled:hover:bg-gray-900"
                           }`}
                         >
-                          {isAdded ? (
+                          {soldOut ? (
+                            "Sold Out"
+                          ) : isAdded ? (
                             <>
                               <Check className="w-3.5 h-3.5" />
                               Added

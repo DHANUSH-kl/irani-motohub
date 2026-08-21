@@ -63,6 +63,14 @@ export interface Product {
       safety_rating?: number | string;
     };
   };
+  inventoryQuantity?: number;
+  inventoryTracked?: boolean;
+}
+
+export function isProductSoldOut(product: Product): boolean {
+  if (product.inventoryTracked === false) return true;
+  if (product.inventoryQuantity === 0) return true;
+  return false;
 }
 
 export interface Collection {
@@ -246,6 +254,7 @@ const MOCK_PRODUCTS: Product[] = [
     rating: 5.0,
     hp_gain: 1.0,
     weight_saved: 0.30,
+    inventoryQuantity: 0,
     metafields: {
       custom: {
         hp_gain: 1.0,
@@ -376,6 +385,7 @@ const MOCK_PRODUCTS: Product[] = [
     rating: 4.5,
     hp_gain: 0.2,
     weight_saved: 0.0,
+    inventoryTracked: false,
     metafields: {
       custom: {
         hp_gain: 0.2,

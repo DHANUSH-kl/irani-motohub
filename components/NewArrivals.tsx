@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Heart, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react";
-import { getProducts, Product, isProductCompatible, getOptimizedImageUrl, shopifyLoader } from "@/lib/shopify";
+import { getProducts, Product, isProductCompatible, getOptimizedImageUrl, shopifyLoader, isProductSoldOut } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 
@@ -255,99 +255,112 @@ export default function NewArrivals({ initialProducts }: { initialProducts: Prod
             className="flex gap-6"
             style={{ width: latestProducts.length * cardWidth + (latestProducts.length - 1) * gap }}
           >
-            {latestProducts.map((product) => (
-              <div
-                key={product.id}
-                className="group flex flex-col bg-[#1c1c1c] border border-white/5 overflow-hidden transition-all duration-300 hover:border-white/15 flex-shrink-0"
-                style={{ width: cardWidth }}
-              >
-                {/* Image panel */}
-                <div className="relative aspect-[4/5] w-full bg-[#f6f6f6] overflow-hidden flex items-center justify-center p-4">
-                  <Link href={`/products/${product.handle}`} className="relative w-full h-full block" draggable={false}>
-                    <Image
-                      src={getOptimizedImageUrl(product.images[0]?.url, 400)}
-                      alt={product.images[0]?.altText || product.title}
-                      fill
-                      className="object-contain p-4 transition-transform duration-700 ease-out group-hover:scale-105"
-                      sizes="(max-w-768px) 100vw, 25vw"
-                      draggable={false}
-                      loader={product.images[0]?.url?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
-                    />
-                  </Link>
+            {latestProducts.map((product) => {
+              const soldOut = isProductSoldOut(product);
+              return (
+                <div
+                  key={product.id}
+                  className={`group flex flex-col bg-[#1c1c1c] border border-white/5 overflow-hidden transition-all duration-300 hover:border-white/15 flex-shrink-0 ${
+                    soldOut ? "opacity-65 grayscale-[40%]" : ""
+                  }`}
+                  style={{ width: cardWidth }}
+                >
+                  {/* Image panel */}
+                  <div className="relative aspect-[4/5] w-full bg-[#f6f6f6] overflow-hidden flex items-center justify-center p-4">
+                    <Link href={`/products/${product.handle}`} className="relative w-full h-full block" draggable={false}>
+                      <Image
+                        src={getOptimizedImageUrl(product.images[0]?.url, 400)}
+                        alt={product.images[0]?.altText || product.title}
+                        fill
+                        className="object-contain p-4 transition-transform duration-700 ease-out group-hover:scale-105"
+                        sizes="(max-w-768px) 100vw, 25vw"
+                        draggable={false}
+                        loader={product.images[0]?.url?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
+                      />
+                    </Link>
 
-                  {/* New Arrival Tag */}
-                  <span className="absolute top-4 left-4 bg-brand-red text-white text-[8px] font-headings font-extrabold uppercase tracking-widest px-2.5 py-1 z-10 rounded-sm">
-                    NEW DROP
-                  </span>
+                    {/* New Arrival Tag */}
+                    {soldOut ? (
+                      <span className="absolute top-4 left-4 bg-brand-primary text-white text-[8px] font-headings font-extrabold uppercase tracking-widest px-2.5 py-1 z-10 rounded-sm">
+                        SOLD OUT
+                      </span>
+                    ) : (
+                      <span className="absolute top-4 left-4 bg-brand-red text-white text-[8px] font-headings font-extrabold uppercase tracking-widest px-2.5 py-1 z-10 rounded-sm">
+                        NEW DROP
+                      </span>
+                    )}
 
-                  {/* Wishlist Heart */}
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      toggleWishlist(product);
-                    }}
-                    className="absolute top-4 right-4 p-2 bg-[#121212]/80 hover:bg-brand-red rounded-full text-white shadow-sm transition-all duration-200 z-10"
-                    aria-label="Add to wishlist"
-                  >
-                    <Heart 
-                      className={`w-3.5 h-3.5 transition-colors ${
-                        isInWishlist(product.id) ? "fill-brand-red text-brand-red border-brand-red" : "text-white"
-                      }`} 
-                    />
-                  </button>
-                </div>
+                    {/* Wishlist Heart */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleWishlist(product);
+                      }}
+                      className="absolute top-4 right-4 p-2 bg-[#121212]/80 hover:bg-brand-red rounded-full text-white shadow-sm transition-all duration-200 z-10"
+                      aria-label="Add to wishlist"
+                    >
+                      <Heart 
+                        className={`w-3.5 h-3.5 transition-colors ${
+                          isInWishlist(product.id) ? "fill-brand-red text-brand-red border-brand-red" : "text-white"
+                        }`} 
+                      />
+                    </button>
+                  </div>
 
-                {/* Info Panel */}
-                <div className="p-5 flex-grow flex flex-col justify-between space-y-4">
-                  <div className="space-y-1.5">
-                    <h3 className="font-headings font-extrabold text-sm text-white uppercase tracking-tight line-clamp-1 group-hover:text-brand-red transition-colors">
-                      <Link href={`/products/${product.handle}`}>{product.title}</Link>
-                    </h3>
+                  {/* Info Panel */}
+                  <div className="p-5 flex-grow flex flex-col justify-between space-y-4">
+                    <div className="space-y-1.5">
+                      <h3 className="font-headings font-extrabold text-sm text-white uppercase tracking-tight line-clamp-1 group-hover:text-brand-red transition-colors">
+                        <Link href={`/products/${product.handle}`}>{product.title}</Link>
+                      </h3>
 
-                    {/* Compatibility verification badge */}
-                    <div className="pt-0.5">
-                      {garageBike ? (
-                        isProductCompatible(product, garageBike) ? (
-                          <span className="text-[8px] bg-emerald-500/10 text-emerald-400 font-extrabold border border-emerald-500/20 px-2 py-0.5 rounded tracking-wide uppercase inline-flex items-center">
-                            ✓ Fits Your Bike
-                          </span>
+                      {/* Compatibility verification badge */}
+                      <div className="pt-0.5">
+                        {garageBike ? (
+                          isProductCompatible(product, garageBike) ? (
+                            <span className="text-[8px] bg-emerald-500/10 text-emerald-400 font-extrabold border border-emerald-500/20 px-2 py-0.5 rounded tracking-wide uppercase inline-flex items-center">
+                              ✓ Fits Your Bike
+                            </span>
+                          ) : (
+                            <span className="text-[8px] bg-red-500/10 text-red-400 font-extrabold border border-red-500/20 px-2 py-0.5 rounded tracking-wide uppercase inline-flex items-center">
+                              ✗ Does Not Fit
+                            </span>
+                          )
                         ) : (
-                          <span className="text-[8px] bg-red-500/10 text-red-400 font-extrabold border border-red-500/20 px-2 py-0.5 rounded tracking-wide uppercase inline-flex items-center">
-                            ✗ Does Not Fit
+                          <span className="text-[8px] text-gray-500 font-semibold tracking-wider uppercase">
+                            Fits: {product.compatibility[0]}
                           </span>
-                        )
-                      ) : (
-                        <span className="text-[8px] text-gray-500 font-semibold tracking-wider uppercase">
-                          Fits: {product.compatibility[0]}
-                        </span>
-                      )}
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Price & Cart add action */}
+                    <div className="flex items-center justify-between pt-3.5 border-t border-white/5">
+                      <span className="text-sm font-bold text-white font-mono">
+                        ₹{parseInt(product.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
+                      </span>
+
+                      <button
+                        onClick={(e) => handleQuickAdd(e, product)}
+                        disabled={addingId === product.id || soldOut}
+                        className="bg-brand-red hover:bg-white hover:text-black text-white p-2.5 rounded-sm transition-all duration-300 flex items-center justify-center disabled:bg-brand-red/50 disabled:text-white/50"
+                        aria-label={soldOut ? "Sold Out" : "Add to Cart"}
+                      >
+                        {soldOut ? (
+                          <span className="text-[9px] font-bold px-1">SOLD OUT</span>
+                        ) : addingId === product.id ? (
+                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <ShoppingBag className="w-3.5 h-3.5" />
+                        )}
+                      </button>
                     </div>
                   </div>
 
-                  {/* Price & Cart add action */}
-                  <div className="flex items-center justify-between pt-3.5 border-t border-white/5">
-                    <span className="text-sm font-bold text-white font-mono">
-                      ₹{parseInt(product.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
-                    </span>
-
-                    <button
-                      onClick={(e) => handleQuickAdd(e, product)}
-                      disabled={addingId === product.id}
-                      className="bg-brand-red hover:bg-white hover:text-black text-white p-2.5 rounded-sm transition-all duration-300 flex items-center justify-center disabled:bg-brand-red/50 disabled:text-white/50"
-                      aria-label="Add to Cart"
-                    >
-                      {addingId === product.id ? (
-                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <ShoppingBag className="w-3.5 h-3.5" />
-                      )}
-                    </button>
-                  </div>
                 </div>
-
-              </div>
-            ))}
+              );
+            })}
           </motion.div>
         </div>
 

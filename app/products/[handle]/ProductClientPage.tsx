@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Star, ShoppingCart, ShieldCheck, Check, AlertTriangle, ArrowRight, Truck, RotateCcw, Wrench, Heart, ChevronDown, ChevronUp, CreditCard } from "lucide-react";
-import { Product, getOptimizedImageUrl, shopifyLoader } from "@/lib/shopify";
+import { Product, getOptimizedImageUrl, shopifyLoader, isProductSoldOut } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 
@@ -21,6 +21,7 @@ interface ProductClientPageProps {
 }
 
 export default function ProductClientPage({ product, relatedProducts }: ProductClientPageProps) {
+  const soldOut = isProductSoldOut(product);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedVariantId, setSelectedVariantId] = useState(product.variants[0]?.id || "");
   const [quantity, setQuantity] = useState(1);
@@ -262,10 +263,17 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
                 </div>
                 
                 {/* Stock Availability */}
-                <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 uppercase tracking-wider">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>In Stock</span>
-                </div>
+                {soldOut ? (
+                  <div className="flex items-center gap-2 text-xs font-bold text-brand-red uppercase tracking-wider">
+                    <span className="w-2 h-2 rounded-full bg-brand-red" />
+                    <span>Sold Out</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 uppercase tracking-wider">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>In Stock</span>
+                  </div>
+                )}
               </div>
 
               {/* CTAs: Outlined Add to Cart + Heart & Solid Red Buy It Now */}
@@ -273,10 +281,12 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
                 <div className="flex gap-3">
                   <button
                     onClick={handleAddToCart}
-                    disabled={isAdding}
-                    className="flex-grow border-2 border-brand-primary hover:bg-brand-primary hover:text-white bg-white text-brand-primary py-3.5 font-headings text-xs uppercase tracking-widest font-extrabold transition-all duration-300 flex items-center justify-center gap-2"
+                    disabled={isAdding || soldOut}
+                    className="flex-grow border-2 border-brand-primary hover:bg-brand-primary hover:text-white bg-white text-brand-primary py-3.5 font-headings text-xs uppercase tracking-widest font-extrabold transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-brand-primary"
                   >
-                    {isAdding ? (
+                    {soldOut ? (
+                      "SOLD OUT"
+                    ) : isAdding ? (
                       <>
                         <div className="w-3.5 h-3.5 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
                         ADDING...
@@ -303,9 +313,10 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
 
                 <button
                   onClick={handleBuyItNow}
-                  className="w-full bg-brand-red hover:bg-red-750 text-white py-4 font-headings text-xs uppercase tracking-widest font-extrabold transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                  disabled={soldOut}
+                  className="w-full bg-brand-red hover:bg-red-750 text-white py-4 font-headings text-xs uppercase tracking-widest font-extrabold transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50 disabled:hover:bg-brand-red"
                 >
-                  Buy It Now
+                  {soldOut ? "SOLD OUT" : "Buy It Now"}
                 </button>
               </div>
 
@@ -415,42 +426,54 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {relatedProducts.map((p) => (
-                <div
-                  key={p.id}
-                  className="group bg-white border border-brand-border p-4 rounded-lg hover:shadow-lg hover:border-brand-primary transition-all duration-300 flex flex-col relative"
-                >
-                  {/* Image */}
-                  <div className="relative aspect-square w-full bg-brand-bg overflow-hidden rounded mb-4 border border-brand-border">
-                    <Image
-                      src={getOptimizedImageUrl(p.images[0]?.url, 400)}
-                      alt={p.images[0]?.altText || p.title}
-                      fill
-                      className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
-                      sizes="200px"
-                      loader={p.images[0]?.url?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
-                    />
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-grow flex flex-col">
-                    <h3 className="font-headings font-extrabold text-sm text-brand-primary hover:text-brand-red transition-colors line-clamp-1 mb-2">
-                      <Link href={`/products/${p.handle}`}>{p.title}</Link>
-                    </h3>
-                    <div className="mt-auto pt-3 border-t border-brand-border flex justify-between items-center text-xs">
-                      <span className="font-extrabold text-brand-primary">
-                        ₹{parseInt(p.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
-                      </span>
-                      <Link
-                        href={`/products/${p.handle}`}
-                        className="text-[9px] font-bold uppercase tracking-widest text-brand-primary hover:text-brand-red transition-colors flex items-center gap-0.5"
-                      >
-                        View Part <ArrowRight className="w-3 h-3" />
+              {relatedProducts.map((p) => {
+                const pSoldOut = isProductSoldOut(p);
+                return (
+                  <div
+                    key={p.id}
+                    className={`group bg-white border border-brand-border p-4 rounded-lg hover:shadow-lg hover:border-brand-primary transition-all duration-300 flex flex-col relative ${
+                      pSoldOut ? "opacity-65 grayscale-[40%]" : ""
+                    }`}
+                  >
+                    {/* Image */}
+                    <div className="relative aspect-square w-full bg-brand-bg overflow-hidden rounded mb-4 border border-brand-border">
+                      <Link href={`/products/${p.handle}`}>
+                        <Image
+                          src={getOptimizedImageUrl(p.images[0]?.url, 400)}
+                          alt={p.images[0]?.altText || p.title}
+                          fill
+                          className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
+                          sizes="200px"
+                          loader={p.images[0]?.url?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
+                        />
                       </Link>
+                      {pSoldOut && (
+                        <span className="absolute top-2 left-2 bg-brand-primary text-white text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 z-10 rounded">
+                          SOLD OUT
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-grow flex flex-col">
+                      <h3 className="font-headings font-extrabold text-sm text-brand-primary hover:text-brand-red transition-colors line-clamp-1 mb-2">
+                        <Link href={`/products/${p.handle}`}>{p.title}</Link>
+                      </h3>
+                      <div className="mt-auto pt-3 border-t border-brand-border flex justify-between items-center text-xs">
+                        <span className="font-extrabold text-brand-primary">
+                          ₹{parseInt(p.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
+                        </span>
+                        <Link
+                          href={`/products/${p.handle}`}
+                          className="text-[9px] font-bold uppercase tracking-widest text-brand-primary hover:text-brand-red transition-colors flex items-center gap-0.5"
+                        >
+                          {pSoldOut ? "Sold Out" : "View Part"} <ArrowRight className="w-3 h-3" />
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

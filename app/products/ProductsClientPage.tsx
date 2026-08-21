@@ -11,7 +11,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   getProducts, Product, Collection, 
-  isProductCompatible, getActiveMotorcycleGroups, getActiveYears, getOptimizedImageUrl, shopifyLoader 
+  isProductCompatible, getActiveMotorcycleGroups, getActiveYears, getOptimizedImageUrl, shopifyLoader,
+  isProductSoldOut
 } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -569,81 +570,92 @@ export default function ProductsClientPage({ initialProducts, initialCollections
               
               {/* Catalog Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-                {filteredProducts.slice(0, visibleCount).map((product) => (
-                  <div
-                    key={product.id}
-                    className="group bg-white border border-brand-border p-4 rounded-lg hover:shadow-lg hover:border-brand-primary transition-all duration-300 flex flex-col relative"
-                  >
-                    {/* Image Block */}
-                    <div className="relative aspect-square w-full bg-brand-bg overflow-hidden rounded mb-4 border border-brand-border">
-                      <Link href={`/products/${product.handle}`}>
-                        <Image
-                          src={getOptimizedImageUrl(product.images[0]?.url, 400)}
-                          alt={product.images[0]?.altText || product.title}
-                          fill
-                          className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
-                          sizes="(max-w-768px) 100vw, 25vw"
-                          loader={product.images[0]?.url?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
-                        />
-                      </Link>
-                      
-                    </div>
-
-                    {/* Details Info Block */}
-                    <div className="flex-grow flex flex-col">
-                      <span className="text-[9px] font-bold text-brand-red uppercase tracking-wider block mb-1 font-body">
-                        {product.category}
-                      </span>
-                      
-                      <h3 className="font-headings font-extrabold text-sm text-brand-primary hover:text-brand-red transition-colors line-clamp-1 mb-2 leading-tight uppercase">
-                        <Link href={`/products/${product.handle}`}>{product.title}</Link>
-                      </h3>
-
-                      {/* Rating star summary */}
-                      <div className="flex items-center gap-1 text-[11px] mb-3">
-                        <div className="flex text-amber-500">
-                          <Star className="w-3.5 h-3.5 fill-current" />
-                        </div>
-                        <span className="font-bold text-brand-primary">{product.rating}</span>
-                        <span className="text-brand-muted">({product.reviews.length})</span>
+                {filteredProducts.slice(0, visibleCount).map((product) => {
+                  const soldOut = isProductSoldOut(product);
+                  return (
+                    <div
+                      key={product.id}
+                      className={`group bg-white border border-brand-border p-4 rounded-lg hover:shadow-lg hover:border-brand-primary transition-all duration-300 flex flex-col relative ${
+                        soldOut ? "opacity-65 grayscale-[40%]" : ""
+                      }`}
+                    >
+                      {/* Image Block */}
+                      <div className="relative aspect-square w-full bg-brand-bg overflow-hidden rounded mb-4 border border-brand-border">
+                        <Link href={`/products/${product.handle}`}>
+                          <Image
+                            src={getOptimizedImageUrl(product.images[0]?.url, 400)}
+                            alt={product.images[0]?.altText || product.title}
+                            fill
+                            className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
+                            sizes="(max-w-768px) 100vw, 25vw"
+                            loader={product.images[0]?.url?.includes("cdn.shopify.com") ? shopifyLoader : undefined}
+                          />
+                        </Link>
+                        {soldOut && (
+                          <span className="absolute top-2 left-2 bg-brand-primary text-white text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 z-10 rounded">
+                            SOLD OUT
+                          </span>
+                        )}
                       </div>
 
-                      {/* Pricing + Quick buy (At bottom) */}
-                      <div className="mt-auto pt-3 border-t border-brand-border space-y-3">
-                        <div className="flex justify-between items-baseline">
-                          <div className="flex gap-2 items-baseline">
-                            <span className="font-headings font-extrabold text-sm text-brand-primary">
-                              ₹{parseInt(product.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
-                            </span>
-                            {product.variants[0]?.compareAtPrice && (
-                              <span className="text-[10px] text-brand-muted line-through font-bold">
-                                ₹{parseInt(product.variants[0].compareAtPrice.amount).toLocaleString("en-IN")}
-                              </span>
-                            )}
+                      {/* Details Info Block */}
+                      <div className="flex-grow flex flex-col">
+                        <span className="text-[9px] font-bold text-brand-red uppercase tracking-wider block mb-1 font-body">
+                          {product.category}
+                        </span>
+                        
+                        <h3 className="font-headings font-extrabold text-sm text-brand-primary hover:text-brand-red transition-colors line-clamp-1 mb-2 leading-tight uppercase">
+                          <Link href={`/products/${product.handle}`}>{product.title}</Link>
+                        </h3>
+
+                        {/* Rating star summary */}
+                        <div className="flex items-center gap-1 text-[11px] mb-3">
+                          <div className="flex text-amber-500">
+                            <Star className="w-3.5 h-3.5 fill-current" />
                           </div>
+                          <span className="font-bold text-brand-primary">{product.rating}</span>
+                          <span className="text-brand-muted">({product.reviews.length})</span>
                         </div>
 
-                        <button
-                          onClick={(e) => handleQuickAdd(e, product)}
-                          disabled={addingId === product.id}
-                          className="w-full bg-[#1E1E1E] hover:bg-brand-red text-white py-2.5 rounded font-headings text-[10px] uppercase tracking-wider font-extrabold transition-all duration-300 flex items-center justify-center gap-1.5 shadow-sm"
-                        >
-                          {addingId === product.id ? (
-                            <>
-                              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                              ADDING...
-                            </>
-                          ) : (
-                            <>
-                              <ShoppingBag className="w-3.5 h-3.5" />
-                              ADD TO CART
-                            </>
-                          )}
-                        </button>
+                        {/* Pricing + Quick buy (At bottom) */}
+                        <div className="mt-auto pt-3 border-t border-brand-border space-y-3">
+                          <div className="flex justify-between items-baseline">
+                            <div className="flex gap-2 items-baseline">
+                              <span className="font-headings font-extrabold text-sm text-brand-primary">
+                                ₹{parseInt(product.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
+                              </span>
+                              {product.variants[0]?.compareAtPrice && (
+                                <span className="text-[10px] text-brand-muted line-through font-bold">
+                                  ₹{parseInt(product.variants[0].compareAtPrice.amount).toLocaleString("en-IN")}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={(e) => handleQuickAdd(e, product)}
+                            disabled={addingId === product.id || soldOut}
+                            className="w-full bg-[#1E1E1E] hover:bg-brand-red text-white py-2.5 rounded font-headings text-[10px] uppercase tracking-wider font-extrabold transition-all duration-300 flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 disabled:hover:bg-[#1E1E1E]"
+                          >
+                            {soldOut ? (
+                              "SOLD OUT"
+                            ) : addingId === product.id ? (
+                              <>
+                                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                ADDING...
+                              </>
+                            ) : (
+                              <>
+                                <ShoppingBag className="w-3.5 h-3.5" />
+                                ADD TO CART
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Load More Button */}

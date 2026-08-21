@@ -4,7 +4,7 @@ import React, { useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Star } from "lucide-react";
-import { Product, getOptimizedImageUrl } from "@/lib/shopify";
+import { Product, getOptimizedImageUrl, isProductSoldOut } from "@/lib/shopify";
 
 export default function BestsellersCarousel({ products }: { products: Product[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -71,10 +71,13 @@ export default function BestsellersCarousel({ products }: { products: Product[] 
     >
       {products.map((product) => {
         const rating = 4.8;
+        const soldOut = isProductSoldOut(product);
         return (
           <div
             key={product.id}
-            className="group flex flex-col bg-[#141414] border border-white/5 rounded-lg p-4 hover:border-brand-red/30 hover:shadow-2xl transition-all duration-300 relative min-w-[280px] sm:min-w-0 w-[280px] sm:w-auto snap-start flex-shrink-0"
+            className={`group flex flex-col bg-[#141414] border border-white/5 rounded-lg p-4 hover:border-brand-red/30 hover:shadow-2xl transition-all duration-300 relative min-w-[280px] sm:min-w-0 w-[280px] sm:w-auto snap-start flex-shrink-0 ${
+              soldOut ? "opacity-65 grayscale-[40%]" : ""
+            }`}
           >
             {/* Image Box */}
             <div className="relative aspect-square w-full bg-[#f6f6f6] overflow-hidden rounded-md mb-4 flex items-center justify-center p-4">
@@ -88,9 +91,15 @@ export default function BestsellersCarousel({ products }: { products: Product[] 
                   unoptimized={product.images[0]?.url?.includes("cdn.shopify.com")}
                 />
               </Link>
-              <span className="absolute top-3 left-3 bg-[#1c1c1c] border border-white/10 text-white text-[8px] font-headings font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-sm">
-                BEST SELLER
-              </span>
+              {soldOut ? (
+                <span className="absolute top-3 left-3 bg-brand-primary text-white text-[8px] font-headings font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-sm">
+                  SOLD OUT
+                </span>
+              ) : (
+                <span className="absolute top-3 left-3 bg-[#1c1c1c] border border-white/10 text-white text-[8px] font-headings font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-sm">
+                  BEST SELLER
+                </span>
+              )}
             </div>
 
             {/* Details */}
@@ -121,9 +130,13 @@ export default function BestsellersCarousel({ products }: { products: Product[] 
 
                 <Link
                   href={`/products/${product.handle}`}
-                  className="bg-brand-red hover:bg-white hover:text-black text-white px-4 py-2 font-headings text-[9px] font-bold uppercase tracking-widest transition-colors rounded-sm"
+                  className={`px-4 py-2 font-headings text-[9px] font-bold uppercase tracking-widest transition-colors rounded-sm ${
+                    soldOut
+                      ? "bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-gray-200"
+                      : "bg-brand-red hover:bg-white hover:text-black text-white"
+                  }`}
                 >
-                  View Details
+                  {soldOut ? "Sold Out" : "View Details"}
                 </Link>
               </div>
             </div>
