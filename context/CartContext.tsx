@@ -196,17 +196,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
       if (existingLineIndex > -1) {
         // Increment quantity
+        let targetQuantity = newLines[existingLineIndex].quantity + quantity;
+        if (typeof selectedVariant.quantityAvailable === "number") {
+          targetQuantity = Math.min(targetQuantity, selectedVariant.quantityAvailable);
+        }
         newLines[existingLineIndex] = {
           ...newLines[existingLineIndex],
-          quantity: newLines[existingLineIndex].quantity + quantity
+          quantity: targetQuantity
         };
       } else {
         // Add new line
+        let targetQuantity = quantity;
+        if (typeof selectedVariant.quantityAvailable === "number") {
+          targetQuantity = Math.min(targetQuantity, selectedVariant.quantityAvailable);
+        }
         newLines.push({
           id: `line-${Math.random().toString(36).substr(2, 9)}`,
           product,
           selectedVariant,
-          quantity
+          quantity: targetQuantity
         });
       }
 
@@ -257,7 +265,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCart((prevCart) => {
       const newLines = prevCart.lines.map((line) => {
         if (line.selectedVariant.id === variantId) {
-          return { ...line, quantity };
+          let targetQuantity = quantity;
+          if (typeof line.selectedVariant.quantityAvailable === "number") {
+            targetQuantity = Math.min(targetQuantity, line.selectedVariant.quantityAvailable);
+          }
+          return { ...line, quantity: targetQuantity };
         }
         return line;
       });

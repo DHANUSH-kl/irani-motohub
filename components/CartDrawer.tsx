@@ -251,7 +251,8 @@ export default function CartDrawer() {
                           </span>
                           <button
                             onClick={() => updateQuantity(line.selectedVariant.id, line.quantity + 1)}
-                            className="px-2 py-1 text-brand-primary hover:bg-brand-bg transition-colors"
+                            disabled={typeof line.selectedVariant.quantityAvailable === "number" && line.quantity >= line.selectedVariant.quantityAvailable}
+                            className="px-2 py-1 text-brand-primary hover:bg-brand-bg transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
                           >
                             <Plus className="w-3 h-3" />
                           </button>

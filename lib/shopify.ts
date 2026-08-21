@@ -12,6 +12,7 @@ export interface ProductVariant {
     currencyCode: string;
   } | null;
   availableForSale: boolean;
+  quantityAvailable?: number | null;
 }
 
 export interface ProductImage {
@@ -179,13 +180,15 @@ const MOCK_PRODUCTS: Product[] = [
         id: "var-1-1",
         title: "KTM Duke 390 (Gen 3)",
         price: { amount: "4990", currencyCode: "INR" },
-        availableForSale: true
+        availableForSale: true,
+        quantityAvailable: 10
       },
       {
         id: "var-1-2",
         title: "Royal Enfield Himalayan 450",
         price: { amount: "5200", currencyCode: "INR" },
-        availableForSale: true
+        availableForSale: true,
+        quantityAvailable: 5
       }
     ],
     brand: "BMC",
@@ -204,6 +207,7 @@ const MOCK_PRODUCTS: Product[] = [
     rating: 4.8,
     hp_gain: 1.2,
     weight_saved: 0.35,
+    inventoryQuantity: 15,
     metafields: {
       custom: {
         hp_gain: 1.2,
@@ -230,13 +234,15 @@ const MOCK_PRODUCTS: Product[] = [
         id: "var-2-1",
         title: "Royal Enfield Interceptor 650",
         price: { amount: "5490", currencyCode: "INR" },
-        availableForSale: true
+        availableForSale: true,
+        quantityAvailable: 0
       },
       {
         id: "var-2-2",
         title: "Yamaha YZF-R15 V4",
         price: { amount: "4200", currencyCode: "INR" },
-        availableForSale: true
+        availableForSale: true,
+        quantityAvailable: 0
       }
     ],
     brand: "K&N",
@@ -281,7 +287,8 @@ const MOCK_PRODUCTS: Product[] = [
         id: "var-3-1",
         title: "Universal Fit / Standard ECU",
         price: { amount: "7990", currencyCode: "INR" },
-        availableForSale: true
+        availableForSale: true,
+        quantityAvailable: 8
       }
     ],
     brand: "Race Dynamics",
@@ -299,6 +306,8 @@ const MOCK_PRODUCTS: Product[] = [
     rating: 4.9,
     hp_gain: 1.8,
     weight_saved: 0.0,
+    inventoryQuantity: 8,
+    inventoryTracked: true,
     metafields: {
       custom: {
         hp_gain: 1.8,
@@ -325,7 +334,8 @@ const MOCK_PRODUCTS: Product[] = [
         id: "var-4-1",
         title: "Pro Edition with Handlebar Map Selector",
         price: { amount: "9990", currencyCode: "INR" },
-        availableForSale: true
+        availableForSale: true,
+        quantityAvailable: 12
       }
     ],
     brand: "Race Dynamics",
@@ -342,6 +352,8 @@ const MOCK_PRODUCTS: Product[] = [
     rating: 4.7,
     hp_gain: 3.2,
     weight_saved: 0.1,
+    inventoryQuantity: 12,
+    inventoryTracked: true,
     metafields: {
       custom: {
         hp_gain: 3.2,
@@ -412,7 +424,8 @@ const MOCK_PRODUCTS: Product[] = [
         id: "var-6-1",
         title: "C1 Clean 400ml + C2 Lube 400ml",
         price: { amount: "950", currencyCode: "INR" },
-        availableForSale: true
+        availableForSale: true,
+        quantityAvailable: 5
       }
     ],
     brand: "Motul",
@@ -429,6 +442,8 @@ const MOCK_PRODUCTS: Product[] = [
     rating: 4.9,
     hp_gain: 0.4,
     weight_saved: 0.0,
+    inventoryQuantity: 5,
+    inventoryTracked: true,
     metafields: {
       custom: {
         hp_gain: 0.4,
@@ -455,7 +470,8 @@ const MOCK_PRODUCTS: Product[] = [
         id: "var-7-1",
         title: "1 Litre Can",
         price: { amount: "1490", currencyCode: "INR" },
-        availableForSale: true
+        availableForSale: true,
+        quantityAvailable: 20
       }
     ],
     brand: "Liqui Moly",
@@ -472,6 +488,8 @@ const MOCK_PRODUCTS: Product[] = [
     rating: 4.6,
     hp_gain: 0.3,
     weight_saved: 0.0,
+    inventoryQuantity: 20,
+    inventoryTracked: true,
     metafields: {
       custom: {
         hp_gain: 0.3,
@@ -498,13 +516,15 @@ const MOCK_PRODUCTS: Product[] = [
         id: "var-10-1",
         title: "Size M / Black",
         price: { amount: "5490", currencyCode: "INR" },
-        availableForSale: true
+        availableForSale: true,
+        quantityAvailable: 7
       },
       {
         id: "var-10-2",
         title: "Size L / Black",
         price: { amount: "5490", currencyCode: "INR" },
-        availableForSale: true
+        availableForSale: true,
+        quantityAvailable: 8
       }
     ],
     brand: "Viaterra",
@@ -520,6 +540,8 @@ const MOCK_PRODUCTS: Product[] = [
     ],
     rating: 4.8,
     safety_rating: 10,
+    inventoryQuantity: 15,
+    inventoryTracked: true,
     metafields: {
       custom: {
         safety_rating: 10
@@ -545,15 +567,19 @@ const MOCK_PRODUCTS: Product[] = [
         id: "var-11-1",
         title: "Standard Handlebar Mount",
         price: { amount: "2100", currencyCode: "INR" },
-        availableForSale: true
+        availableForSale: true,
+        quantityAvailable: 1
       },
       {
         id: "var-11-2",
         title: "Mirror Mount (Scooters/Sports)",
         price: { amount: "2100", currencyCode: "INR" },
-        availableForSale: true
+        availableForSale: true,
+        quantityAvailable: 3
       }
     ],
+    inventoryQuantity: 4,
+    inventoryTracked: true,
     brand: "BOBO",
     category: "Touring Accessories",
     compatibility: ["All Motorcycles"],
@@ -663,7 +689,13 @@ function formatShopifyProduct(shopifyProduct: any): Product {
       currencyCode: edge.node.compareAtPrice.currencyCode,
     } : null,
     availableForSale: edge.node.availableForSale,
+    quantityAvailable: edge.node.quantityAvailable,
   })) || [];
+
+  const hasQuantityTracking = variants.some((v: any) => typeof v.quantityAvailable === "number");
+  const totalQuantity = hasQuantityTracking 
+    ? variants.reduce((sum: number, v: any) => sum + (v.quantityAvailable || 0), 0)
+    : undefined;
 
   // Parse custom metadata fields if available, otherwise map default attributes
   const brand = shopifyProduct.vendor || "MotoHub";
@@ -712,7 +744,9 @@ function formatShopifyProduct(shopifyProduct: any): Product {
         weight_saved: weight_saved_val,
         safety_rating: safety_rating_val
       }
-    }
+    },
+    inventoryQuantity: totalQuantity,
+    inventoryTracked: hasQuantityTracking ? true : undefined,
   };
 }
 
@@ -893,6 +927,7 @@ async function fetchAllProductsInternal(collectionHandle?: string): Promise<Prod
                             currencyCode
                           }
                           availableForSale
+                          quantityAvailable
                         }
                       }
                     }
@@ -957,6 +992,7 @@ async function fetchAllProductsInternal(collectionHandle?: string): Promise<Prod
                           currencyCode
                         }
                         availableForSale
+                        quantityAvailable
                       }
                     }
                   }
@@ -1079,6 +1115,7 @@ async function fetchProductsBatch(collectionHandle?: string, limit?: number): Pr
                         currencyCode
                       }
                       availableForSale
+                      quantityAvailable
                     }
                   }
                 }
@@ -1139,6 +1176,7 @@ async function fetchProductsBatch(collectionHandle?: string, limit?: number): Pr
                       currencyCode
                     }
                     availableForSale
+                    quantityAvailable
                   }
                 }
               }
@@ -1223,6 +1261,7 @@ export const getProduct = cache(async (handle: string): Promise<Product | null> 
                 currencyCode
               }
               availableForSale
+              quantityAvailable
             }
           }
         }
@@ -1284,7 +1323,8 @@ export const getProduct = cache(async (handle: string): Promise<Product | null> 
           amount: edge.node.compareAtPrice.amount,
           currencyCode: edge.node.compareAtPrice.currencyCode
         } : null,
-        availableForSale: edge.node.availableForSale
+        availableForSale: edge.node.availableForSale,
+        quantityAvailable: edge.node.quantityAvailable
       })),
       brand: product.vendor || "Irani MotoHub",
       category: product.productType || "Accessories",
@@ -1298,7 +1338,11 @@ export const getProduct = cache(async (handle: string): Promise<Product | null> 
       ],
       rating: safety_rating || 4.8,
       hp_gain,
-      weight_saved
+      weight_saved,
+      inventoryQuantity: product.variants.edges.some((edge: any) => typeof edge.node.quantityAvailable === "number")
+        ? product.variants.edges.reduce((sum: number, edge: any) => sum + (edge.node.quantityAvailable || 0), 0)
+        : undefined,
+      inventoryTracked: product.variants.edges.some((edge: any) => typeof edge.node.quantityAvailable === "number") ? true : undefined,
     };
   }
 
@@ -1322,9 +1366,12 @@ export const getProduct = cache(async (handle: string): Promise<Product | null> 
         id: `dyn-mock-var-${handle}`,
         title: "Standard Fitment",
         price: { amount: "6500", currencyCode: "INR" },
-        availableForSale: true
+        availableForSale: true,
+        quantityAvailable: 10
       }
     ],
+    inventoryQuantity: 10,
+    inventoryTracked: true,
     brand: handle.toLowerCase().includes("motowolf") ? "Motowolf" : (handle.toLowerCase().includes("hjg") ? "HJG" : "Premium Gear"),
     category: handle.toLowerCase().includes("light") ? "Lights & Electronics" : "Bike Accessories",
     compatibility: ["All Motorcycles"],

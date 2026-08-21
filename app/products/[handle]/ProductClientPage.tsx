@@ -147,6 +147,18 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
   };
 
   const selectedVariant = product.variants.find((v) => v.id === selectedVariantId) || product.variants[0];
+  const isSelectedVariantSoldOut = selectedVariant 
+    ? (typeof selectedVariant.quantityAvailable === "number" ? selectedVariant.quantityAvailable === 0 : !selectedVariant.availableForSale)
+    : true;
+
+  // Cap quantity when selected variant changes or quantity exceeds stock
+  useEffect(() => {
+    if (selectedVariant && typeof selectedVariant.quantityAvailable === "number") {
+      if (quantity > selectedVariant.quantityAvailable) {
+        setQuantity(Math.max(1, selectedVariant.quantityAvailable));
+      }
+    }
+  }, [selectedVariantId, selectedVariant, quantity]);
 
   return (
     <div className="min-h-screen bg-brand-bg pt-36 md:pt-40 pb-16">
@@ -255,15 +267,24 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
                     {quantity}
                   </span>
                   <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="px-3.5 py-2 text-brand-primary hover:bg-brand-bg transition-colors font-bold text-sm"
+                    onClick={() => {
+                      if (typeof selectedVariant?.quantityAvailable === "number") {
+                        if (quantity < selectedVariant.quantityAvailable) {
+                          setQuantity(quantity + 1);
+                        }
+                      } else {
+                        setQuantity(quantity + 1);
+                      }
+                    }}
+                    disabled={typeof selectedVariant?.quantityAvailable === "number" && quantity >= selectedVariant.quantityAvailable}
+                    className="px-3.5 py-2 text-brand-primary hover:bg-brand-bg transition-colors font-bold text-sm disabled:opacity-30 disabled:hover:bg-transparent"
                   >
                     +
                   </button>
                 </div>
                 
                 {/* Stock Availability */}
-                {soldOut ? (
+                {isSelectedVariantSoldOut ? (
                   <div className="flex items-center gap-2 text-xs font-bold text-brand-red uppercase tracking-wider">
                     <span className="w-2 h-2 rounded-full bg-brand-red" />
                     <span>Sold Out</span>
@@ -271,7 +292,10 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
                 ) : (
                   <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 uppercase tracking-wider">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>In Stock</span>
+                    <span>
+                      In Stock
+                      {typeof selectedVariant?.quantityAvailable === "number" && ` (${selectedVariant.quantityAvailable} left)`}
+                    </span>
                   </div>
                 )}
               </div>
@@ -281,10 +305,10 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
                 <div className="flex gap-3">
                   <button
                     onClick={handleAddToCart}
-                    disabled={isAdding || soldOut}
+                    disabled={isAdding || isSelectedVariantSoldOut}
                     className="flex-grow border-2 border-brand-primary hover:bg-brand-primary hover:text-white bg-white text-brand-primary py-3.5 font-headings text-xs uppercase tracking-widest font-extrabold transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-brand-primary"
                   >
-                    {soldOut ? (
+                    {isSelectedVariantSoldOut ? (
                       "SOLD OUT"
                     ) : isAdding ? (
                       <>
@@ -313,10 +337,10 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
 
                 <button
                   onClick={handleBuyItNow}
-                  disabled={soldOut}
+                  disabled={isSelectedVariantSoldOut}
                   className="w-full bg-brand-red hover:bg-red-750 text-white py-4 font-headings text-xs uppercase tracking-widest font-extrabold transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50 disabled:hover:bg-brand-red"
                 >
-                  {soldOut ? "SOLD OUT" : "Buy It Now"}
+                  {isSelectedVariantSoldOut ? "SOLD OUT" : "Buy It Now"}
                 </button>
               </div>
 
