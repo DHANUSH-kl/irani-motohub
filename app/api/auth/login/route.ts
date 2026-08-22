@@ -43,6 +43,8 @@ export async function GET(request: Request) {
     authUrl.searchParams.set("code_challenge", codeChallenge);
     authUrl.searchParams.set("code_challenge_method", "S256");
 
+    const cookieDomain = url.hostname.endsWith("iranimotohub.in") ? "iranimotohub.in" : undefined;
+
     // Store security parameters in browser cookies with HttpOnly and secure attributes (expires in 5 minutes)
     const cookieOptions = {
       httpOnly: true,
@@ -50,6 +52,7 @@ export async function GET(request: Request) {
       sameSite: "lax" as const,
       path: "/",
       maxAge: 300, // 5 minutes
+      domain: cookieDomain,
     };
 
     const response = NextResponse.redirect(authUrl.toString());

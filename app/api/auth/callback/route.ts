@@ -86,10 +86,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Failed to persist authentication session server-side" }, { status: 500 });
     }
 
-    // Clear OAuth temporary transition cookies
-    cookieStore.delete("oauth_state");
-    cookieStore.delete("oauth_nonce");
-    cookieStore.delete("oauth_code_verifier");
+    const cookieDomain = url.hostname.endsWith("iranimotohub.in") ? "iranimotohub.in" : undefined;
+
+    // Clear OAuth temporary transition cookies with matching domain option
+    cookieStore.set("oauth_state", "", { path: "/", domain: cookieDomain, maxAge: 0 });
+    cookieStore.set("oauth_nonce", "", { path: "/", domain: cookieDomain, maxAge: 0 });
+    cookieStore.set("oauth_code_verifier", "", { path: "/", domain: cookieDomain, maxAge: 0 });
 
     // Redirect the customer back to their account dashboard
     const accountUrl = new URL("/account", request.url);
@@ -104,6 +106,7 @@ export async function GET(request: Request) {
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 30, // 30 days
+      domain: cookieDomain,
     });
 
     return response;
