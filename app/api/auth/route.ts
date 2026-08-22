@@ -24,7 +24,7 @@ async function fetchCustomerProfile(endpoint: string, accessToken: string) {
               processedAt
               financialStatus
               fulfillmentStatus
-              status
+              cancelledAt
               totalPrice {
                 amount
                 currencyCode
@@ -142,8 +142,8 @@ export async function GET() {
             orderNumber: node.name ? node.name.replace("#", "") : "",
             processedAt: node.processedAt,
             financialStatus: node.financialStatus,
-            fulfillmentStatus: node.fulfillmentStatus,
-            status: node.status,
+             fulfillmentStatus: node.fulfillmentStatus,
+            status: node.cancelledAt ? "CANCELLED" : "ACTIVE",
             totalPrice: {
               amount: node.totalPrice?.amount || "0",
               currencyCode: node.totalPrice?.currencyCode || "INR",
