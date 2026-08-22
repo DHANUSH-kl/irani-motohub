@@ -27,21 +27,6 @@ export async function GET(request: Request) {
     const codeVerifier = generateRandomString(64);
     const codeChallenge = await generateCodeChallenge(codeVerifier);
 
-    const cookieStore = await cookies();
-
-    // Store security parameters in browser cookies with HttpOnly and secure attributes (expires in 5 minutes)
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production" || !host.includes("localhost"),
-      sameSite: "lax" as const,
-      path: "/",
-      maxAge: 300, // 5 minutes
-    };
-
-    cookieStore.set("oauth_state", state, cookieOptions);
-    cookieStore.set("oauth_nonce", nonce, cookieOptions);
-    cookieStore.set("oauth_code_verifier", codeVerifier, cookieOptions);
-
     // Build the authorization redirect URL using discovered endpoint
     const authUrl = new URL(metadata.authorization_endpoint);
     authUrl.searchParams.set("client_id", CLIENT_ID);
@@ -53,7 +38,21 @@ export async function GET(request: Request) {
     authUrl.searchParams.set("code_challenge", codeChallenge);
     authUrl.searchParams.set("code_challenge_method", "S256");
 
-    return NextResponse.redirect(authUrl.toString());
+    // Store security parameters in browser cookies with HttpOnly and secure attributes (expires in 5 minutes)
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production" || !host.includes("localhost"),
+      sameSite: "lax" as const,
+      path: "/",
+      maxAge: 300, // 5 minutes
+    };
+
+    const response = NextResponse.redirect(authUrl.toString());
+    response.cookies.set("oauth_state", state, cookieOptions);
+    response.cookies.set("oauth_nonce", nonce, cookieOptions);
+    response.cookies.set("oauth_code_verifier", codeVerifier, cookieOptions);
+
+    return response;
   } catch (error: any) {
     console.error("Login redirect initialization failed:", error);
     return NextResponse.json({ error: error.message || "Internal server error during login redirect" }, { status: 500 });
