@@ -6,10 +6,10 @@ import BestsellersCarousel from "./BestsellersCarousel";
 
 export default async function BestsellersSection() {
   const handles = [
-    "oval-barend-mirrors",
-    "dimaond-barend-mirrors",
-    "bsddp-aluminium-mirrors-black",
-    "duke-gen-3-tail-tidy"
+    "ktm-front-brembo-pad",
+    "ninja-zx10r-evotech-swingarm-spools",
+    "tanax-napoleon-anti-glare-mirrors-copy",
+    "rcb-s1-fl-master-brake-pump-14mm-rh-01bp049s-silver"
   ];
 
   const products = await Promise.all(

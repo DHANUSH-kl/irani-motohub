@@ -2000,6 +2000,7 @@ export interface CustomerOrder {
   };
   financialStatus: string;
   fulfillmentStatus: string;
+  status?: string;
   lineItems: CustomerOrderLineItem[];
   successfulFulfillments?: SuccessfulFulfillment[];
 }

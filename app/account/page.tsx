@@ -120,11 +120,13 @@ export default function AccountPage() {
                       </div>
                       <div className="flex gap-2">
                         <span className={`px-2.5 py-1 rounded text-[9px] font-headings font-bold uppercase tracking-wider ${
-                          order.fulfillmentStatus.toUpperCase() === "FULFILLED" || order.fulfillmentStatus.toUpperCase() === "DELIVERED"
+                          order.status === "CANCELLED"
+                            ? "bg-red-500/10 text-red-400 border border-red-500/20"
+                            : order.fulfillmentStatus.toUpperCase() === "FULFILLED" || order.fulfillmentStatus.toUpperCase() === "DELIVERED"
                             ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                             : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
                         }`}>
-                          {order.fulfillmentStatus}
+                          {order.status === "CANCELLED" ? "CANCELLED" : order.fulfillmentStatus}
                         </span>
                       </div>
                     </div>

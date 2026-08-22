@@ -24,6 +24,7 @@ async function fetchCustomerProfile(endpoint: string, accessToken: string) {
               processedAt
               financialStatus
               fulfillmentStatus
+              status
               totalPrice {
                 amount
                 currencyCode
@@ -142,6 +143,7 @@ export async function GET() {
             processedAt: node.processedAt,
             financialStatus: node.financialStatus,
             fulfillmentStatus: node.fulfillmentStatus,
+            status: node.status,
             totalPrice: {
               amount: node.totalPrice?.amount || "0",
               currencyCode: node.totalPrice?.currencyCode || "INR",

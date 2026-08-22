@@ -90,6 +90,44 @@ export default function OrdersHistoryPage() {
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackingError, setTrackingError] = useState<string | null>(null);
   const [trackingUrl, setTrackingUrl] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  const handleCancelOrder = async (orderId: string) => {
+    if (!window.confirm("Are you sure you want to cancel this order? This action cannot be undone.")) {
+      return;
+    }
+    setCancellingId(orderId);
+    setCancelError(null);
+
+    try {
+      const res = await fetch("/api/orders/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert("Order cancelled successfully!");
+        if (selectedOrder) {
+          setSelectedOrder({
+            ...selectedOrder,
+            status: "CANCELLED",
+          });
+        }
+        if (user && user.orders) {
+          // Update the order in user profile cache
+          user.orders = user.orders.map(o => o.id === orderId ? { ...o, status: "CANCELLED" } : o);
+        }
+      } else {
+        setCancelError(data.error || "Failed to cancel order.");
+      }
+    } catch (err) {
+      setCancelError("An error occurred. Please try again.");
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   useEffect(() => {
     if (!loading && !user) {
@@ -200,13 +238,15 @@ export default function OrdersHistoryPage() {
                       <span className="text-xs font-mono font-bold text-white">#{order.orderNumber}</span>
                       <span
                         className={`px-2 py-0.5 rounded text-[8px] font-headings font-bold uppercase tracking-wider ${
-                          order.fulfillmentStatus === "FULFILLED" ||
-                          order.fulfillmentStatus === "DELIVERED"
+                          order.status === "CANCELLED"
+                            ? "bg-red-500/10 text-red-400 border border-red-500/20"
+                            : order.fulfillmentStatus === "FULFILLED" ||
+                              order.fulfillmentStatus === "DELIVERED"
                             ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                             : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
                         }`}
                       >
-                        {order.fulfillmentStatus}
+                        {order.status === "CANCELLED" ? "CANCELLED" : order.fulfillmentStatus}
                       </span>
                     </div>
 
@@ -249,7 +289,9 @@ export default function OrdersHistoryPage() {
                       #{selectedOrder.orderNumber}
                     </h2>
                     <p className="text-[10px] text-gray-500 uppercase tracking-wider">
-                      {isPrepaidOrder(selectedOrder)
+                      {selectedOrder.status === "CANCELLED"
+                        ? "Cancelled"
+                        : isPrepaidOrder(selectedOrder)
                         ? "Prepaid · Shree Maruti manual dispatch"
                         : "COD · Shiprocket automated shipment"}
                     </p>
@@ -293,6 +335,29 @@ export default function OrdersHistoryPage() {
                     Open courier tracking <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 )}
+
+                {/* Cancel Order Action */}
+                <div className="pt-4 border-t border-white/5 flex flex-col gap-2">
+                  {selectedOrder.status === "CANCELLED" ? (
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl p-4 text-xs font-semibold">
+                      This order has been cancelled.
+                    </div>
+                  ) : selectedOrder.fulfillmentStatus?.toUpperCase() !== "FULFILLED" &&
+                    selectedOrder.fulfillmentStatus?.toUpperCase() !== "DELIVERED" ? (
+                    <div>
+                      <button
+                        onClick={() => handleCancelOrder(selectedOrder.id)}
+                        disabled={cancellingId === selectedOrder.id}
+                        className="px-4 py-2.5 border border-red-500/30 bg-red-500/5 text-red-400 rounded-lg text-xs font-headings font-bold uppercase tracking-wider hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
+                      >
+                        {cancellingId === selectedOrder.id ? "Cancelling..." : "Cancel Order"}
+                      </button>
+                      {cancelError && (
+                        <p className="text-xs text-red-400 mt-2">{cancelError}</p>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
 
                 <div className="space-y-4">
                   <h3 className="text-[10px] font-headings font-bold uppercase tracking-wider text-gray-500">
