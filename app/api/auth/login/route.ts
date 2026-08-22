@@ -14,9 +14,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID is not configured" }, { status: 500 });
     }
 
-    const host = new URL(request.url).host;
-    const protocol = host.includes("localhost") ? "http" : "https";
-    const redirectUri = `${protocol}://${host}/api/auth/callback`;
+    const url = new URL(request.url);
+    const isLocal =
+      url.hostname === "localhost" ||
+      url.hostname === "127.0.0.1";
+
+    const redirectUri = isLocal
+      ? `http://${url.host}/api/auth/callback`
+      : "https://iranimotohub.in/api/auth/callback";
 
     // Fetch discovery metadata dynamically
     const metadata = await getDiscoveryMetadata();
@@ -41,7 +46,7 @@ export async function GET(request: Request) {
     // Store security parameters in browser cookies with HttpOnly and secure attributes (expires in 5 minutes)
     const cookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production" || !host.includes("localhost"),
+      secure: process.env.NODE_ENV === "production" || !url.host.includes("localhost"),
       sameSite: "lax" as const,
       path: "/",
       maxAge: 300, // 5 minutes

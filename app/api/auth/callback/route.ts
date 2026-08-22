@@ -39,9 +39,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Missing PKCE code verifier session cookie" }, { status: 400 });
     }
 
-    const host = new URL(request.url).host;
-    const protocol = host.includes("localhost") ? "http" : "https";
-    const redirectUri = `${protocol}://${host}/api/auth/callback`;
+    const url = new URL(request.url);
+    const isLocal =
+      url.hostname === "localhost" ||
+      url.hostname === "127.0.0.1";
+
+    const redirectUri = isLocal
+      ? `http://${url.host}/api/auth/callback`
+      : "https://iranimotohub.in/api/auth/callback";
 
     // Exchange the authorization code for tokens
     const tokens = await exchangeCodeForTokens(code, codeVerifier, redirectUri);
@@ -86,20 +91,22 @@ export async function GET(request: Request) {
     cookieStore.delete("oauth_nonce");
     cookieStore.delete("oauth_code_verifier");
 
-    // Set the opaque session ID cookie
-    cookieStore.set({
+    // Redirect the customer back to their account dashboard
+    const accountUrl = new URL("/account", request.url);
+    const response = NextResponse.redirect(accountUrl.toString());
+
+    // Set the opaque session ID cookie directly on the redirect response
+    response.cookies.set({
       name: "iranimotohub_session_id",
       value: sessionId,
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production" || !host.includes("localhost"),
+      secure: process.env.NODE_ENV === "production" || !url.host.includes("localhost"),
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 30, // 30 days
     });
 
-    // Redirect the customer back to their account dashboard
-    const accountUrl = new URL("/account", request.url);
-    return NextResponse.redirect(accountUrl.toString());
+    return response;
   } catch (error: any) {
     console.error("OAuth callback processing failed:", error);
     return NextResponse.json({ error: error.message || "Failed to process authorization callback" }, { status: 500 });
