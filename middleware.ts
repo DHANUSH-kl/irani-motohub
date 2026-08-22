@@ -13,10 +13,20 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // 1. Redirect www.iranimotohub.in to iranimotohub.in (Apex domain) for SEO & authentication consistency
+  const host = request.headers.get("host") || "";
+  if (host === "www.iranimotohub.in") {
+    const url = request.nextUrl.clone();
+    url.host = "iranimotohub.in";
+    url.protocol = "https";
+    return NextResponse.redirect(url, 301);
+  }
+
   const hasSession = request.cookies.has(SESSION_COOKIE);
+  const isAccountPath = request.nextUrl.pathname === "/account" || request.nextUrl.pathname.startsWith("/account/");
 
   // If session ID cookie is absent, intercept request and redirect directly to Shopify portal
-  if (!hasSession) {
+  if (!hasSession && isAccountPath) {
     const loginUrl = new URL("/api/auth/login", request.url);
     return NextResponse.redirect(loginUrl);
   }
@@ -25,5 +35,14 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/account/:path*", "/account"],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+  ],
 };
