@@ -949,7 +949,7 @@ async function fetchAllProductsInternal(collectionHandle?: string): Promise<Prod
       } else {
         query = `
           query GetProducts($first: Int!, $after: String) {
-            products(first: $first, after: $after) {
+            products(first: $first, after: $after, query: "status:active") {
               pageInfo {
                 hasNextPage
                 endCursor
@@ -1137,7 +1137,7 @@ async function fetchProductsBatch(collectionHandle?: string, limit?: number): Pr
   } else {
     query = `
       query GetProductsBatch($first: Int!) {
-        products(first: $first) {
+        products(first: $first, query: "status:active") {
           edges {
             node {
               id
@@ -2831,7 +2831,7 @@ export async function searchProducts(searchTerm: string, limit: number = 10): Pr
 
   try {
     const res = await shopifyFetch<{ products: any }>(queryCorrect, {
-      query: searchTerm,
+      query: searchTerm ? `${searchTerm} status:active` : "status:active",
       first: limit
     });
 
