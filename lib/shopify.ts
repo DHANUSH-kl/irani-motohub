@@ -749,109 +749,56 @@ function formatShopifyProduct(shopifyProduct: any): Product {
   };
 }
 
-let cachedProducts: Product[] | null = null;
-let productsFetchPromise: Promise<Product[]> | null = null;
-
-const cachedCollectionProducts: Record<string, Product[] | undefined> = {};
-const collectionProductsFetchPromises: Record<string, Promise<Product[]> | undefined> = {};
-
-let cachedCollections: Collection[] | null = null;
-let collectionsFetchPromise: Promise<Collection[]> | null = null;
-
 export async function getCollections(): Promise<Collection[]> {
-  // Return from cache if available
-  if (cachedCollections) return cachedCollections;
-  if (collectionsFetchPromise) return collectionsFetchPromise;
+  if (!isShopifyConfigured()) {
+    return MOCK_COLLECTIONS;
+  }
 
-  collectionsFetchPromise = (async () => {
-    if (!isShopifyConfigured()) {
-      cachedCollections = MOCK_COLLECTIONS;
-      return MOCK_COLLECTIONS;
-    }
-
-    const query = `
-      query GetCollections {
-        collections(first: 100) {
-          edges {
-            node {
-              id
-              handle
-              title
-              description
-              image {
-                url
-                altText
-              }
+  const query = `
+    query GetCollections {
+      collections(first: 100) {
+        edges {
+          node {
+            id
+            handle
+            title
+            description
+            image {
+              url
+              altText
             }
           }
         }
       }
-    `;
-
-    const result = await shopifyFetch<any>(query);
-    if (result?.data?.collections?.edges) {
-      const cols = result.data.collections.edges.map((edge: any) => ({
-        id: edge.node.id,
-        handle: edge.node.handle,
-        title: edge.node.title,
-        description: edge.node.description || "",
-        image: edge.node.image ? { url: edge.node.image.url, altText: edge.node.image.altText || edge.node.title } : undefined
-      }));
-      cachedCollections = cols;
-      return cols;
     }
+  `;
 
-    cachedCollections = MOCK_COLLECTIONS;
-    return MOCK_COLLECTIONS;
-  })();
+  const result = await shopifyFetch<any>(query);
+  if (result?.data?.collections?.edges) {
+    return result.data.collections.edges.map((edge: any) => ({
+      id: edge.node.id,
+      handle: edge.node.handle,
+      title: edge.node.title,
+      description: edge.node.description || "",
+      image: edge.node.image ? { url: edge.node.image.url, altText: edge.node.image.altText || edge.node.title } : undefined
+    }));
+  }
 
-  return collectionsFetchPromise;
+  return MOCK_COLLECTIONS;
 }
 
 export async function getProducts(options?: { collectionHandle?: string; limit?: number }): Promise<Product[]> {
   const limit = options?.limit;
   const collectionHandle = options?.collectionHandle;
 
-  // Cache general catalog requests (no limit, no collection handle)
   if (!limit && !collectionHandle) {
-    if (cachedProducts) {
-      return cachedProducts;
-    }
-    if (productsFetchPromise) {
-      return productsFetchPromise;
-    }
-
-    productsFetchPromise = (async () => {
-      const prods = await fetchAllProductsInternal();
-      cachedProducts = prods;
-      return prods;
-    })();
-
-    return productsFetchPromise;
+    return fetchAllProductsInternal();
   }
 
-  // Cache collection-specific requests with no limit
   if (collectionHandle && !limit) {
-    const cached = cachedCollectionProducts[collectionHandle];
-    if (cached) {
-      return cached;
-    }
-    const promise = collectionProductsFetchPromises[collectionHandle];
-    if (promise) {
-      return promise;
-    }
-
-    const newPromise = (async () => {
-      const prods = await fetchAllProductsInternal(collectionHandle);
-      cachedCollectionProducts[collectionHandle] = prods;
-      return prods;
-    })();
-
-    collectionProductsFetchPromises[collectionHandle] = newPromise;
-    return newPromise;
+    return fetchAllProductsInternal(collectionHandle);
   }
 
-  // Otherwise, fetch direct batch
   return fetchProductsBatch(collectionHandle, limit);
 }
 
@@ -1345,6 +1292,10 @@ export const getProduct = cache(async (handle: string): Promise<Product | null> 
     };
   }
 
+  if (isShopifyConfigured()) {
+    return null;
+  }
+
   // Fallback to mock data with dynamic brand extraction to support custom URLs gracefully
   return {
     id: `dyn-mock-${handle}`,
@@ -1454,22 +1405,13 @@ export async function getProductLightweight(handle: string): Promise<Product | n
     console.error("Error in getProductLightweight:", error);
   }
 
-  return MOCK_PRODUCTS.find(p => p.handle === handle) || null;
+  return null;
 }
 
 /**
  * Fetch a small set of related products by category, without loading the entire catalog.
- * Uses the in-memory cache if already populated, otherwise fetches a limited batch.
  */
 export async function getRelatedProducts(currentProductId: string, category: string, limit: number = 4): Promise<Product[]> {
-  // If the full catalog is already cached, just filter from it (zero network cost)
-  if (cachedProducts) {
-    return cachedProducts
-      .filter(p => p.id !== currentProductId && p.category === category)
-      .slice(0, limit);
-  }
-
-  // Otherwise fetch a small batch instead of the entire catalog
   const products = await fetchProductsBatch(undefined, limit + 4); // fetch a few extra to increase match odds
   return products
     .filter(p => p.id !== currentProductId && p.category === category)
