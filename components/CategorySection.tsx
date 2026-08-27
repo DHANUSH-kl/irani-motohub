@@ -23,9 +23,12 @@ export default function CategorySection({ initialCategories }: { initialCategori
   const [scrollProgress, setScrollProgress] = useState(0);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
   const gap = 24;
 
   useEffect(() => {
+    setIsMounted(true);
+
     const updateSize = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.offsetWidth;
@@ -179,7 +182,7 @@ export default function CategorySection({ initialCategories }: { initialCategori
           <div className="flex items-center gap-3">
             <button
               onClick={handlePrev}
-              disabled={!canScrollLeft}
+              disabled={!isMounted || !canScrollLeft}
               className="w-12 h-12 rounded-full border border-white/15 bg-white/5 hover:bg-brand-red hover:border-brand-red disabled:opacity-30 disabled:hover:bg-white/5 disabled:hover:border-white/15 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-300 group"
               aria-label="Previous categories"
             >
@@ -187,7 +190,7 @@ export default function CategorySection({ initialCategories }: { initialCategori
             </button>
             <button
               onClick={handleNext}
-              disabled={!canScrollRight}
+              disabled={!isMounted || !canScrollRight}
               className="w-12 h-12 rounded-full border border-white/15 bg-white/5 hover:bg-brand-red hover:border-brand-red disabled:opacity-30 disabled:hover:bg-white/5 disabled:hover:border-white/15 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-300 group"
               aria-label="Next categories"
             >

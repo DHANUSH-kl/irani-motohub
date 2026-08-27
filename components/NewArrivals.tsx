@@ -24,9 +24,11 @@ export default function NewArrivals({ initialProducts }: { initialProducts: Prod
   const [maxIndex, setMaxIndex] = useState(0);
   const [cardWidth, setCardWidth] = useState(300);
   const [isHovered, setIsHovered] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const gap = 24;
 
   useEffect(() => {
+    setIsMounted(true);
     // Load active bike from garage cache
     const saved = localStorage.getItem("rider_garage");
     if (saved) {
@@ -219,7 +221,7 @@ export default function NewArrivals({ initialProducts }: { initialProducts: Prod
             <div className="flex items-center gap-3">
               <button
                 onClick={handlePrev}
-                disabled={currentIndex === 0}
+                disabled={!isMounted || currentIndex === 0}
                 className="w-12 h-12 rounded-full border border-white/10 bg-white/5 hover:bg-brand-red hover:border-brand-red text-white disabled:opacity-30 disabled:hover:bg-white/5 disabled:hover:border-white/10 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-300 group"
                 aria-label="Previous arrivals"
               >
@@ -227,7 +229,7 @@ export default function NewArrivals({ initialProducts }: { initialProducts: Prod
               </button>
               <button
                 onClick={handleNext}
-                disabled={currentIndex === maxIndex}
+                disabled={!isMounted || currentIndex === maxIndex}
                 className="w-12 h-12 rounded-full border border-white/10 bg-white/5 hover:bg-brand-red hover:border-brand-red text-white disabled:opacity-30 disabled:hover:bg-white/5 disabled:hover:border-white/10 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-300 group"
                 aria-label="Next arrivals"
               >
