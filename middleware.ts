@@ -13,14 +13,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 1. Redirect www.iranimotohub.in to iranimotohub.in (Apex domain) for SEO & authentication consistency
-  const host = request.headers.get("host") || "";
-  if (host === "www.iranimotohub.in") {
-    const url = request.nextUrl.clone();
-    url.host = "iranimotohub.in";
-    url.protocol = "https";
-    return NextResponse.redirect(url, 301);
-  }
+
 
   const hasSession = request.cookies.has(SESSION_COOKIE);
   const isAccountPath = request.nextUrl.pathname === "/account" || request.nextUrl.pathname.startsWith("/account/");
