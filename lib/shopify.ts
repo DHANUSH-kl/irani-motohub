@@ -598,18 +598,33 @@ const MOCK_PRODUCTS: Product[] = [
 // SHOPIFY STOREFRONT GRAPHQL CLIENT
 // ==========================================
 
-const DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
-const ACCESS_TOKEN = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+const getDomain = (): string | undefined => process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
+const getAccessToken = (): string | undefined => process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
 let hasLoggedConfigWarning = false;
 const isShopifyConfigured = (): boolean => {
-  const configured = typeof DOMAIN === "string" && DOMAIN.length > 0 && typeof ACCESS_TOKEN === "string" && ACCESS_TOKEN.length > 0;
-  if (!configured && !hasLoggedConfigWarning) {
-    hasLoggedConfigWarning = true;
-    console.warn("[ShopifyClient] Shopify Storefront API credentials are not fully configured. Using mock data engine fallbacks.", {
-      hasDomain: typeof DOMAIN === "string" && DOMAIN.length > 0,
-      hasToken: typeof ACCESS_TOKEN === "string" && ACCESS_TOKEN.length > 0
+  const domain = getDomain();
+  const accessToken = getAccessToken();
+  const configured = typeof domain === "string" && domain.length > 0 && typeof accessToken === "string" && accessToken.length > 0;
+  
+  if (!hasLoggedConfigWarning) {
+    console.log("[ShopifyConfigDebug] Configuration state check:", {
+      dynamicRuntime: {
+        hasDomain: typeof domain === "string" && domain.length > 0,
+        domainLength: domain ? domain.length : 0,
+        hasToken: typeof accessToken === "string" && accessToken.length > 0,
+        tokenLength: accessToken ? accessToken.length : 0,
+      },
+      envKeysPresent: Object.keys(process.env).filter(k => k.includes("SHOPIFY") || k.includes("STORE"))
     });
+    
+    if (!configured) {
+      hasLoggedConfigWarning = true;
+      console.warn("[ShopifyClient] Shopify Storefront API credentials are not fully configured. Using mock data engine fallbacks.", {
+        hasDomain: typeof domain === "string" && domain.length > 0,
+        hasToken: typeof accessToken === "string" && accessToken.length > 0
+      });
+    }
   }
   return configured;
 };
@@ -644,27 +659,41 @@ async function shopifyFetch<T>(query: string, variables = {}): Promise<{ data?: 
   }
 
   // Server-side direct request
-  if (!isShopifyConfigured()) return null;
+  if (!isShopifyConfigured()) {
+    console.warn("[ShopifyFetchError] shopifyFetch aborted: isShopifyConfigured returned false");
+    return null;
+  }
 
-  const endpoint = `https://${DOMAIN}/api/2024-01/graphql.json`;
+  const domain = getDomain();
+  const accessToken = getAccessToken();
+  const endpoint = `https://${domain}/api/2024-01/graphql.json`;
   try {
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Shopify-Storefront-Access-Token": ACCESS_TOKEN || "",
+        "X-Shopify-Storefront-Access-Token": accessToken || "",
       },
       body: JSON.stringify({ query, variables }),
       next: { revalidate: 60 } // Cache for 60s
     });
 
     if (!response.ok) {
-      console.warn(`Shopify API responded with status ${response.status}`);
+      const errorText = await response.text();
+      console.error(`[ShopifyFetchError] Shopify API responded with HTTP status ${response.status}. Error details:`, errorText);
       return null;
     }
-    return await response.json();
-  } catch (error) {
-    console.error("Failed to fetch from Shopify Storefront API:", error);
+    const payload = await response.json();
+    if (payload?.errors) {
+      console.error("[ShopifyFetchError] Shopify API returned GraphQL errors:", JSON.stringify(payload.errors));
+    }
+    return payload;
+  } catch (error: any) {
+    console.error("[ShopifyFetchError] Failed to fetch from Shopify Storefront API:", {
+      message: error?.message,
+      stack: error?.stack,
+      error
+    });
     return null;
   }
 }
@@ -873,7 +902,6 @@ async function fetchAllProductsInternal(collectionHandle?: string): Promise<Prod
                             currencyCode
                           }
                           availableForSale
-                          quantityAvailable
                         }
                       }
                     }
@@ -938,7 +966,6 @@ async function fetchAllProductsInternal(collectionHandle?: string): Promise<Prod
                           currencyCode
                         }
                         availableForSale
-                        quantityAvailable
                       }
                     }
                   }
@@ -1061,7 +1088,6 @@ async function fetchProductsBatch(collectionHandle?: string, limit?: number): Pr
                         currencyCode
                       }
                       availableForSale
-                      quantityAvailable
                     }
                   }
                 }
@@ -1122,7 +1148,6 @@ async function fetchProductsBatch(collectionHandle?: string, limit?: number): Pr
                       currencyCode
                     }
                     availableForSale
-                    quantityAvailable
                   }
                 }
               }
@@ -1207,7 +1232,6 @@ export const getProduct = cache(async (handle: string): Promise<Product | null> 
                 currencyCode
               }
               availableForSale
-              quantityAvailable
             }
           }
         }
