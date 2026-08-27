@@ -1,0 +1,3 @@
+module.exports=[83694,a=>{"use strict";var b=a.i(87924),c=a.i(72131);a.s(["default",0,function(){return(0,c.useEffect)(()=>{window.location.href="/api/auth/login"},[]),(0,b.jsx)("main",{className:"flex-1 min-h-[calc(100vh-80px)] flex items-center justify-center bg-[#090909] text-white",children:(0,b.jsxs)("div",{className:"flex flex-col items-center gap-3.5",children:[(0,b.jsx)("span",{className:"w-8 h-8 border-3 border-brand-red border-t-transparent rounded-full animate-spin"}),(0,b.jsx)("p",{className:"text-xs text-gray-400 font-body",children:"Redirecting to secure login portal..."})]})})}])}];
+
+//# sourceMappingURL=app_login_page_tsx_1nv--5q._.js.map
