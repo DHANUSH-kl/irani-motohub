@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 
-const DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN?.replace(/['"]/g, "");
-const CLIENT_ID = process.env.SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID?.replace(/['"]/g, "");
-const CLIENT_SECRET = process.env.SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET?.replace(/['"]/g, "");
+const getDomain = () => process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN?.replace(/['"]/g, "");
+const getClientId = () => process.env.SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID?.replace(/['"]/g, "");
+const getClientSecret = () => process.env.SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET?.replace(/['"]/g, "");
 
 export interface DiscoveryMetadata {
   authorization_endpoint: string;
@@ -16,11 +16,12 @@ let cachedMetadata: DiscoveryMetadata | null = null;
 export async function getDiscoveryMetadata(): Promise<DiscoveryMetadata> {
   if (cachedMetadata) return cachedMetadata;
 
-  if (!DOMAIN) {
+  const domain = getDomain();
+  if (!domain) {
     throw new Error("NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN is not configured.");
   }
 
-  const cleanDomain = DOMAIN.replace(/^https?:\/\//, "");
+  const cleanDomain = domain.replace(/^https?:\/\//, "");
   console.log(`[OAuthDiscovery] Resolving metadata for domain: ${cleanDomain}`);
 
   const controller = new AbortController();
@@ -111,10 +112,12 @@ export async function exchangeCodeForTokens(
   codeVerifier: string,
   redirectUri: string
 ) {
+  const clientId = getClientId();
+  const clientSecret = getClientSecret();
   const metadata = await getDiscoveryMetadata();
   const body = new URLSearchParams({
     grant_type: "authorization_code",
-    client_id: CLIENT_ID || "",
+    client_id: clientId || "",
     code,
     redirect_uri: redirectUri,
     code_verifier: codeVerifier,
@@ -125,8 +128,8 @@ export async function exchangeCodeForTokens(
   };
 
   // If Client Secret is configured, use Basic Authentication header for confidential client exchange
-  if (CLIENT_SECRET) {
-    const credentials = btoa(`${CLIENT_ID}:${CLIENT_SECRET}`);
+  if (clientSecret) {
+    const credentials = btoa(`${clientId}:${clientSecret}`);
     headers["Authorization"] = `Basic ${credentials}`;
   }
 
@@ -147,10 +150,12 @@ export async function exchangeCodeForTokens(
 }
 
 export async function refreshAccessToken(refreshToken: string) {
+  const clientId = getClientId();
+  const clientSecret = getClientSecret();
   const metadata = await getDiscoveryMetadata();
   const body = new URLSearchParams({
     grant_type: "refresh_token",
-    client_id: CLIENT_ID || "",
+    client_id: clientId || "",
     refresh_token: refreshToken,
   });
 
@@ -158,8 +163,8 @@ export async function refreshAccessToken(refreshToken: string) {
     "Content-Type": "application/x-www-form-urlencoded",
   };
 
-  if (CLIENT_SECRET) {
-    const credentials = btoa(`${CLIENT_ID}:${CLIENT_SECRET}`);
+  if (clientSecret) {
+    const credentials = btoa(`${clientId}:${clientSecret}`);
     headers["Authorization"] = `Basic ${credentials}`;
   }
 
