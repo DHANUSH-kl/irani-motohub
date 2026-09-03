@@ -4,7 +4,7 @@ import React, { useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Star } from "lucide-react";
-import { Product, getOptimizedImageUrl, isProductSoldOut } from "@/lib/shopify";
+import { Product, getOptimizedImageUrl, isProductSoldOut, formatProductPrice } from "@/lib/shopify";
 
 export default function BestsellersCarousel({ products }: { products: Product[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -119,7 +119,7 @@ export default function BestsellersCarousel({ products }: { products: Product[] 
                 <div>
                   <span className="text-xs text-gray-500 block uppercase tracking-wider text-[8px]">Price</span>
                   <span className="font-headings font-extrabold text-sm text-white">
-                    ₹{parseInt(product.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
+                    {formatProductPrice(product)}
                   </span>
                 </div>
 

@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Product, Collection, 
   isProductCompatible, getActiveMotorcycleGroups, getActiveYears, getOptimizedImageUrl, shopifyLoader,
-  isProductSoldOut
+  isProductSoldOut, formatProductPrice, getProductDisplayPrice
 } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -183,7 +183,7 @@ export default function CollectionClientPage({
     // Filter by Price range
     if (priceRangeFilter !== "all") {
       result = result.filter((p) => {
-        const price = parseFloat(p.priceRange.minVariantPrice.amount);
+        const price = parseFloat(getProductDisplayPrice(p));
         if (priceRangeFilter === "under-1k") return price < 1000;
         if (priceRangeFilter === "1k-3k") return price >= 1000 && price <= 3000;
         if (priceRangeFilter === "3k-5k") return price >= 3000 && price <= 5000;
@@ -195,9 +195,9 @@ export default function CollectionClientPage({
 
     // Sort products
     if (sortBy === "price-asc") {
-      result.sort((a, b) => parseFloat(a.priceRange.minVariantPrice.amount) - parseFloat(b.priceRange.minVariantPrice.amount));
+      result.sort((a, b) => parseFloat(getProductDisplayPrice(a)) - parseFloat(getProductDisplayPrice(b)));
     } else if (sortBy === "price-desc") {
-      result.sort((a, b) => parseFloat(b.priceRange.minVariantPrice.amount) - parseFloat(a.priceRange.minVariantPrice.amount));
+      result.sort((a, b) => parseFloat(getProductDisplayPrice(b)) - parseFloat(getProductDisplayPrice(a)));
     } else if (sortBy === "rating") {
       result.sort((a, b) => b.rating - a.rating);
     } else if (sortBy === "title-asc") {
@@ -447,7 +447,7 @@ export default function CollectionClientPage({
                           <div className="flex justify-between items-baseline">
                             <div className="flex gap-2 items-baseline">
                               <span className="font-headings font-extrabold text-sm text-brand-primary">
-                                ₹{parseInt(product.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
+                                {formatProductPrice(product)}
                               </span>
                               {product.variants[0]?.compareAtPrice && (
                                 <span className="text-[10px] text-brand-muted line-through font-bold">

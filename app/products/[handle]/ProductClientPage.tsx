@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Star, ShoppingCart, ShieldCheck, Check, AlertTriangle, ArrowRight, Truck, RotateCcw, Wrench, Heart, ChevronDown, ChevronUp, CreditCard } from "lucide-react";
-import { Product, getOptimizedImageUrl, shopifyLoader, isProductSoldOut } from "@/lib/shopify";
+import { Product, getOptimizedImageUrl, shopifyLoader, isProductSoldOut, formatProductPrice } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 
@@ -454,7 +454,7 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
                       </h3>
                       <div className="mt-auto pt-3 border-t border-brand-border flex justify-between items-center text-xs">
                         <span className="font-extrabold text-brand-primary">
-                          ₹{parseInt(p.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
+                          {formatProductPrice(p)}
                         </span>
                         <Link
                           href={`/products/${p.handle}`}

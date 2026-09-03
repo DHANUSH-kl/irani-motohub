@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Heart, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react";
-import { getProducts, Product, isProductCompatible, getOptimizedImageUrl, shopifyLoader, isProductSoldOut } from "@/lib/shopify";
+import { getProducts, Product, isProductCompatible, getOptimizedImageUrl, shopifyLoader, isProductSoldOut, formatProductPrice } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 
@@ -358,7 +358,7 @@ export default function FeaturedProducts({ initialProducts }: { initialProducts:
                         {/* Price (Left-aligned) */}
                         <div className="flex items-baseline gap-2 mb-4">
                           <span className="text-sm font-bold text-brand-primary">
-                            ₹{parseInt(product.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
+                            {formatProductPrice(product)}
                           </span>
                           {product.variants[0]?.compareAtPrice && (
                             <span className="text-xs text-brand-muted line-through">

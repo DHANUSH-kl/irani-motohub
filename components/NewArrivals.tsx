@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Heart, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react";
-import { getProducts, Product, isProductCompatible, getOptimizedImageUrl, shopifyLoader, isProductSoldOut } from "@/lib/shopify";
+import { getProducts, Product, isProductCompatible, getOptimizedImageUrl, shopifyLoader, isProductSoldOut, formatProductPrice } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 
@@ -340,7 +340,7 @@ export default function NewArrivals({ initialProducts }: { initialProducts: Prod
                     {/* Price & Cart add action */}
                     <div className="flex items-center justify-between pt-3.5 border-t border-white/5">
                       <span className="text-sm font-bold text-white font-mono">
-                        ₹{parseInt(product.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
+                        {formatProductPrice(product)}
                       </span>
 
                       <button

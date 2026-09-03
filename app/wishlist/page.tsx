@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useWishlist } from "@/context/WishlistContext";
 import { useCart } from "@/context/CartContext";
-import { Product, getOptimizedImageUrl, shopifyLoader, isProductSoldOut } from "@/lib/shopify";
+import { Product, getOptimizedImageUrl, shopifyLoader, isProductSoldOut, getProductDisplayPrice } from "@/lib/shopify";
 
 export default function WishlistPage() {
   const { wishlist, removeFromWishlist, clearWishlist } = useWishlist();
@@ -151,7 +151,7 @@ export default function WishlistPage() {
                 const isRemoving = removingId === product.id;
                 const soldOut = isProductSoldOut(product);
                 const price = parseInt(
-                  product.priceRange.minVariantPrice.amount
+                  getProductDisplayPrice(product)
                 );
                 const comparePrice = product.variants[0]?.compareAtPrice
                   ? parseInt(product.variants[0].compareAtPrice.amount)

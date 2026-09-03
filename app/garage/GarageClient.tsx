@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useWishlist } from "@/context/WishlistContext";
 import { useCart } from "@/context/CartContext";
-import { Product, ProductVariant, isProductCompatible as checkProductCompatibility, MASTER_MOTORCYCLES, getActiveYears, BikeProfile, getOptimizedImageUrl, shopifyLoader } from "@/lib/shopify";
+import { Product, ProductVariant, isProductCompatible as checkProductCompatibility, MASTER_MOTORCYCLES, getActiveYears, BikeProfile, getOptimizedImageUrl, shopifyLoader, formatProductPrice } from "@/lib/shopify";
 import { 
   Bike, Heart, Trash2, ShoppingCart, Plus, Check, 
   ArrowRight, ShieldCheck, Wrench, Sparkles, HelpCircle, Info, Flame, AlertCircle, ArrowUpRight
@@ -666,7 +666,7 @@ export default function GarageClient() {
                               <div className="text-right">
                                 <span className="block text-xs text-brand-muted font-medium">Estimated</span>
                                 <span className="font-bold text-sm text-brand-primary">
-                                  ₹{parseInt(variant?.price.amount || item.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
+                                  {formatProductPrice(item)}
                                 </span>
                               </div>
 
@@ -746,7 +746,7 @@ export default function GarageClient() {
                           
                           <div className="mt-auto pt-2 flex justify-between items-center text-[10px] border-t border-brand-border border-dashed">
                             <span className="font-bold text-brand-primary">
-                              ₹{parseInt(prod.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
+                              {formatProductPrice(prod)}
                             </span>
                             
                             <Link

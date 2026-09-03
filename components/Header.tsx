@@ -12,7 +12,7 @@ import {
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useAuth } from "@/context/AuthContext";
-import { getCollections, getProducts, searchProducts, Collection, Product, getActiveMotorcycleGroups, getActiveYears, getOptimizedImageUrl, shopifyLoader } from "@/lib/shopify";
+import { getCollections, getProducts, searchProducts, Collection, Product, getActiveMotorcycleGroups, getActiveYears, getOptimizedImageUrl, shopifyLoader, formatProductPrice } from "@/lib/shopify";
 
 export default function Header() {
   const { setIsOpen: openCart, cartCount, clearCart } = useCart();
@@ -371,29 +371,29 @@ export default function Header() {
                     <div className="col-span-4 bg-gray-50 border border-black/5 p-5 rounded-lg flex flex-col justify-between relative overflow-hidden group/spot">
                       <div className="relative w-full h-28 bg-[#181818] border border-black/5 rounded mb-3 overflow-hidden flex items-center justify-center">
                         <Image
-                          src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop"
-                          alt="All Products Catalog Spotlight"
+                          src="/full-catalog.jpeg"
+                          alt="Full Store Catalog Spotlight"
                           fill
                           className="object-cover group-hover/spot:scale-105 transition-transform duration-500 opacity-90"
                         />
                         <div className="absolute inset-0 bg-black/30" />
-                        <span className="relative z-10 text-white font-headings font-extrabold text-xs uppercase tracking-widest bg-brand-red px-2.5 py-1 rounded">
-                          Full Store Catalog
+                        <span className="relative z-10 text-white font-headings font-extrabold text-[10px] uppercase tracking-widest bg-brand-red px-2.5 py-1 rounded">
+                          UPGRADE YOUR RIDE
                         </span>
                       </div>
                       <div>
                         <h5 className="font-headings font-extrabold text-xs text-gray-900 uppercase tracking-wider mb-1">
-                          All Products
+                          UPGRADE YOUR RIDE
                         </h5>
                         <p className="text-gray-600 text-[10px] leading-relaxed font-body">
-                          Browse our complete range of high-flow air filters, ECU tuners, riding gear, and bike care accessories.
+                          From performance parts to premium accessories, find everything you need to make your bike yours.
                         </p>
                       </div>
                       <Link
                         href="/products"
                         className="text-brand-red font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 hover:gap-2 transition-all mt-4"
                       >
-                        Browse All Products <ArrowRight className="w-3.5 h-3.5" />
+                        EXPLORE THE COLLECTION <ArrowRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>
 
@@ -721,7 +721,7 @@ export default function Header() {
                           )}
                         </div>
                         <span className="text-sm font-semibold text-white flex-shrink-0">
-                          ₹{parseInt(prod.priceRange.minVariantPrice.amount).toLocaleString("en-IN")}
+                          {formatProductPrice(prod)}
                         </span>
                       </Link>
                     ))}

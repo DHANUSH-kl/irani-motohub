@@ -73,6 +73,22 @@ export function isProductSoldOut(product: Product): boolean {
   return false;
 }
 
+export function getProductDisplayPrice(product: Product): string {
+  if (product?.variants && product.variants.length > 0 && product.variants[0]?.price?.amount) {
+    return product.variants[0].price.amount;
+  }
+  if (product?.priceRange?.minVariantPrice?.amount) {
+    return product.priceRange.minVariantPrice.amount;
+  }
+  return "0";
+}
+
+export function formatProductPrice(product: Product): string {
+  const price = getProductDisplayPrice(product);
+  const numericPrice = parseInt(price, 10) || 0;
+  return `₹${numericPrice.toLocaleString("en-IN")}`;
+}
+
 export interface Collection {
   id: string;
   handle: string;
@@ -745,8 +761,8 @@ function formatShopifyProduct(shopifyProduct: any): Product {
     description: shopifyProduct.description || "",
     priceRange: {
       minVariantPrice: {
-        amount: shopifyProduct.priceRange?.minVariantPrice?.amount || "0",
-        currencyCode: shopifyProduct.priceRange?.minVariantPrice?.currencyCode || "INR"
+        amount: variants[0]?.price?.amount || shopifyProduct.priceRange?.minVariantPrice?.amount || "0",
+        currencyCode: variants[0]?.price?.currencyCode || shopifyProduct.priceRange?.minVariantPrice?.currencyCode || "INR"
       }
     },
     images: images.length ? images : [{ url: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=600", altText: shopifyProduct.title }],
