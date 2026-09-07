@@ -4,16 +4,11 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Star, ShoppingCart, ShieldCheck, Check, AlertTriangle, ArrowRight, Truck, RotateCcw, Wrench, Heart, ChevronDown, ChevronUp, CreditCard } from "lucide-react";
-import { Product, getOptimizedImageUrl, shopifyLoader, isProductSoldOut, formatProductPrice } from "@/lib/shopify";
+import { Product, getOptimizedImageUrl, shopifyLoader, isProductSoldOut, formatProductPrice, isProductCompatible, MASTER_MOTORCYCLES } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 
-const MOTORCYCLES = [
-  { maker: "KTM", models: ["Duke 390", "RC 390"] },
-  { maker: "Royal Enfield", models: ["Himalayan 450", "Interceptor 650", "Continental GT 650"] },
-  { maker: "Yamaha", models: ["R15 V4"] },
-  { maker: "Triumph", models: ["Speed 400"] }
-];
+const MOTORCYCLES = MASTER_MOTORCYCLES;
 
 interface ProductClientPageProps {
   product: Product;
@@ -82,7 +77,7 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
     };
   }, []);
 
-  // Run compatibility calculations when selected bike changes
+  // Run compatibility calculations when selected bike changes using unified isProductCompatible engine
   useEffect(() => {
     if (!selectedMaker || !selectedModel) {
       setFitmentResult({ status: "idle", msg: "" });
@@ -90,28 +85,19 @@ export default function ProductClientPage({ product, relatedProducts }: ProductC
     }
 
     const fullBikeName = `${selectedMaker} ${selectedModel}`;
-    const isUniversal = product.compatibility.includes("All Motorcycles") || product.category === "Helmets" || product.category === "Riding Gear";
+    const bike = { maker: selectedMaker, model: selectedModel };
+    const fits = isProductCompatible(product, bike);
 
-    if (isUniversal) {
+    if (fits) {
       setFitmentResult({
-        status: "universal",
-        msg: `✓ UNIVERSAL FIT. Confirmed compatibility with your ${fullBikeName}.`
+        status: "fits",
+        msg: `✓ COMPATIBLE. Confirmed 100% fitment for your ${fullBikeName}.`
       });
     } else {
-      const match = product.compatibility.some(
-        (bike) => bike.toLowerCase().trim() === fullBikeName.toLowerCase().trim()
-      );
-      if (match) {
-        setFitmentResult({
-          status: "fits",
-          msg: `✓ COMPATIBLE. Confirmed 100% fitment for your ${fullBikeName}.`
-        });
-      } else {
-        setFitmentResult({
-          status: "nofit",
-          msg: `✗ DOES NOT FIT. This part is not configured for a ${fullBikeName}.`
-        });
-      }
+      setFitmentResult({
+        status: "nofit",
+        msg: `✗ DOES NOT FIT. This part is not configured for a ${fullBikeName}.`
+      });
     }
   }, [product, selectedMaker, selectedModel]);
 

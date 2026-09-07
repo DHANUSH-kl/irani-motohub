@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useWishlist } from "@/context/WishlistContext";
 import { useCart } from "@/context/CartContext";
-import { Product, ProductVariant, isProductCompatible as checkProductCompatibility, MASTER_MOTORCYCLES, getActiveYears, BikeProfile, getOptimizedImageUrl, shopifyLoader, formatProductPrice } from "@/lib/shopify";
+import { Product, ProductVariant, isProductCompatible, MASTER_MOTORCYCLES, getActiveYears, BikeProfile, getOptimizedImageUrl, shopifyLoader, formatProductPrice } from "@/lib/shopify";
 import { 
   Bike, Heart, Trash2, ShoppingCart, Plus, Check, 
   ArrowRight, ShieldCheck, Wrench, Sparkles, HelpCircle, Info, Flame, AlertCircle, ArrowUpRight
@@ -143,7 +143,7 @@ export default function GarageClient() {
     let totalSafety = 0;
 
     wishlist.forEach((item) => {
-      const fits = isProductCompatible(item);
+      const fits = isProductCompatible(item, garageBike);
       const isConfigured = installedItems.includes(item.id);
       
       if (fits && isConfigured) {
@@ -163,10 +163,6 @@ export default function GarageClient() {
     };
   };
 
-  const isProductCompatible = (product: Product) => {
-    return checkProductCompatibility(product, garageBike);
-  };
-
   // Quick Add To Cart handler
   const handleQuickAdd = async (product: Product) => {
     const variant = product.variants[0];
@@ -179,7 +175,7 @@ export default function GarageClient() {
 
   // Add all active planned parts in build planner to cart
   const handleAddAllPlanned = () => {
-    const plannedParts = wishlist.filter(item => isProductCompatible(item) && installedItems.includes(item.id));
+    const plannedParts = wishlist.filter(item => isProductCompatible(item, garageBike) && installedItems.includes(item.id));
     if (plannedParts.length === 0) return;
 
     setAddingAll(true);
@@ -554,7 +550,7 @@ export default function GarageClient() {
                     </p>
                   </div>
 
-                  {wishlist.filter(isProductCompatible).length > 0 && (
+                  {wishlist.filter(item => isProductCompatible(item, garageBike)).length > 0 && (
                     <button
                       onClick={handleAddAllPlanned}
                       disabled={addingAll || installedItems.length === 0}
@@ -588,7 +584,7 @@ export default function GarageClient() {
                       Explore Catalog
                     </Link>
                   </div>
-                ) : wishlist.filter(isProductCompatible).length === 0 ? (
+                ) : wishlist.filter(item => isProductCompatible(item, garageBike)).length === 0 ? (
                   <div className="p-5 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-lg flex items-start gap-3">
                     <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                     <div className="space-y-1">
@@ -604,7 +600,7 @@ export default function GarageClient() {
                     
                     {/* List Grid */}
                     <div className="divide-y divide-brand-border">
-                      {wishlist.filter(isProductCompatible).map((item) => {
+                      {wishlist.filter(item => isProductCompatible(item, garageBike)).map((item) => {
                         const isInstalledInBuilder = installedItems.includes(item.id);
                         const hp = parseFloat(String(item.metafields?.custom?.hp_gain ?? item.hp_gain ?? 0));
                         const wt = parseFloat(String(item.metafields?.custom?.weight_saved ?? item.weight_saved ?? 0));

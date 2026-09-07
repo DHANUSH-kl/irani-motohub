@@ -11,8 +11,9 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Product, Collection, 
-  isProductCompatible, getActiveMotorcycleGroups, getActiveYears, getOptimizedImageUrl, shopifyLoader,
-  isProductSoldOut, formatProductPrice, getProductDisplayPrice
+  isProductCompatible, getOptimizedImageUrl, shopifyLoader,
+  isProductSoldOut, formatProductPrice, getProductDisplayPrice,
+  extractUniqueProductFilters, isProductMatchingQuery
 } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -47,7 +48,6 @@ export default function CollectionClientPage({
   const [selectedMaker, setSelectedMaker] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
-  const [motorcycles, setMotorcycles] = useState<{ maker: string; models: string[] }[]>([]);
 
   // Dropdown Filter States
   const [selectedCollection, setSelectedCollection] = useState<string>(handle);
@@ -63,6 +63,12 @@ export default function CollectionClientPage({
   const { addItem } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [addingId, setAddingId] = useState<string | null>(null);
+
+  // Extract all unique filters dynamically from Shopify products
+  const filterOptions = extractUniqueProductFilters(products);
+  const availableModels = selectedMaker && filterOptions.makerModelsMap[selectedMaker]
+    ? filterOptions.makerModelsMap[selectedMaker]
+    : filterOptions.allModels;
 
   // Sync Rider Garage state
   useEffect(() => {
@@ -93,6 +99,9 @@ export default function CollectionClientPage({
         }
       } else {
         setGarageBike(null);
+        setSelectedMaker("");
+        setSelectedModel("");
+        setSelectedYear("");
       }
     };
 
@@ -101,38 +110,6 @@ export default function CollectionClientPage({
       window.removeEventListener("garage-updated", syncGarage);
     };
   }, []);
-
-  // Extract motorcycles and options from products on mount
-  useEffect(() => {
-    if (products.length > 0) {
-      const makerModelsMap: Record<string, Set<string>> = {};
-      products.forEach((product) => {
-        if (product.compatibility) {
-          product.compatibility.forEach((comp) => {
-            if (comp === "All Motorcycles" || comp === "Universal") return;
-            const parts = comp.split(" ");
-            if (parts.length >= 2) {
-              let maker = parts[0];
-              let model = parts.slice(1).join(" ");
-              if (maker.toLowerCase() === "royal" && parts[1]?.toLowerCase() === "enfield") {
-                maker = "Royal Enfield";
-                model = parts.slice(2).join(" ");
-              }
-              if (maker && model) {
-                if (!makerModelsMap[maker]) makerModelsMap[maker] = new Set();
-                makerModelsMap[maker].add(model);
-              }
-            }
-          });
-        }
-      });
-      const extracted = Object.entries(makerModelsMap).map(([maker, modelsSet]) => ({
-        maker,
-        models: Array.from(modelsSet)
-      }));
-      setMotorcycles(extracted.length > 0 ? extracted : getActiveMotorcycleGroups(products));
-    }
-  }, [products]);
 
   // Update URL if collection select filter changes
   useEffect(() => {
@@ -146,28 +123,68 @@ export default function CollectionClientPage({
     if (urlSearchQuery) setSearchQuery(urlSearchQuery);
   }, [urlSearchQuery]);
 
-  // Extract unique brands & categories in the current collection
-  const uniqueBrands = Array.from(new Set(products.map((p) => p.brand))).sort();
-  const uniqueCategories = Array.from(new Set(products.map((p) => p.category))).sort();
+  const syncGarageBike = (maker: string, model: string, year: string) => {
+    if (maker || model || year) {
+      const bike = { maker, model, year: year || undefined };
+      setGarageBike(bike);
+      localStorage.setItem("rider_garage", JSON.stringify(bike));
+      window.dispatchEvent(new Event("garage-updated"));
+    } else {
+      setGarageBike(null);
+      localStorage.removeItem("rider_garage");
+      window.dispatchEvent(new Event("garage-updated"));
+    }
+  };
+
+  const handleMakerChange = (newMaker: string) => {
+    setSelectedMaker(newMaker);
+    let newModel = selectedModel;
+    if (newMaker && filterOptions.makerModelsMap[newMaker]) {
+      if (!filterOptions.makerModelsMap[newMaker].includes(selectedModel)) {
+        newModel = "";
+        setSelectedModel("");
+      }
+    }
+    syncGarageBike(newMaker, newModel, selectedYear);
+  };
+
+  const handleModelChange = (newModel: string) => {
+    setSelectedModel(newModel);
+    let maker = selectedMaker;
+    if (!maker && newModel) {
+      for (const [m, models] of Object.entries(filterOptions.makerModelsMap)) {
+        if (models.includes(newModel)) {
+          maker = m;
+          setSelectedMaker(m);
+          break;
+        }
+      }
+    }
+    syncGarageBike(maker, newModel, selectedYear);
+  };
+
+  const handleYearChange = (newYear: string) => {
+    setSelectedYear(newYear);
+    syncGarageBike(selectedMaker, selectedModel, newYear);
+  };
 
   // Apply filtering and sorting
   useEffect(() => {
     let result = [...products];
 
-    // Filter by Active Garage Bike
-    if (garageBike) {
-      result = result.filter((p) => isProductCompatible(p, garageBike));
+    // Filter by Bike Fitment (dropdown state or active garage bike)
+    const activeBike = (selectedMaker || selectedModel || selectedYear) 
+      ? { maker: selectedMaker, model: selectedModel, year: selectedYear }
+      : garageBike;
+
+    if (activeBike && (activeBike.maker || activeBike.model || activeBike.year)) {
+      result = result.filter((p) => isProductCompatible(p, activeBike));
     }
 
     // Filter by Search Query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      result = result.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q) ||
-          p.compatibility.some((c) => c.toLowerCase().includes(q))
-      );
+      result = result.filter((p) => isProductMatchingQuery(p, q));
     }
 
     // Filter by Category
@@ -206,16 +223,7 @@ export default function CollectionClientPage({
 
     setFilteredProducts(result);
     setVisibleCount(24);
-  }, [products, garageBike, searchQuery, selectedCategory, selectedBrand, priceRangeFilter, sortBy]);
-
-  const handleSaveGarage = () => {
-    if (selectedMaker && selectedModel) {
-      const bike = { maker: selectedMaker, model: selectedModel, year: selectedYear || undefined };
-      setGarageBike(bike);
-      localStorage.setItem("rider_garage", JSON.stringify(bike));
-      window.dispatchEvent(new Event("garage-updated"));
-    }
-  };
+  }, [products, garageBike, selectedMaker, selectedModel, selectedYear, searchQuery, selectedCategory, selectedBrand, priceRangeFilter, sortBy]);
 
   const handleClearGarage = () => {
     setGarageBike(null);
@@ -229,6 +237,9 @@ export default function CollectionClientPage({
   const handleResetFilters = () => {
     setSelectedCategory("all");
     setSelectedBrand("all");
+    setSelectedMaker("");
+    setSelectedModel("");
+    setSelectedYear("");
     setPriceRangeFilter("all");
     setSortBy("default");
     setSearchQuery("");
@@ -248,6 +259,9 @@ export default function CollectionClientPage({
   const hasActiveFilters =
     selectedCategory !== "all" ||
     selectedBrand !== "all" ||
+    selectedMaker !== "" ||
+    selectedModel !== "" ||
+    selectedYear !== "" ||
     priceRangeFilter !== "all" ||
     searchQuery.trim() !== "" ||
     garageBike !== null;
@@ -318,10 +332,10 @@ export default function CollectionClientPage({
 
             <div className="h-px bg-brand-border" />
 
-            {/* Lower */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+            {/* Lower: Multi-Dropdown Fitment & Catalog Filters */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
               
-              {/* Collection Navigator */}
+              {/* Switch Collection Dropdown (First) */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-brand-muted flex items-center gap-1">
                   <Layers className="w-3 h-3 text-brand-primary" />
@@ -330,7 +344,7 @@ export default function CollectionClientPage({
                 <select
                   value={selectedCollection}
                   onChange={(e) => setSelectedCollection(e.target.value)}
-                  className="w-full bg-brand-bg border border-brand-border text-brand-primary rounded p-3 text-xs font-semibold focus:outline-none"
+                  className="w-full bg-brand-bg border border-brand-border text-brand-primary rounded p-2.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-brand-primary"
                 >
                   {allCollections.map((col) => (
                     <option key={col.id} value={col.handle}>{col.title}</option>
@@ -338,7 +352,79 @@ export default function CollectionClientPage({
                 </select>
               </div>
 
-              {/* Price */}
+              {/* Bike Brand (Maker) Dropdown */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-brand-muted flex items-center gap-1">
+                  <Bike className="w-3 h-3 text-brand-red" />
+                  Bike Brand
+                </label>
+                <select
+                  value={selectedMaker}
+                  onChange={(e) => handleMakerChange(e.target.value)}
+                  className="w-full bg-brand-bg border border-brand-border text-brand-primary rounded p-2.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-brand-primary"
+                >
+                  <option value="">All Bike Brands</option>
+                  {filterOptions.makers.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Bike Name / Model Dropdown */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-brand-muted flex items-center gap-1">
+                  <Wrench className="w-3 h-3 text-brand-primary" />
+                  Bike Model
+                </label>
+                <select
+                  value={selectedModel}
+                  onChange={(e) => handleModelChange(e.target.value)}
+                  className="w-full bg-brand-bg border border-brand-border text-brand-primary rounded p-2.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-brand-primary"
+                >
+                  <option value="">All Bike Models</option>
+                  {availableModels.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Bike Year Dropdown */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-brand-muted flex items-center gap-1">
+                  <Tag className="w-3 h-3 text-brand-primary" />
+                  Bike Year
+                </label>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => handleYearChange(e.target.value)}
+                  className="w-full bg-brand-bg border border-brand-border text-brand-primary rounded p-2.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-brand-primary"
+                >
+                  <option value="">All Years</option>
+                  {filterOptions.years.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Category Dropdown */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-brand-muted flex items-center gap-1">
+                  <Layers className="w-3 h-3 text-brand-primary" />
+                  Category
+                </label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full bg-brand-bg border border-brand-border text-brand-primary rounded p-2.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-brand-primary"
+                >
+                  <option value="all">All Categories</option>
+                  {filterOptions.productCategories.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Price Range Dropdown */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-brand-muted flex items-center gap-1">
                   <IndianRupee className="w-3 h-3 text-brand-primary" />
@@ -347,7 +433,7 @@ export default function CollectionClientPage({
                 <select
                   value={priceRangeFilter}
                   onChange={(e) => setPriceRangeFilter(e.target.value)}
-                  className="w-full bg-brand-bg border border-brand-border text-brand-primary rounded p-3 text-xs font-semibold focus:outline-none"
+                  className="w-full bg-brand-bg border border-brand-border text-brand-primary rounded p-2.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-brand-primary"
                 >
                   <option value="all">Any Price</option>
                   <option value="under-1k">Under ₹1,000</option>
@@ -359,6 +445,27 @@ export default function CollectionClientPage({
               </div>
 
             </div>
+
+            {/* Active Fitment Badge Banner */}
+            {(selectedMaker || selectedModel || selectedYear || garageBike) && (
+              <div className="bg-brand-red/5 border border-brand-red/20 rounded-lg p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2 text-brand-primary font-bold">
+                  <Bike className="w-4 h-4 text-brand-red" />
+                  <span>
+                    Active Compatibility Fitment:{" "}
+                    <span className="text-brand-red uppercase font-black">
+                      {[selectedMaker || garageBike?.maker, selectedModel || garageBike?.model, selectedYear || garageBike?.year].filter(Boolean).join(" ")}
+                    </span>
+                  </span>
+                </div>
+                <button
+                  onClick={handleClearGarage}
+                  className="text-[10px] font-extrabold text-brand-red hover:underline flex items-center gap-1 uppercase tracking-wider"
+                >
+                  <X className="w-3.5 h-3.5" /> Clear Bike Compatibility
+                </button>
+              </div>
+            )}
 
           </div>
 
