@@ -13,7 +13,7 @@ import {
   getProducts, Product, Collection, 
   isProductCompatible, getOptimizedImageUrl, shopifyLoader,
   isProductSoldOut, formatProductPrice, getProductDisplayPrice,
-  extractUniqueProductFilters, isProductMatchingQuery
+  extractUniqueProductFilters, isProductMatchingQuery, parseBikeNames
 } from "@/lib/shopify";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -204,6 +204,9 @@ export default function ProductsClientPage({ initialProducts, initialCollections
 
         const bikeBrand = (p.bike_brand || p.metafields?.custom?.bike_brand || "").toString().toLowerCase();
         const bikeName = (p.bike_name || p.metafields?.custom?.bike_name || "").toString().toLowerCase();
+        const bikeNames = (p.bike_names && p.bike_names.length > 0)
+          ? p.bike_names.map((b: string) => b.toLowerCase())
+          : parseBikeNames(p.bike_name || p.metafields?.custom?.bike_name).map((b: string) => b.toLowerCase());
         const bikeYear = (p.bike_year || p.metafields?.custom?.bike_year || "").toString().toLowerCase();
 
         for (const keyword of keywords) {
@@ -233,7 +236,7 @@ export default function ProductsClientPage({ initialProducts, initialCollections
             keywordMatched = true;
           }
 
-          if (bikeName.includes(keyword) || bikeName.includes(singularKeyword)) {
+          if (bikeName.includes(keyword) || bikeName.includes(singularKeyword) || bikeNames.some((bn: string) => bn.includes(keyword) || bn.includes(singularKeyword))) {
             score += 14;
             keywordMatched = true;
           }

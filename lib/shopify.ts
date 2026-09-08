@@ -58,6 +58,7 @@ export interface Product {
   safety_rating?: number;
   bike_brand?: string;
   bike_name?: string;
+  bike_names?: string[];
   bike_year?: string;
   tags?: string[];
   metafields?: {
@@ -67,6 +68,7 @@ export interface Product {
       safety_rating?: number | string;
       bike_brand?: string;
       bike_name?: string;
+      bike_names?: string[];
       bike_year?: string;
     };
   };
@@ -866,8 +868,43 @@ async function shopifyFetch<T>(query: string, variables = {}): Promise<{ data?: 
   }
 }
 
+export function parseBikeNames(raw: string | undefined | null): string[] {
+  if (!raw || typeof raw !== "string") return [];
+  const trimmed = raw.trim();
+  if (!trimmed) return [];
+
+  // 1. JSON Array format (e.g. from list.single_line_text_field)
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        const names: string[] = [];
+        for (const item of parsed) {
+          if (typeof item === "string" && item.trim()) {
+            names.push(item.trim());
+          }
+        }
+        return Array.from(new Set(names));
+      }
+    } catch {
+      // Fallback to delimiter splitting if JSON parsing fails
+    }
+  }
+
+  // 2. Delimiter separated format (/, comma, or |)
+  const parts = trimmed.split(/[\/\,|]+/);
+  const names: string[] = [];
+  for (const part of parts) {
+    const clean = part.trim();
+    if (clean) {
+      names.push(clean);
+    }
+  }
+  return Array.from(new Set(names));
+}
+
 // Convert Shopify GraphQL response schemas into our unified app schemas
-function formatShopifyProduct(shopifyProduct: any): Product {
+export function formatShopifyProduct(shopifyProduct: any): Product {
   const images = shopifyProduct.images?.edges.map((edge: any) => ({
     url: edge.node.url,
     altText: edge.node.altText || shopifyProduct.title,
@@ -911,7 +948,8 @@ function formatShopifyProduct(shopifyProduct: any): Product {
     }
   }
 
-  const bike_name = rawBikeName ? rawBikeName.trim() : undefined;
+  const bike_names = parseBikeNames(rawBikeName);
+  const bike_name = bike_names.length > 0 ? bike_names.join(" / ") : (rawBikeName ? rawBikeName.trim() : undefined);
   const bike_brand = rawBikeBrand ? rawBikeBrand.trim() : undefined;
 
   let compatibility: string[] = [];
@@ -920,11 +958,14 @@ function formatShopifyProduct(shopifyProduct: any): Product {
   }
 
   // Clean compatibility: Only push valid structured fitment strings or explicit universal signals
-  if (bike_brand || bike_name || bike_year) {
-    const fullBikeStr = [bike_brand, bike_name, bike_year].filter(Boolean).join(" ");
-    if (fullBikeStr && !compatibility.includes(fullBikeStr)) compatibility.push(fullBikeStr);
-    if (bike_brand && !compatibility.includes(bike_brand)) compatibility.push(bike_brand);
+  if (bike_brand || bike_names.length > 0 || bike_year) {
+    bike_names.forEach(bName => {
+      const fullBikeStr = [bike_brand, bName, bike_year].filter(Boolean).join(" ");
+      if (fullBikeStr && !compatibility.includes(fullBikeStr)) compatibility.push(fullBikeStr);
+      if (!compatibility.includes(bName)) compatibility.push(bName);
+    });
     if (bike_name && !compatibility.includes(bike_name)) compatibility.push(bike_name);
+    if (bike_brand && !compatibility.includes(bike_brand)) compatibility.push(bike_brand);
     if (bike_year && !compatibility.includes(bike_year)) compatibility.push(bike_year);
   }
 
@@ -974,6 +1015,7 @@ function formatShopifyProduct(shopifyProduct: any): Product {
     safety_rating: safety_rating_val,
     bike_brand,
     bike_name,
+    bike_names,
     bike_year,
     tags: shopifyProduct.tags || [],
     metafields: {
@@ -983,6 +1025,7 @@ function formatShopifyProduct(shopifyProduct: any): Product {
         safety_rating: safety_rating_val,
         bike_brand,
         bike_name,
+        bike_names,
         bike_year
       }
     },
@@ -1511,6 +1554,7 @@ export const getProduct = cache(async (handle: string): Promise<Product | null> 
     let safety_rating: number | undefined;
     let bike_brand: string | undefined;
     let bike_name: string | undefined;
+    let bike_names: string[] = [];
     let bike_year: string | undefined;
 
     if (product.metafields) {
@@ -1520,7 +1564,10 @@ export const getProduct = cache(async (handle: string): Promise<Product | null> 
         if (mf.key === "weight_saved" && mf.value) weight_saved = parseFloat(mf.value);
         if (mf.key === "safety_rating" && mf.value) safety_rating = parseFloat(mf.value);
         if (mf.key === "bike_brand" && mf.value) bike_brand = mf.value.trim();
-        if (mf.key === "bike_name" && mf.value) bike_name = mf.value.trim();
+        if (mf.key === "bike_name" && mf.value) {
+          bike_names = parseBikeNames(mf.value);
+          bike_name = bike_names.length > 0 ? bike_names.join(" / ") : mf.value.trim();
+        }
         if (mf.key === "bike_year" && mf.value) {
           const num = parseFloat(mf.value);
           bike_year = !isNaN(num) ? Math.floor(num).toString() : mf.value.trim();
@@ -1529,12 +1576,15 @@ export const getProduct = cache(async (handle: string): Promise<Product | null> 
     }
 
     let compatibility: string[] = [];
-    if (bike_brand || bike_name || bike_year) {
-      const fullBikeStr = [bike_brand, bike_name, bike_year].filter(Boolean).join(" ");
-      if (fullBikeStr) compatibility.push(fullBikeStr);
-      if (bike_brand) compatibility.push(bike_brand);
-      if (bike_name) compatibility.push(bike_name);
-      if (bike_year) compatibility.push(bike_year);
+    if (bike_brand || bike_names.length > 0 || bike_year) {
+      bike_names.forEach(bName => {
+        const fullBikeStr = [bike_brand, bName, bike_year].filter(Boolean).join(" ");
+        if (fullBikeStr && !compatibility.includes(fullBikeStr)) compatibility.push(fullBikeStr);
+        if (!compatibility.includes(bName)) compatibility.push(bName);
+      });
+      if (bike_name && !compatibility.includes(bike_name)) compatibility.push(bike_name);
+      if (bike_brand && !compatibility.includes(bike_brand)) compatibility.push(bike_brand);
+      if (bike_year && !compatibility.includes(bike_year)) compatibility.push(bike_year);
     }
     if (product.tags) {
       product.tags.forEach((t: string) => {
@@ -1589,6 +1639,7 @@ export const getProduct = cache(async (handle: string): Promise<Product | null> 
       safety_rating,
       bike_brand,
       bike_name,
+      bike_names,
       bike_year,
       tags: product.tags || [],
       metafields: {
@@ -1598,6 +1649,7 @@ export const getProduct = cache(async (handle: string): Promise<Product | null> 
           safety_rating,
           bike_brand,
           bike_name,
+          bike_names,
           bike_year
         }
       },
@@ -2091,6 +2143,7 @@ export type FitmentState = "UNIVERSAL" | "BIKE-SPECIFIC" | "UNKNOWN";
 export interface NormalizedFitment {
   brand?: string;
   model?: string;
+  models?: string[];
   minYear?: number;
   maxYear?: number;
   state: FitmentState;
@@ -2159,6 +2212,10 @@ export function getNormalizedProductFitment(product: Product): NormalizedFitment
   const compLower = (product.compatibility || []).map(c => c.toLowerCase());
   const categoryLower = (product.category || "").toLowerCase();
 
+  const bikeNames = (product.bike_names && product.bike_names.length > 0)
+    ? product.bike_names
+    : parseBikeNames(metaModel);
+
   const isExplicitUniversal = 
     compLower.includes("all motorcycles") || 
     compLower.includes("universal") ||
@@ -2172,7 +2229,7 @@ export function getNormalizedProductFitment(product: Product): NormalizedFitment
     ["riding gear", "helmets", "bike care", "touring accessories"].includes(categoryLower);
 
   const hasStructuredBrand = !!(metaBrand && metaBrand.trim());
-  const hasStructuredModel = !!(metaModel && metaModel.trim());
+  const hasStructuredModel = bikeNames.length > 0 || !!(metaModel && metaModel.trim());
 
   let state: FitmentState = "UNKNOWN";
 
@@ -2205,7 +2262,11 @@ export function getNormalizedProductFitment(product: Product): NormalizedFitment
     }
   }
 
-  let model: string | undefined = hasStructuredModel ? normalizeModelName(metaModel!) : undefined;
+  const normalizedModels = bikeNames.map(normalizeModelName).filter(Boolean);
+  let model: string | undefined = normalizedModels.length > 0 
+    ? normalizedModels[0] 
+    : (hasStructuredModel ? normalizeModelName(metaModel!) : undefined);
+
   if (!model) {
     for (const master of MASTER_MOTORCYCLES) {
       const normMasterModel = normalizeModelName(master.model);
@@ -2250,6 +2311,7 @@ export function getNormalizedProductFitment(product: Product): NormalizedFitment
   return {
     brand,
     model,
+    models: normalizedModels,
     minYear,
     maxYear,
     state
@@ -2326,21 +2388,39 @@ export function isProductCompatible(
     const filterModelNorm = normalizeModelName(filterModelRaw);
     let modelMatches = false;
 
-    if (fitment.model) {
-      modelMatches = fitment.model === filterModelNorm;
+    const bikeNames = (product.bike_names && product.bike_names.length > 0)
+      ? product.bike_names
+      : parseBikeNames(product.bike_name || product.metafields?.custom?.bike_name);
+
+    if (bikeNames.length > 0) {
+      modelMatches = bikeNames.some((bn: string) => normalizeModelName(bn) === filterModelNorm);
+    }
+
+    if (!modelMatches && fitment.models && fitment.models.length > 0) {
+      modelMatches = fitment.models.includes(filterModelNorm);
     }
 
     if (!modelMatches) {
       const titleLower = (product.title || "").toLowerCase();
       const compLower = (product.compatibility || []).map(c => c.toLowerCase());
 
-      for (const candidate of [product.bike_name, ...compLower, titleLower]) {
-        if (!candidate) continue;
-        const candNorm = normalizeModelName(candidate);
-        if (candNorm === filterModelNorm) {
-          modelMatches = true;
-          break;
+      const candidates = [
+        product.bike_name,
+        ...(product.bike_names || []),
+        ...compLower,
+        titleLower
+      ].filter(Boolean) as string[];
+
+      for (const candidate of candidates) {
+        const subParts = candidate.includes("/") ? candidate.split("/") : [candidate];
+        for (const part of subParts) {
+          const candNorm = normalizeModelName(part);
+          if (candNorm === filterModelNorm) {
+            modelMatches = true;
+            break;
+          }
         }
+        if (modelMatches) break;
       }
     }
 
@@ -2435,18 +2515,36 @@ export function extractUniqueProductFilters(products: Product[]): ExtractedProdu
 
     // Direct metafield extraction (bike_brand, bike_name, bike_year)
     const brand = product.bike_brand || product.metafields?.custom?.bike_brand;
-    const model = product.bike_name || product.metafields?.custom?.bike_name;
+    const rawModel = product.bike_name || product.metafields?.custom?.bike_name;
     const yearRaw = (product.bike_year || product.metafields?.custom?.bike_year)?.toString();
 
-    if (brand && brand.trim()) {
-      const cleanBrand = brand.trim();
-      if (!makerModelsMap[cleanBrand]) {
-        makerModelsMap[cleanBrand] = new Set();
+    const bikeNames = (product.bike_names && product.bike_names.length > 0)
+      ? product.bike_names
+      : parseBikeNames(rawModel);
+
+    // Primary Source of Truth: Add normalized bike_names under appropriate maker
+    bikeNames.forEach((modelName: string) => {
+      const cleanModel = modelName.trim();
+      if (!cleanModel) return;
+
+      let targetBrand = brand && brand.trim() ? brand.trim() : undefined;
+      
+      if (!targetBrand) {
+        const masterMatch = MASTER_MOTORCYCLES.find(m => 
+          normalizeModelName(m.model) === normalizeModelName(cleanModel)
+        );
+        if (masterMatch) {
+          targetBrand = masterMatch.maker;
+        }
       }
-      if (model && model.trim() && isLikelyBikeModel(model.trim())) {
-        makerModelsMap[cleanBrand].add(model.trim());
+
+      if (targetBrand) {
+        if (!makerModelsMap[targetBrand]) {
+          makerModelsMap[targetBrand] = new Set();
+        }
+        makerModelsMap[targetBrand].add(cleanModel);
       }
-    }
+    });
 
     if (yearRaw) {
       const num = parseFloat(yearRaw);
@@ -2456,7 +2554,7 @@ export function extractUniqueProductFilters(products: Product[]): ExtractedProdu
       }
     }
 
-    // Compatibility tags extraction with strict brand & model validation
+    // Extract years from compatibility strings, and only match against verified master motorcycle models
     const compStrings = [
       ...(product.compatibility || [])
     ];
@@ -2465,24 +2563,28 @@ export function extractUniqueProductFilters(products: Product[]): ExtractedProdu
       const trimmed = str.trim();
       if (!trimmed || trimmed === "All Motorcycles" || trimmed === "Universal") return;
 
-      const yearMatch = trimmed.match(/\b(20\d{2})\b/);
-      if (yearMatch) {
-        yearsSet.add(yearMatch[1]);
-      }
+      const subParts = trimmed.includes("/") ? trimmed.split("/") : [trimmed];
+      subParts.forEach(sub => {
+        const subTrimmed = sub.trim();
+        if (!subTrimmed) return;
 
-      for (const knownBrand of KNOWN_BIKE_BRANDS) {
-        if (trimmed.toLowerCase().startsWith(knownBrand.toLowerCase())) {
-          let modelPart = trimmed.slice(knownBrand.length).trim();
-          modelPart = modelPart.replace(/\b(20\d{2})\b/g, "").trim();
-          if (isLikelyBikeModel(modelPart)) {
-            if (!makerModelsMap[knownBrand]) {
-              makerModelsMap[knownBrand] = new Set();
-            }
-            makerModelsMap[knownBrand].add(modelPart);
-          }
-          break;
+        const yearMatch = subTrimmed.match(/\b(20\d{2})\b/);
+        if (yearMatch) {
+          yearsSet.add(yearMatch[1]);
         }
-      }
+
+        // Only add model if it strictly matches a verified master motorcycle model
+        for (const master of MASTER_MOTORCYCLES) {
+          const normMaster = normalizeModelName(master.model);
+          const normSub = normalizeModelName(subTrimmed);
+          if (normSub === normMaster || normSub.includes(normMaster)) {
+            if (!makerModelsMap[master.maker]) {
+              makerModelsMap[master.maker] = new Set();
+            }
+            makerModelsMap[master.maker].add(master.model);
+          }
+        }
+      });
     });
   });
 
@@ -2491,7 +2593,7 @@ export function extractUniqueProductFilters(products: Product[]): ExtractedProdu
   const allModelsSet = new Set<string>();
 
   makers.forEach((maker) => {
-    const modelsArr = Array.from(makerModelsMap[maker]).filter(isLikelyBikeModel).sort();
+    const modelsArr = Array.from(makerModelsMap[maker]).sort();
     formattedMakerModelsMap[maker] = modelsArr;
     modelsArr.forEach((m) => allModelsSet.add(m));
   });
@@ -2591,11 +2693,15 @@ export function isProductMatchingQuery(product: Product, query: string): boolean
   const compatibility = (product.compatibility || []).map(c => c.toLowerCase());
   const tags = (product.tags || []).map(t => t.toLowerCase());
   const metaBrand = (product.bike_brand || product.metafields?.custom?.bike_brand || "").toString().toLowerCase().trim();
-  const metaModel = (product.bike_name || product.metafields?.custom?.bike_name || "").toString().toLowerCase().trim();
+  const rawMetaModel = (product.bike_name || product.metafields?.custom?.bike_name || "").toString();
+  const bikeNames = (product.bike_names && product.bike_names.length > 0)
+    ? product.bike_names
+    : parseBikeNames(rawMetaModel);
+  const bikeNamesStr = bikeNames.join(" ").toLowerCase();
   const metaYear = (product.bike_year || product.metafields?.custom?.bike_year || "").toString().toLowerCase().trim();
 
   const fullText = [
-    title, desc, brand, category, ...compatibility, ...tags, metaBrand, metaModel, metaYear
+    title, desc, brand, category, ...compatibility, ...tags, metaBrand, rawMetaModel.toLowerCase(), bikeNamesStr, metaYear
   ].join(" ");
 
   for (const keyword of keywords) {
