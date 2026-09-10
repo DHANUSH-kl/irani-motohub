@@ -12,7 +12,7 @@ import {
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useAuth } from "@/context/AuthContext";
-import { getCollections, getProducts, searchProducts, Collection, Product, getActiveMotorcycleGroups, getActiveYears, getOptimizedImageUrl, shopifyLoader, formatProductPrice } from "@/lib/shopify";
+import { getCollections, getProducts, searchProducts, Collection, Product, extractUniqueProductFilters, getOptimizedImageUrl, shopifyLoader, formatProductPrice } from "@/lib/shopify";
 
 export default function Header() {
   const { setIsOpen: openCart, cartCount, clearCart } = useCart();
@@ -49,11 +49,12 @@ export default function Header() {
   const [selectedMaker, setSelectedMaker] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
-  const [motorcycles, setMotorcycles] = useState<{ maker: string; models: string[] }[]>([
-    { maker: "KTM", models: ["Duke 390", "RC 390"] },
-    { maker: "Royal Enfield", models: ["Himalayan 450", "Interceptor 650", "Continental GT 650"] }
-  ]);
-  const [years, setYears] = useState<string[]>(["2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"]);
+
+  // Extract dynamic fitment options matching Products & Collections catalog filters
+  const filterOptions = extractUniqueProductFilters(allProducts);
+  const availableModels = selectedMaker && filterOptions.makerModelsMap[selectedMaker]
+    ? filterOptions.makerModelsMap[selectedMaker]
+    : filterOptions.allModels;
 
   // Fetch collections & products (limit to 250 to avoid connection timeouts)
   useEffect(() => {
@@ -62,8 +63,6 @@ export default function Header() {
       setCollections(cols);
       const prods = await getProducts({ limit: 250 });
       setAllProducts(prods);
-      setMotorcycles(getActiveMotorcycleGroups(prods));
-      setYears(getActiveYears(prods));
     };
     loadData();
   }, []);
@@ -74,10 +73,10 @@ export default function Header() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.maker && parsed.model) {
+        if (parsed.maker || parsed.model || parsed.year) {
           setGarageBike(parsed);
-          setSelectedMaker(parsed.maker);
-          setSelectedModel(parsed.model);
+          setSelectedMaker(parsed.maker || "");
+          setSelectedModel(parsed.model || "");
           setSelectedYear(parsed.year || "");
         }
       } catch (e) {
@@ -191,24 +190,30 @@ export default function Header() {
     }
   };
 
-  const handleSaveGarage = () => {
-    if (selectedMaker && selectedModel) {
-      const bike = { maker: selectedMaker, model: selectedModel, year: selectedYear || undefined };
+  const syncHeaderGarage = (maker: string, model: string, year: string) => {
+    if (maker || model || year) {
+      const bike = { maker, model, year: year || undefined };
       setGarageBike(bike);
       localStorage.setItem("rider_garage", JSON.stringify(bike));
-      setIsGarageOpen(false);
+      window.dispatchEvent(new Event("garage-updated"));
+    } else {
+      setGarageBike(null);
+      localStorage.removeItem("rider_garage");
       window.dispatchEvent(new Event("garage-updated"));
     }
   };
 
+  const handleSaveGarage = () => {
+    syncHeaderGarage(selectedMaker, selectedModel, selectedYear);
+    setIsGarageOpen(false);
+  };
+
   const handleClearGarage = () => {
-    setGarageBike(null);
     setSelectedMaker("");
     setSelectedModel("");
     setSelectedYear("");
-    localStorage.removeItem("rider_garage");
+    syncHeaderGarage("", "", "");
     setIsGarageOpen(false);
-    window.dispatchEvent(new Event("garage-updated"));
   };
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -416,22 +421,24 @@ export default function Header() {
                 Contact
                 <span className="absolute bottom-0 left-0 w-0 group-hover:w-full h-[2px] bg-brand-red transition-all duration-300" />
               </a>
-            </nav>            {/* Middle/Right Box: Active Rider Garage Pill (Hidden) */}
-            <div className="hidden lg:hidden items-center h-full px-6 border-l border-black/10 relative">
+            </nav>            {/* Middle/Right Box: Active Rider Garage Pill (Active Navbar Fitment) */}
+            <div className="flex items-center h-full px-3 sm:px-6 border-l border-black/10 relative">
               <button 
                 onClick={() => setIsGarageOpen(!isGarageOpen)}
-                className={`flex items-center gap-2.5 px-4 py-2 border rounded-full text-xs font-headings font-extrabold uppercase tracking-wider transition-all duration-300 ${
-                  garageBike 
-                    ? "bg-brand-red/5 border-brand-red/30 text-brand-red hover:bg-brand-red/10" 
+                className={`flex items-center gap-2.5 px-3.5 py-1.5 sm:px-4 sm:py-2 border rounded-full text-xs font-headings font-extrabold uppercase tracking-wider transition-all duration-300 ${
+                  garageBike && (garageBike.maker || garageBike.model || garageBike.year)
+                    ? "bg-brand-red/10 border-brand-red/40 text-brand-red hover:bg-brand-red/20 shadow-sm" 
                     : "bg-black/5 border-black/10 text-gray-700 hover:bg-black/10 hover:text-black"
                 }`}
               >
                 <Bike className="w-3.5 h-3.5" />
                 <span>
-                  {garageBike ? `Garage: ${garageBike.maker} ${garageBike.model}${garageBike.year ? ` (${garageBike.year})` : ""}` : "Select Motorcycle"}
+                  {garageBike && (garageBike.maker || garageBike.model || garageBike.year) 
+                    ? `Fitment: ${[garageBike.maker, garageBike.model, garageBike.year ? `(${garageBike.year})` : ""].filter(Boolean).join(" ")}` 
+                    : "Select Bike Fitment"}
                 </span>
                 {/* Live Status indicator light */}
-                <span className={`w-1.5 h-1.5 rounded-full ${garageBike ? "bg-emerald-500 animate-pulse" : "bg-amber-500 animate-pulse"}`} />
+                <span className={`w-1.5 h-1.5 rounded-full ${garageBike && (garageBike.maker || garageBike.model || garageBike.year) ? "bg-emerald-500 animate-pulse" : "bg-amber-500 animate-pulse"}`} />
               </button>
 
               {/* Rider Garage Dialog Dropdown */}
@@ -441,11 +448,11 @@ export default function Header() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="absolute top-full right-6 mt-2 w-80 bg-white border border-black/10 shadow-2xl p-5 rounded-lg text-gray-900 z-50 space-y-4"
+                    className="absolute top-full right-0 sm:right-6 mt-2 w-80 bg-white border border-black/10 shadow-2xl p-5 rounded-lg text-gray-900 z-50 space-y-4"
                   >
                     <div className="flex justify-between items-center pb-2 border-b border-black/5">
                       <span className="text-[10px] font-headings font-bold uppercase tracking-wider text-gray-500">
-                        Rider Garage Setup
+                        Bike Fitment Selector
                       </span>
                       <button 
                         onClick={() => setIsGarageOpen(false)}
@@ -464,15 +471,17 @@ export default function Header() {
                         <select
                           value={selectedMaker}
                           onChange={(e) => {
-                            setSelectedMaker(e.target.value);
+                            const newMaker = e.target.value;
+                            setSelectedMaker(newMaker);
                             setSelectedModel("");
                             setSelectedYear("");
+                            syncHeaderGarage(newMaker, "", "");
                           }}
                           className="w-full bg-gray-50 border border-black/10 rounded px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-brand-red text-gray-900"
                         >
                           <option value="">Choose Maker</option>
-                          {motorcycles.map((m) => (
-                            <option key={m.maker} value={m.maker}>{m.maker}</option>
+                          {filterOptions.makers.map((m) => (
+                            <option key={m} value={m}>{m}</option>
                           ))}
                         </select>
                       </div>
@@ -485,13 +494,15 @@ export default function Header() {
                           value={selectedModel}
                           disabled={!selectedMaker}
                           onChange={(e) => {
-                            setSelectedModel(e.target.value);
+                            const newModel = e.target.value;
+                            setSelectedModel(newModel);
                             setSelectedYear("");
+                            syncHeaderGarage(selectedMaker, newModel, "");
                           }}
                           className="w-full bg-gray-50 border border-black/10 rounded px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-brand-red text-gray-900 disabled:opacity-40"
                         >
                           <option value="">Choose Model</option>
-                          {motorcycles.find((m) => m.maker === selectedMaker)?.models.map((mod) => (
+                          {availableModels.map((mod) => (
                             <option key={mod} value={mod}>{mod}</option>
                           ))}
                         </select>
@@ -499,16 +510,20 @@ export default function Header() {
  
                       <div>
                         <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-gray-500 mb-1">
-                          Model Year
+                          Model Year (Optional)
                         </label>
                         <select
                           value={selectedYear}
-                          disabled={!selectedModel}
-                          onChange={(e) => setSelectedYear(e.target.value)}
+                          disabled={!selectedMaker}
+                          onChange={(e) => {
+                            const newYear = e.target.value;
+                            setSelectedYear(newYear);
+                            syncHeaderGarage(selectedMaker, selectedModel, newYear);
+                          }}
                           className="w-full bg-gray-50 border border-black/10 rounded px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-brand-red text-gray-900 disabled:opacity-40"
                         >
                           <option value="">Choose Year (Optional)</option>
-                          {years.map((y) => (
+                          {filterOptions.years.map((y) => (
                             <option key={y} value={y}>{y}</option>
                           ))}
                         </select>
@@ -519,16 +534,16 @@ export default function Header() {
                     <div className="flex gap-2.5 pt-2">
                       <button
                         onClick={handleSaveGarage}
-                        disabled={!selectedMaker || !selectedModel}
+                        disabled={!selectedMaker && !selectedModel && !selectedYear}
                         className="flex-1 bg-brand-red hover:bg-red-700 text-white py-2 px-3 rounded text-[10px] font-headings font-bold uppercase tracking-wider transition-colors disabled:opacity-40 flex items-center justify-center gap-1"
                       >
-                        <Check className="w-3.5 h-3.5" /> Save Bike
+                        <Check className="w-3.5 h-3.5" /> Apply Fitment
                       </button>
                       {garageBike && (
                         <button
                           onClick={handleClearGarage}
                           className="bg-black/5 hover:bg-black/10 text-gray-600 hover:text-black p-2 rounded transition-colors"
-                          title="Clear Garage Profile"
+                          title="Clear Fitment Filter"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>

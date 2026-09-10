@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useWishlist } from "@/context/WishlistContext";
 import { useCart } from "@/context/CartContext";
-import { Product, ProductVariant, isProductCompatible, MASTER_MOTORCYCLES, getActiveYears, BikeProfile, getOptimizedImageUrl, shopifyLoader, formatProductPrice } from "@/lib/shopify";
+import { Product, ProductVariant, isProductCompatible, MASTER_MOTORCYCLES, getActiveYears, BikeProfile, getOptimizedImageUrl, shopifyLoader, formatProductPrice, normalizeBrandName } from "@/lib/shopify";
 import { 
   Bike, Heart, Trash2, ShoppingCart, Plus, Check, 
   ArrowRight, ShieldCheck, Wrench, Sparkles, HelpCircle, Info, Flame, AlertCircle, ArrowUpRight
@@ -22,7 +22,7 @@ export default function GarageClient() {
   const [selectedYear, setSelectedYear] = useState("");
   const [showConfigurator, setShowConfigurator] = useState(false);
   const [motorcycles, setMotorcycles] = useState<BikeProfile[]>(
-    MASTER_MOTORCYCLES.filter(b => b.maker === "KTM" || b.maker === "Royal Enfield")
+    MASTER_MOTORCYCLES.filter(b => normalizeBrandName(b.maker) === "KTM" || normalizeBrandName(b.maker) === "ROYAL ENFIELD")
   );
   const [years, setYears] = useState<string[]>(["2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"]);
 

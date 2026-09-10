@@ -2118,10 +2118,105 @@ export async function cartBuyerIdentityUpdate(
   return null;
 }
 
+export const CANONICAL_BRANDS = [
+  "APRILIA",
+  "BAJAJ",
+  "BENELLI",
+  "BMW",
+  "DUCATI",
+  "HARLEY-DAVIDSON",
+  "HERO",
+  "HONDA",
+  "HUSQVARNA",
+  "JAWA",
+  "KAWASAKI",
+  "KTM",
+  "ROYAL ENFIELD",
+  "SUZUKI",
+  "TRIUMPH",
+  "TVS",
+  "YAMAHA",
+  "YEZDI"
+] as const;
+
+export type CanonicalBrand = typeof CANONICAL_BRANDS[number];
+
+export const CANONICAL_BRAND_MAP: Record<string, string> = {
+  "royal enfield": "ROYAL ENFIELD",
+  "re": "ROYAL ENFIELD",
+  "royal-enfield": "ROYAL ENFIELD",
+  "roya enfield": "ROYAL ENFIELD",
+  "royal enfied": "ROYAL ENFIELD",
+  "royal enfeld": "ROYAL ENFIELD",
+  "royal enfiei": "ROYAL ENFIELD",
+  "royal enfeild": "ROYAL ENFIELD",
+  "royalenfield": "ROYAL ENFIELD",
+  "honda": "HONDA",
+  "bmw": "BMW",
+  "ktm": "KTM",
+  "tvs": "TVS",
+  "bajaj": "BAJAJ",
+  "yamaha": "YAMAHA",
+  "triumph": "TRIUMPH",
+  "kawasaki": "KAWASAKI",
+  "ducati": "DUCATI",
+  "suzuki": "SUZUKI",
+  "hero": "HERO",
+  "hero motocorp": "HERO",
+  "harley-davidson": "HARLEY-DAVIDSON",
+  "harley davidson": "HARLEY-DAVIDSON",
+  "harley": "HARLEY-DAVIDSON",
+  "aprilia": "APRILIA",
+  "benelli": "BENELLI",
+  "husqvarna": "HUSQVARNA",
+  "jawa": "JAWA",
+  "yezdi": "YEZDI"
+};
+
+export function normalizeBrandName(rawBrand: string): string {
+  if (!rawBrand) return "";
+  const clean = rawBrand.trim().toLowerCase().replace(/\s+/g, " ");
+  
+  if (CANONICAL_BRAND_MAP[clean]) {
+    return CANONICAL_BRAND_MAP[clean];
+  }
+
+  // Conservative fallback pattern for Royal Enfield typos
+  if (/^roy?a?l?\s*enf[ieeld]{3,6}$/i.test(clean) || /^roya?\s*enfield$/i.test(clean) || /^royal\s*enf/i.test(clean)) {
+    return "ROYAL ENFIELD";
+  }
+
+  for (const canonical of CANONICAL_BRANDS) {
+    if (clean === canonical.toLowerCase()) {
+      return canonical;
+    }
+  }
+
+  return clean.toUpperCase();
+}
+
+export function parseBrandNames(rawBrand?: string): string[] {
+  if (!rawBrand || !rawBrand.trim()) return [];
+  
+  const parts = rawBrand.split(/[\/,]+/);
+  const result: string[] = [];
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const normalized = normalizeBrandName(trimmed);
+    if (normalized && !result.includes(normalized)) {
+      result.push(normalized);
+    }
+  }
+
+  return result;
+}
+
 export const BRAND_ALIASES: Record<string, string[]> = {
   "bmw": ["bmw"],
   "ktm": ["ktm"],
-  "royal enfield": ["royal enfield", "re", "royal-enfield"],
+  "royal enfield": ["royal enfield", "re", "royal-enfield", "royal enfiei", "roya enfield", "royal enfied", "royal enfeld", "royal enfeild"],
   "tvs": ["tvs"],
   "yamaha": ["yamaha"],
   "triumph": ["triumph"],
@@ -2135,7 +2230,8 @@ export const BRAND_ALIASES: Record<string, string[]> = {
   "benelli": ["benelli"],
   "husqvarna": ["husqvarna"],
   "jawa": ["jawa"],
-  "yezdi": ["yezdi"]
+  "yezdi": ["yezdi"],
+  "bajaj": ["bajaj"]
 };
 
 export type FitmentState = "UNIVERSAL" | "BIKE-SPECIFIC" | "UNKNOWN";
@@ -2216,6 +2312,8 @@ export function getNormalizedProductFitment(product: Product): NormalizedFitment
     ? product.bike_names
     : parseBikeNames(metaModel);
 
+  const parsedBrands = parseBrandNames(metaBrand);
+
   const isExplicitUniversal = 
     compLower.includes("all motorcycles") || 
     compLower.includes("universal") ||
@@ -2228,7 +2326,7 @@ export function getNormalizedProductFitment(product: Product): NormalizedFitment
   const isUniversalCategory = 
     ["riding gear", "helmets", "bike care", "touring accessories"].includes(categoryLower);
 
-  const hasStructuredBrand = !!(metaBrand && metaBrand.trim());
+  const hasStructuredBrand = parsedBrands.length > 0;
   const hasStructuredModel = bikeNames.length > 0 || !!(metaModel && metaModel.trim());
 
   let state: FitmentState = "UNKNOWN";
@@ -2252,11 +2350,11 @@ export function getNormalizedProductFitment(product: Product): NormalizedFitment
     }
   }
 
-  let brand: string | undefined = hasStructuredBrand ? metaBrand!.trim() : undefined;
+  let brand: string | undefined = hasStructuredBrand ? parsedBrands.join(" / ") : undefined;
   if (!brand) {
     for (const knownBrand of KNOWN_BIKE_BRANDS) {
       if (titleLower.includes(knownBrand.toLowerCase())) {
-        brand = knownBrand;
+        brand = normalizeBrandName(knownBrand);
         break;
       }
     }
@@ -2274,7 +2372,7 @@ export function getNormalizedProductFitment(product: Product): NormalizedFitment
       
       if (masterModelRegex.test(titleLower) || compLower.some(c => masterModelRegex.test(c.toLowerCase()))) {
         model = normMasterModel;
-        if (!brand) brand = master.maker;
+        if (!brand) brand = normalizeBrandName(master.maker);
         break;
       }
     }
@@ -2318,68 +2416,104 @@ export function getNormalizedProductFitment(product: Product): NormalizedFitment
   };
 }
 
+export function getProductCanonicalBrands(product: Product): string[] {
+  const result = new Set<string>();
+
+  // 1. Direct bike_brand metafields
+  const metaBrand = product.bike_brand || product.metafields?.custom?.bike_brand;
+  if (metaBrand) {
+    parseBrandNames(metaBrand).forEach(b => result.add(b));
+  }
+
+  // 2. Compatibility strings
+  if (product.compatibility && Array.isArray(product.compatibility)) {
+    product.compatibility.forEach(comp => {
+      parseBrandNames(comp).forEach(b => result.add(b));
+      
+      const compLower = comp.toLowerCase();
+      for (const [alias, canon] of Object.entries(CANONICAL_BRAND_MAP)) {
+        if (compLower.includes(alias)) {
+          result.add(canon);
+        }
+      }
+    });
+  }
+
+  // 3. Fallback to vendor / product.brand if recognized as a motorcycle maker
+  if (product.brand) {
+    const brandCanon = normalizeBrandName(product.brand);
+    if (CANONICAL_BRANDS.includes(brandCanon as any)) {
+      result.add(brandCanon);
+    }
+  }
+
+  // 4. Fallback to title scanning if no brand found yet
+  if (result.size === 0 && product.title) {
+    const titleLower = product.title.toLowerCase();
+    for (const [alias, canon] of Object.entries(CANONICAL_BRAND_MAP)) {
+      if (titleLower.includes(alias)) {
+        result.add(canon);
+      }
+    }
+  }
+
+  return Array.from(result);
+}
+
 export function isProductCompatible(
   product: Product,
   bike: { maker?: string; model?: string; year?: string } | null
 ): boolean {
   if (!bike) return true;
 
-  const filterMaker = bike.maker && bike.maker.toLowerCase().trim() !== "all" ? bike.maker.trim() : "";
+  const filterMakerRaw = bike.maker && bike.maker.toLowerCase().trim() !== "all" ? bike.maker.trim() : "";
   const filterModelRaw = bike.model && bike.model.toLowerCase().trim() !== "all" ? bike.model.trim() : "";
   const filterYearRaw = bike.year && bike.year.toLowerCase().trim() !== "all" ? bike.year.trim() : "";
 
-  if (!filterMaker && !filterModelRaw && !filterYearRaw) return true;
+  if (!filterMakerRaw && !filterModelRaw && !filterYearRaw) return true;
 
   const fitment = getNormalizedProductFitment(product);
 
-  // 1. UNIVERSAL STATE
-  if (fitment.state === "UNIVERSAL") {
-    if (filterMaker) {
-      const filterMakerLower = filterMaker.toLowerCase();
-      if (fitment.brand) {
-        const prodBrandLower = fitment.brand.toLowerCase();
-        if (prodBrandLower !== filterMakerLower && !prodBrandLower.includes(filterMakerLower)) {
-          return false;
-        }
-      }
+  // A. BRAND MATCH
+  if (filterMakerRaw) {
+    const filterCanonBrand = normalizeBrandName(filterMakerRaw);
+
+    // Universal products match all brands UNLESS they are explicitly for a conflicting brand
+    if (fitment.state === "UNIVERSAL") {
       const titleLower = (product.title || "").toLowerCase();
       const conflictingBrand = KNOWN_BIKE_BRANDS.find(b => {
+        const bCanon = normalizeBrandName(b);
+        if (bCanon === filterCanonBrand) return false;
         const bLower = b.toLowerCase();
-        if (bLower === filterMakerLower) return false;
         return titleLower.includes(`for ${bLower}`) || titleLower.includes(`fit ${bLower}`);
       });
       if (conflictingBrand) {
         return false;
       }
-    }
+    } else {
+      const prodCanonBrands = getProductCanonicalBrands(product);
 
-    return true;
-  }
+      let brandMatches = prodCanonBrands.includes(filterCanonBrand);
 
-  // 2. UNKNOWN STATE
-  if (fitment.state === "UNKNOWN") {
-    return false;
-  }
+      if (!brandMatches) {
+        const filterMakerLower = filterMakerRaw.toLowerCase();
+        const aliases = BRAND_ALIASES[filterMakerLower] || [filterMakerLower];
 
-  // 3. BIKE-SPECIFIC STATE
+        const rawProdBrand = product.bike_brand || product.metafields?.custom?.bike_brand || fitment.brand || product.brand || "";
+        const prodBrandLower = rawProdBrand.toLowerCase();
+        const titleLower = (product.title || "").toLowerCase();
+        const compLower = (product.compatibility || []).map(c => c.toLowerCase());
 
-  // A. BRAND MATCH
-  if (filterMaker) {
-    const filterMakerLower = filterMaker.toLowerCase();
-    const aliases = BRAND_ALIASES[filterMakerLower] || [filterMakerLower];
+        brandMatches = aliases.some(alias => 
+          prodBrandLower.includes(alias) || 
+          titleLower.includes(alias) || 
+          compLower.some(c => c.includes(alias))
+        ) || prodCanonBrands.some(b => aliases.some(a => b.toLowerCase().includes(a)));
+      }
 
-    const prodBrandLower = (fitment.brand || product.brand || "").toLowerCase();
-    const titleLower = (product.title || "").toLowerCase();
-    const compLower = (product.compatibility || []).map(c => c.toLowerCase());
-
-    const brandMatches = aliases.some(alias => 
-      prodBrandLower.includes(alias) || 
-      titleLower.includes(alias) || 
-      compLower.some(c => c.includes(alias))
-    );
-
-    if (!brandMatches) {
-      return false;
+      if (!brandMatches) {
+        return false;
+      }
     }
   }
 
@@ -2466,9 +2600,9 @@ const INVALID_MODEL_KEYWORDS = [
 ];
 
 export const KNOWN_BIKE_BRANDS = [
-  "BMW", "KTM", "Royal Enfield", "Yamaha", "Triumph", "Honda",
-  "Kawasaki", "Ducati", "Suzuki", "TVS", "Hero", "Harley-Davidson",
-  "Aprilia", "Benelli", "Husqvarna", "Jawa", "Yezdi"
+  "APRILIA", "BAJAJ", "BENELLI", "BMW", "DUCATI", "HARLEY-DAVIDSON",
+  "HERO", "HONDA", "HUSQVARNA", "JAWA", "KAWASAKI", "KTM",
+  "ROYAL ENFIELD", "SUZUKI", "TRIUMPH", "TVS", "YAMAHA", "YEZDI"
 ];
 
 function isLikelyBikeModel(modelName: string): boolean {
@@ -2494,12 +2628,13 @@ export function extractUniqueProductFilters(products: Product[]): ExtractedProdu
   const productBrandsSet = new Set<string>();
   const productCategoriesSet = new Set<string>();
 
-  // Include MASTER_MOTORCYCLES as base set
+  // Include MASTER_MOTORCYCLES as base set using canonical brand names
   MASTER_MOTORCYCLES.forEach((bike) => {
-    if (!makerModelsMap[bike.maker]) {
-      makerModelsMap[bike.maker] = new Set();
+    const canonMaker = normalizeBrandName(bike.maker);
+    if (!makerModelsMap[canonMaker]) {
+      makerModelsMap[canonMaker] = new Set();
     }
-    makerModelsMap[bike.maker].add(bike.model);
+    makerModelsMap[canonMaker].add(bike.model);
   });
 
   const defaultYears = ["2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"];
@@ -2514,36 +2649,45 @@ export function extractUniqueProductFilters(products: Product[]): ExtractedProdu
     }
 
     // Direct metafield extraction (bike_brand, bike_name, bike_year)
-    const brand = product.bike_brand || product.metafields?.custom?.bike_brand;
+    const rawBrand = product.bike_brand || product.metafields?.custom?.bike_brand;
     const rawModel = product.bike_name || product.metafields?.custom?.bike_name;
     const yearRaw = (product.bike_year || product.metafields?.custom?.bike_year)?.toString();
+
+    const canonicalBrands = parseBrandNames(rawBrand);
+    
+    // Register canonical brands in makerModelsMap
+    canonicalBrands.forEach(b => {
+      if (!makerModelsMap[b]) {
+        makerModelsMap[b] = new Set();
+      }
+    });
 
     const bikeNames = (product.bike_names && product.bike_names.length > 0)
       ? product.bike_names
       : parseBikeNames(rawModel);
 
-    // Primary Source of Truth: Add normalized bike_names under appropriate maker
+    // Primary Source of Truth: Add normalized bike_names under appropriate canonical maker(s)
     bikeNames.forEach((modelName: string) => {
       const cleanModel = modelName.trim();
       if (!cleanModel) return;
 
-      let targetBrand = brand && brand.trim() ? brand.trim() : undefined;
+      let targetBrands = canonicalBrands.length > 0 ? canonicalBrands : [];
       
-      if (!targetBrand) {
+      if (targetBrands.length === 0) {
         const masterMatch = MASTER_MOTORCYCLES.find(m => 
           normalizeModelName(m.model) === normalizeModelName(cleanModel)
         );
         if (masterMatch) {
-          targetBrand = masterMatch.maker;
+          targetBrands = [normalizeBrandName(masterMatch.maker)];
         }
       }
 
-      if (targetBrand) {
-        if (!makerModelsMap[targetBrand]) {
-          makerModelsMap[targetBrand] = new Set();
+      targetBrands.forEach((canonBrand) => {
+        if (!makerModelsMap[canonBrand]) {
+          makerModelsMap[canonBrand] = new Set();
         }
-        makerModelsMap[targetBrand].add(cleanModel);
-      }
+        makerModelsMap[canonBrand].add(cleanModel);
+      });
     });
 
     if (yearRaw) {
@@ -2554,7 +2698,7 @@ export function extractUniqueProductFilters(products: Product[]): ExtractedProdu
       }
     }
 
-    // Extract years from compatibility strings, and only match against verified master motorcycle models
+    // Extract years from compatibility strings, and only match models against verified master motorcycle models
     const compStrings = [
       ...(product.compatibility || [])
     ];
@@ -2578,10 +2722,11 @@ export function extractUniqueProductFilters(products: Product[]): ExtractedProdu
           const normMaster = normalizeModelName(master.model);
           const normSub = normalizeModelName(subTrimmed);
           if (normSub === normMaster || normSub.includes(normMaster)) {
-            if (!makerModelsMap[master.maker]) {
-              makerModelsMap[master.maker] = new Set();
+            const canonMaker = normalizeBrandName(master.maker);
+            if (!makerModelsMap[canonMaker]) {
+              makerModelsMap[canonMaker] = new Set();
             }
-            makerModelsMap[master.maker].add(master.model);
+            makerModelsMap[canonMaker].add(master.model);
           }
         }
       });
@@ -2628,13 +2773,13 @@ export const MASTER_MOTORCYCLES: BikeProfile[] = [
   { maker: "KTM", model: "Duke 250", stockHP: 30.0, stockWeight: 163, engine: "249cc Liquid-Cooled Single", image: "" },
   { maker: "KTM", model: "Adventure 390", stockHP: 43.5, stockWeight: 177, engine: "373cc Liquid-Cooled Single", image: "" },
 
-  // Royal Enfield
-  { maker: "Royal Enfield", model: "Himalayan 450", stockHP: 40.0, stockWeight: 196, engine: "452cc Liquid-Cooled Sherpa Single", image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop" },
-  { maker: "Royal Enfield", model: "Interceptor 650", stockHP: 47.0, stockWeight: 202, engine: "648cc Air-Oil Cooled Twin", image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop" },
-  { maker: "Royal Enfield", model: "Continental GT 650", stockHP: 47.0, stockWeight: 198, engine: "648cc Air-Oil Cooled Twin", image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop" },
-  { maker: "Royal Enfield", model: "Super Meteor 650", stockHP: 47.0, stockWeight: 241, engine: "648cc Parallel Twin", image: "" },
-  { maker: "Royal Enfield", model: "Hunter 350", stockHP: 20.2, stockWeight: 181, engine: "349cc Single", image: "" },
-  { maker: "Royal Enfield", model: "Classic 350", stockHP: 20.2, stockWeight: 195, engine: "349cc Single", image: "" },
+  // ROYAL ENFIELD
+  { maker: "ROYAL ENFIELD", model: "Himalayan 450", stockHP: 40.0, stockWeight: 196, engine: "452cc Liquid-Cooled Sherpa Single", image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop" },
+  { maker: "ROYAL ENFIELD", model: "Interceptor 650", stockHP: 47.0, stockWeight: 202, engine: "648cc Air-Oil Cooled Twin", image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop" },
+  { maker: "ROYAL ENFIELD", model: "Continental GT 650", stockHP: 47.0, stockWeight: 198, engine: "648cc Air-Oil Cooled Twin", image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop" },
+  { maker: "ROYAL ENFIELD", model: "Super Meteor 650", stockHP: 47.0, stockWeight: 241, engine: "648cc Parallel Twin", image: "" },
+  { maker: "ROYAL ENFIELD", model: "Hunter 350", stockHP: 20.2, stockWeight: 181, engine: "349cc Single", image: "" },
+  { maker: "ROYAL ENFIELD", model: "Classic 350", stockHP: 20.2, stockWeight: 195, engine: "349cc Single", image: "" },
 
   // BMW
   { maker: "BMW", model: "S1000R/HP4", stockHP: 165.0, stockWeight: 199, engine: "999cc Inline-Four", image: "" },
@@ -2643,23 +2788,23 @@ export const MASTER_MOTORCYCLES: BikeProfile[] = [
   { maker: "BMW", model: "G310GS", stockHP: 34.0, stockWeight: 175, engine: "313cc Liquid-Cooled Single", image: "" },
   { maker: "BMW", model: "R1250GS", stockHP: 136.0, stockWeight: 249, engine: "1254cc Boxer Twin", image: "" },
 
-  // Yamaha
-  { maker: "Yamaha", model: "R15 V4", stockHP: 18.4, stockWeight: 142, engine: "155cc Liquid-Cooled VVA Single", image: "https://images.unsplash.com/photo-1609630875171-b1321377ee65?q=80&w=400&auto=format&fit=crop" },
-  { maker: "Yamaha", model: "MT 15", stockHP: 18.4, stockWeight: 141, engine: "155cc Liquid-Cooled VVA Single", image: "" },
-  { maker: "Yamaha", model: "R3", stockHP: 42.0, stockWeight: 169, engine: "321cc Parallel Twin", image: "" },
+  // YAMAHA
+  { maker: "YAMAHA", model: "R15 V4", stockHP: 18.4, stockWeight: 142, engine: "155cc Liquid-Cooled VVA Single", image: "https://images.unsplash.com/photo-1609630875171-b1321377ee65?q=80&w=400&auto=format&fit=crop" },
+  { maker: "YAMAHA", model: "MT 15", stockHP: 18.4, stockWeight: 141, engine: "155cc Liquid-Cooled VVA Single", image: "" },
+  { maker: "YAMAHA", model: "R3", stockHP: 42.0, stockWeight: 169, engine: "321cc Parallel Twin", image: "" },
 
-  // Triumph
-  { maker: "Triumph", model: "Speed 400", stockHP: 40.0, stockWeight: 170, engine: "398cc Liquid-Cooled Single", image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop" },
-  { maker: "Triumph", model: "Scrambler 400X", stockHP: 40.0, stockWeight: 179, engine: "398cc Liquid-Cooled Single", image: "" },
+  // TRIUMPH
+  { maker: "TRIUMPH", model: "Speed 400", stockHP: 40.0, stockWeight: 170, engine: "398cc Liquid-Cooled Single", image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop" },
+  { maker: "TRIUMPH", model: "Scrambler 400X", stockHP: 40.0, stockWeight: 179, engine: "398cc Liquid-Cooled Single", image: "" },
 
-  // Honda
-  { maker: "Honda", model: "CB350", stockHP: 21.0, stockWeight: 187, engine: "348cc Air-Cooled Single", image: "" },
-  { maker: "Honda", model: "CB300R", stockHP: 31.1, stockWeight: 146, engine: "286cc Liquid-Cooled Single", image: "" },
+  // HONDA
+  { maker: "HONDA", model: "CB350", stockHP: 21.0, stockWeight: 187, engine: "348cc Air-Cooled Single", image: "" },
+  { maker: "HONDA", model: "CB300R", stockHP: 31.1, stockWeight: 146, engine: "286cc Liquid-Cooled Single", image: "" },
 
-  // Kawasaki
-  { maker: "Kawasaki", model: "Ninja 300", stockHP: 39.0, stockWeight: 179, engine: "296cc Parallel Twin", image: "" },
-  { maker: "Kawasaki", model: "Ninja 400", stockHP: 45.0, stockWeight: 168, engine: "399cc Parallel Twin", image: "" },
-  { maker: "Kawasaki", model: "Z900", stockHP: 125.0, stockWeight: 212, engine: "948cc Inline-Four", image: "" },
+  // KAWASAKI
+  { maker: "KAWASAKI", model: "Ninja 300", stockHP: 39.0, stockWeight: 179, engine: "296cc Parallel Twin", image: "" },
+  { maker: "KAWASAKI", model: "Ninja 400", stockHP: 45.0, stockWeight: 168, engine: "399cc Parallel Twin", image: "" },
+  { maker: "KAWASAKI", model: "Z900", stockHP: 125.0, stockWeight: 212, engine: "948cc Inline-Four", image: "" },
 
   // TVS
   { maker: "TVS", model: "Apache RR 310", stockHP: 34.0, stockWeight: 174, engine: "312cc Liquid-Cooled Single", image: "" },
