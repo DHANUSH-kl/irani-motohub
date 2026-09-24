@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -41,7 +41,6 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
 
   // Rider Garage states
@@ -50,19 +49,17 @@ export default function Header() {
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
 
-  // Extract dynamic fitment options matching Products & Collections catalog filters
-  const filterOptions = extractUniqueProductFilters(allProducts);
+  // Extract dynamic fitment options from master catalog (no expensive product fetch needed)
+  const filterOptions = useMemo(() => extractUniqueProductFilters([]), []);
   const availableModels = selectedMaker && filterOptions.makerModelsMap[selectedMaker]
     ? filterOptions.makerModelsMap[selectedMaker]
     : filterOptions.allModels;
 
-  // Fetch collections & products (limit to 250 to avoid connection timeouts)
+  // Fetch collections for navigation menu
   useEffect(() => {
     const loadData = async () => {
       const cols = await getCollections();
       setCollections(cols);
-      const prods = await getProducts({ limit: 250 });
-      setAllProducts(prods);
     };
     loadData();
   }, []);
@@ -216,6 +213,128 @@ export default function Header() {
     setIsGarageOpen(false);
   };
 
+  const renderFitmentContent = () => (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center pb-2 border-b border-black/5">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-brand-red/10 flex items-center justify-center text-brand-red">
+            <Bike className="w-3.5 h-3.5" />
+          </div>
+          <span className="text-xs font-headings font-extrabold uppercase tracking-wider text-gray-900">
+            Bike Fitment Selector
+          </span>
+        </div>
+        <button 
+          onClick={() => setIsGarageOpen(false)}
+          className="p-1.5 -mr-1 text-gray-400 hover:text-black rounded-full hover:bg-black/5 transition-colors cursor-pointer"
+          aria-label="Close fitment selector"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Selectors */}
+      <div className="space-y-3">
+        <div>
+          <label className="block text-[10px] font-headings font-extrabold uppercase tracking-wider text-gray-500 mb-1">
+            Motorcycle Manufacturer
+          </label>
+          <select
+            value={selectedMaker}
+            onChange={(e) => {
+              const newMaker = e.target.value;
+              setSelectedMaker(newMaker);
+              setSelectedModel("");
+              setSelectedYear("");
+              syncHeaderGarage(newMaker, "", "");
+            }}
+            className="w-full bg-gray-50 border border-black/10 rounded-lg px-3 py-2 text-xs font-semibold focus:outline-none focus:border-brand-red text-gray-900 transition-colors"
+          >
+            <option value="">Choose Maker</option>
+            {filterOptions.makers.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-[10px] font-headings font-extrabold uppercase tracking-wider text-gray-500 mb-1">
+            Model Designation
+          </label>
+          <select
+            value={selectedModel}
+            disabled={!selectedMaker}
+            onChange={(e) => {
+              const newModel = e.target.value;
+              setSelectedModel(newModel);
+              setSelectedYear("");
+              syncHeaderGarage(selectedMaker, newModel, "");
+            }}
+            className="w-full bg-gray-50 border border-black/10 rounded-lg px-3 py-2 text-xs font-semibold focus:outline-none focus:border-brand-red text-gray-900 disabled:opacity-40 transition-colors"
+          >
+            <option value="">Choose Model</option>
+            {availableModels.map((mod) => (
+              <option key={mod} value={mod}>{mod}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-[10px] font-headings font-extrabold uppercase tracking-wider text-gray-500 mb-1">
+            Model Year (Optional)
+          </label>
+          <select
+            value={selectedYear}
+            disabled={!selectedMaker}
+            onChange={(e) => {
+              const newYear = e.target.value;
+              setSelectedYear(newYear);
+              syncHeaderGarage(selectedMaker, selectedModel, newYear);
+            }}
+            className="w-full bg-gray-50 border border-black/10 rounded-lg px-3 py-2 text-xs font-semibold focus:outline-none focus:border-brand-red text-gray-900 disabled:opacity-40 transition-colors"
+          >
+            <option value="">Choose Year (Optional)</option>
+            {filterOptions.years.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Form Controls */}
+      <div className="flex gap-2.5 pt-2">
+        <button
+          onClick={handleSaveGarage}
+          disabled={!selectedMaker && !selectedModel && !selectedYear}
+          className="flex-1 bg-brand-red hover:bg-red-700 text-white py-2.5 px-3 rounded-lg text-xs font-headings font-bold uppercase tracking-wider transition-colors disabled:opacity-40 flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+        >
+          <Check className="w-3.5 h-3.5" /> Apply Fitment
+        </button>
+        {garageBike && (
+          <button
+            onClick={handleClearGarage}
+            className="bg-black/5 hover:bg-black/10 text-gray-600 hover:text-brand-red p-2.5 rounded-lg transition-colors cursor-pointer"
+            title="Clear Fitment Filter"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      {garageBike && (
+        <div className="pt-2 border-t border-black/5 text-center">
+          <Link
+            href="/garage"
+            onClick={() => setIsGarageOpen(false)}
+            className="text-[10px] font-bold text-brand-red uppercase tracking-wider hover:underline flex items-center justify-center gap-1"
+          >
+            Configure Custom Build <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -267,14 +386,14 @@ export default function Header() {
 
         {/* Main Navigation Header (Premium Off-White Glassmorphic Panel) */}
         <header className="bg-white/80 backdrop-blur-md border-b border-black/10 text-gray-900 h-20">
-          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
+          <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 h-full flex items-center justify-between">
             
             {/* Left Box: Logo */}
-            <div className="h-full flex items-center pr-2 sm:pr-6 lg:pr-8 md:border-r md:border-black/10">
+            <div className="h-full flex items-center pr-1.5 sm:pr-6 lg:pr-8 md:border-r md:border-black/10 flex-shrink-0">
               <Link href="/" className="flex items-center">
                 {/* CSS wrapper to crop transparent boundaries of 1024x1024 square image */}
-                <div className="relative w-32 h-12 sm:w-44 sm:h-16 overflow-hidden flex items-center justify-center">
-                  <div className="absolute w-[150px] h-[150px] sm:w-[220px] sm:h-[220px] flex items-center justify-center">
+                <div className="relative w-28 h-10 xs:w-32 xs:h-12 sm:w-44 sm:h-16 overflow-hidden flex items-center justify-center">
+                  <div className="absolute w-[130px] h-[130px] xs:w-[150px] xs:h-[150px] sm:w-[220px] sm:h-[220px] flex items-center justify-center">
                     <Image
                       src="/imhlogo.png"
                       alt="IRANI MOTOHUB Logo"
@@ -422,157 +541,66 @@ export default function Header() {
                 <span className="absolute bottom-0 left-0 w-0 group-hover:w-full h-[2px] bg-brand-red transition-all duration-300" />
               </a>
             </nav>            {/* Middle/Right Box: Active Rider Garage Pill (Active Navbar Fitment) */}
-            <div className="flex items-center h-full px-3 sm:px-6 border-l border-black/10 relative">
+            <div className="flex items-center h-full px-1.5 sm:px-6 border-l border-black/10 relative flex-shrink min-w-0">
               <button 
                 onClick={() => setIsGarageOpen(!isGarageOpen)}
-                className={`flex items-center gap-2.5 px-3.5 py-1.5 sm:px-4 sm:py-2 border rounded-full text-xs font-headings font-extrabold uppercase tracking-wider transition-all duration-300 ${
+                className={`flex items-center gap-1.5 sm:gap-2.5 px-2.5 py-1.5 sm:px-4 sm:py-2 border rounded-full text-[10px] sm:text-xs font-headings font-extrabold uppercase tracking-wider transition-all duration-300 max-w-[130px] xs:max-w-[170px] sm:max-w-none cursor-pointer ${
                   garageBike && (garageBike.maker || garageBike.model || garageBike.year)
                     ? "bg-brand-red/10 border-brand-red/40 text-brand-red hover:bg-brand-red/20 shadow-sm" 
                     : "bg-black/5 border-black/10 text-gray-700 hover:bg-black/10 hover:text-black"
                 }`}
               >
-                <Bike className="w-3.5 h-3.5" />
-                <span>
-                  {garageBike && (garageBike.maker || garageBike.model || garageBike.year) 
-                    ? `Fitment: ${[garageBike.maker, garageBike.model, garageBike.year ? `(${garageBike.year})` : ""].filter(Boolean).join(" ")}` 
-                    : "Select Bike Fitment"}
+                <Bike className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="truncate">
+                  {garageBike && (garageBike.maker || garageBike.model || garageBike.year) ? (
+                    <>
+                      <span className="hidden sm:inline">
+                        Fitment: {[garageBike.maker, garageBike.model, garageBike.year ? `(${garageBike.year})` : ""].filter(Boolean).join(" ")}
+                      </span>
+                      <span className="sm:hidden">
+                        {[garageBike.maker, garageBike.model].filter(Boolean).join(" ") || "Fitment"}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="hidden sm:inline">Select Bike Fitment</span>
+                      <span className="sm:hidden">Bike Fit</span>
+                    </>
+                  )}
                 </span>
                 {/* Live Status indicator light */}
-                <span className={`w-1.5 h-1.5 rounded-full ${garageBike && (garageBike.maker || garageBike.model || garageBike.year) ? "bg-emerald-500 animate-pulse" : "bg-amber-500 animate-pulse"}`} />
+                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${garageBike && (garageBike.maker || garageBike.model || garageBike.year) ? "bg-emerald-500 animate-pulse" : "bg-amber-500 animate-pulse"}`} />
               </button>
 
-              {/* Rider Garage Dialog Dropdown */}
+              {/* Desktop Rider Garage Dialog Dropdown */}
               <AnimatePresence>
                 {isGarageOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="absolute top-full right-0 sm:right-6 mt-2 w-80 bg-white border border-black/10 shadow-2xl p-5 rounded-lg text-gray-900 z-50 space-y-4"
-                  >
-                    <div className="flex justify-between items-center pb-2 border-b border-black/5">
-                      <span className="text-[10px] font-headings font-bold uppercase tracking-wider text-gray-500">
-                        Bike Fitment Selector
-                      </span>
-                      <button 
-                        onClick={() => setIsGarageOpen(false)}
-                        className="text-gray-500 hover:text-black"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    {/* Selector Selectors */}
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-gray-500 mb-1">
-                          Motorcycle Manufacturer
-                        </label>
-                        <select
-                          value={selectedMaker}
-                          onChange={(e) => {
-                            const newMaker = e.target.value;
-                            setSelectedMaker(newMaker);
-                            setSelectedModel("");
-                            setSelectedYear("");
-                            syncHeaderGarage(newMaker, "", "");
-                          }}
-                          className="w-full bg-gray-50 border border-black/10 rounded px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-brand-red text-gray-900"
-                        >
-                          <option value="">Choose Maker</option>
-                          {filterOptions.makers.map((m) => (
-                            <option key={m} value={m}>{m}</option>
-                          ))}
-                        </select>
-                      </div>
- 
-                      <div>
-                        <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-gray-500 mb-1">
-                          Model Designation
-                        </label>
-                        <select
-                          value={selectedModel}
-                          disabled={!selectedMaker}
-                          onChange={(e) => {
-                            const newModel = e.target.value;
-                            setSelectedModel(newModel);
-                            setSelectedYear("");
-                            syncHeaderGarage(selectedMaker, newModel, "");
-                          }}
-                          className="w-full bg-gray-50 border border-black/10 rounded px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-brand-red text-gray-900 disabled:opacity-40"
-                        >
-                          <option value="">Choose Model</option>
-                          {availableModels.map((mod) => (
-                            <option key={mod} value={mod}>{mod}</option>
-                          ))}
-                        </select>
-                      </div>
- 
-                      <div>
-                        <label className="block text-[9px] font-headings font-extrabold uppercase tracking-wider text-gray-500 mb-1">
-                          Model Year (Optional)
-                        </label>
-                        <select
-                          value={selectedYear}
-                          disabled={!selectedMaker}
-                          onChange={(e) => {
-                            const newYear = e.target.value;
-                            setSelectedYear(newYear);
-                            syncHeaderGarage(selectedMaker, selectedModel, newYear);
-                          }}
-                          className="w-full bg-gray-50 border border-black/10 rounded px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-brand-red text-gray-900 disabled:opacity-40"
-                        >
-                          <option value="">Choose Year (Optional)</option>
-                          {filterOptions.years.map((y) => (
-                            <option key={y} value={y}>{y}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Form Controls */}
-                    <div className="flex gap-2.5 pt-2">
-                      <button
-                        onClick={handleSaveGarage}
-                        disabled={!selectedMaker && !selectedModel && !selectedYear}
-                        className="flex-1 bg-brand-red hover:bg-red-700 text-white py-2 px-3 rounded text-[10px] font-headings font-bold uppercase tracking-wider transition-colors disabled:opacity-40 flex items-center justify-center gap-1"
-                      >
-                        <Check className="w-3.5 h-3.5" /> Apply Fitment
-                      </button>
-                      {garageBike && (
-                        <button
-                          onClick={handleClearGarage}
-                          className="bg-black/5 hover:bg-black/10 text-gray-600 hover:text-black p-2 rounded transition-colors"
-                          title="Clear Fitment Filter"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-
-                    {garageBike && (
-                      <div className="pt-3 border-t border-black/5 text-center">
-                        <Link
-                          href="/garage"
-                          onClick={() => setIsGarageOpen(false)}
-                          className="text-[10px] font-bold text-brand-red uppercase tracking-wider hover:underline flex items-center justify-center gap-1"
-                        >
-                          Configure Custom Build <ArrowRight className="w-3 h-3" />
-                        </Link>
-                      </div>
-                    )}
-                  </motion.div>
+                  <div className="hidden md:block">
+                    {/* Transparent click-outside backdrop */}
+                    <div
+                      onClick={() => setIsGarageOpen(false)}
+                      className="fixed inset-0 z-40"
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute top-full right-0 mt-2 w-84 bg-white border border-black/10 shadow-2xl p-5 rounded-xl text-gray-900 z-50"
+                    >
+                      {renderFitmentContent()}
+                    </motion.div>
+                  </div>
                 )}
               </AnimatePresence>
             </div>
 
             {/* Right Box: Action Icons */}
-            <div className="h-full flex-shrink-0 flex items-center pl-2 sm:pl-6 lg:pl-8 border-l border-black/10 gap-1 sm:gap-4">
+            <div className="h-full flex-shrink-0 flex items-center pl-1 sm:pl-6 lg:pl-8 border-l border-black/10 gap-0.5 sm:gap-4">
               
               {/* Search Trigger */}
               <button
                 onClick={() => setIsSearchOpen(true)}
-                className="p-2 text-gray-700 hover:text-black transition-colors"
+                className="p-1.5 sm:p-2 text-gray-700 hover:text-black transition-colors cursor-pointer"
                 aria-label="Open Search Catalog"
               >
                 <Search className="w-4.5 h-4.5" />
@@ -581,7 +609,7 @@ export default function Header() {
               {/* Wishlist Icon Link */}
               <Link
                 href="/wishlist"
-                className="p-2 text-gray-700 hover:text-brand-red transition-colors relative flex items-center"
+                className="p-1.5 sm:p-2 text-gray-700 hover:text-brand-red transition-colors relative flex items-center"
                 aria-label="View Wishlist"
               >
                 <Heart className={`w-4.5 h-4.5 ${wishlist.length > 0 ? 'fill-brand-red text-brand-red' : ''}`} />
@@ -616,7 +644,7 @@ export default function Header() {
               {/* Shopping Cart Drawer Trigger */}
               <button
                 onClick={() => openCart(true)}
-                className="p-2 text-gray-700 hover:text-black transition-colors relative"
+                className="p-1.5 sm:p-2 text-gray-700 hover:text-black transition-colors relative cursor-pointer"
                 aria-label="Open Shopping Cart"
               >
                 <ShoppingBag className="w-4.5 h-4.5" />
@@ -630,7 +658,7 @@ export default function Header() {
               {/* Mobile Hamburger Menu Toggle */}
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="p-2 text-gray-700 hover:text-black transition-colors md:hidden"
+                className="p-1.5 sm:p-2 text-gray-700 hover:text-black transition-colors md:hidden cursor-pointer"
                 aria-label="Open Navigation Drawer"
               >
                 <Menu className="w-5.5 h-5.5" />
@@ -640,6 +668,33 @@ export default function Header() {
           </div>
         </header>
       </div>
+
+      {/* Mobile Fitment Selector Modal (Global Overlay - Immune to Header transforms/backdrop-filter) */}
+      <AnimatePresence>
+        {isGarageOpen && (
+          <div className="md:hidden">
+            {/* Dim backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsGarageOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 cursor-pointer"
+            />
+
+            {/* Modal Card - Positioned right below the fixed navbar and animated downward */}
+            <motion.div
+              initial={{ opacity: 0, y: -15, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -15, scale: 0.96 }}
+              transition={{ type: "spring", stiffness: 350, damping: 28 }}
+              className="fixed top-[120px] left-3 right-3 max-w-sm mx-auto bg-white border border-black/10 shadow-2xl p-5 rounded-2xl text-gray-900 z-50 max-h-[calc(100vh-140px)] overflow-y-auto"
+            >
+              {renderFitmentContent()}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Real-time Search Overlay */}
       <AnimatePresence>
@@ -1086,6 +1141,56 @@ export default function Header() {
               </div>
 
               <div className="flex-grow overflow-y-auto p-6 space-y-6">
+
+                {/* Bike Fitment Status in Mobile Menu */}
+                <div className="bg-[#181818] border border-white/10 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-headings font-extrabold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Bike className="w-3.5 h-3.5 text-brand-red" /> Active Bike Fitment
+                    </span>
+                    <span className={`w-2 h-2 rounded-full ${garageBike ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
+                  </div>
+                  {garageBike ? (
+                    <div>
+                      <p className="text-sm font-bold text-white uppercase font-headings truncate">
+                        {[garageBike.maker, garageBike.model, garageBike.year ? `(${garageBike.year})` : ""].filter(Boolean).join(" ")}
+                      </p>
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={() => {
+                            setIsMobileMenuOpen(false);
+                            setIsGarageOpen(true);
+                          }}
+                          className="flex-1 bg-brand-red/20 text-brand-red hover:bg-brand-red hover:text-white py-1.5 px-2.5 rounded text-[10px] font-headings font-bold uppercase tracking-wider transition-colors text-center cursor-pointer"
+                        >
+                          Change Fitment
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleClearGarage();
+                          }}
+                          className="bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white p-1.5 rounded transition-colors cursor-pointer"
+                          title="Clear Fitment"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-xs text-gray-400 font-body">Filter store catalog specifically for your bike.</p>
+                      <button
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          setIsGarageOpen(true);
+                        }}
+                        className="mt-3 w-full bg-brand-red text-white py-2 px-3 rounded text-[10px] font-headings font-bold uppercase tracking-wider hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Bike className="w-3.5 h-3.5" /> Select Bike Fitment
+                      </button>
+                    </div>
+                  )}
+                </div>
 
                 {/* Collections block */}
                 <div className="space-y-6">

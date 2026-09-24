@@ -13,7 +13,7 @@ import {
   NewArrivalsSkeleton 
 } from "@/components/Skeletons";
 
-export const revalidate = 60; // Edge/CDN ISR revalidation window of 60 seconds
+export const revalidate = 86400; // 24-hour fallback ISR cache window, refreshed on-demand via Shopify webhooks
 
 export default function Home() {
   return (

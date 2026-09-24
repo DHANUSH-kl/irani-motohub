@@ -53,7 +53,7 @@ export default function GarageClient() {
 
     const loadProductsAndBikes = async () => {
       const { getProducts } = await import("@/lib/shopify");
-      const prods = await getProducts();
+      const prods = await getProducts({ limit: 48 });
       
       const activeBikes = MASTER_MOTORCYCLES.filter(bike => {
         const makerLower = bike.maker.toLowerCase().trim();
@@ -201,7 +201,7 @@ export default function GarageClient() {
   useEffect(() => {
     const fetchRecommendations = async () => {
       const { getProducts } = await import("@/lib/shopify");
-      const allProds = await getProducts();
+      const allProds = await getProducts({ limit: 24 });
       
       const filtered = allProds.filter((prod) => {
         const inWishlist = wishlist.some((w) => w.id === prod.id);

@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import { getProducts, getCollections } from "@/lib/shopify";
 import ProductsClientPage from "./ProductsClientPage";
 
-export const revalidate = 60; // Revalidate cache every 60 seconds (ISR)
+export const revalidate = 86400; // 24-hour fallback ISR cache window, revalidated on-demand
 
 export const metadata: Metadata = {
   title: "Performance Catalog | Premium Upgrades | Irani MotoHub",
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default async function AllProductsPage() {
   const [initialProducts, initialCollections] = await Promise.all([
-    getProducts(),
+    getProducts({ limit: 48 }),
     getCollections()
   ]);
 

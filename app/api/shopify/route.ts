@@ -1,24 +1,16 @@
 import { NextResponse } from "next/server";
 
-// 5 minutes TTL in milliseconds
-const CACHE_TTL = 5 * 60 * 1000;
-const cache = new Map<string, { data: any; timestamp: number }>();
-
 export async function POST(request: Request) {
   try {
-    const { query, variables } = await request.json();
-    
-    // Create a unique key for the cache based on request payload
-    const cacheKey = JSON.stringify({ query, variables });
-    
-    // Check if we have a valid cached response
-    const cachedEntry = cache.get(cacheKey);
-    if (cachedEntry && Date.now() - cachedEntry.timestamp < CACHE_TTL) {
-      return NextResponse.json(cachedEntry.data);
+    const body = await request.json();
+    const { query, variables } = body;
+
+    if (!query || typeof query !== "string") {
+      return NextResponse.json({ error: "GraphQL query is required" }, { status: 400 });
     }
 
-    const DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
-    const ACCESS_TOKEN = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+    const DOMAIN = process.env.SHOPIFY_STORE_DOMAIN || process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
+    const ACCESS_TOKEN = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN || process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
     if (!DOMAIN || !ACCESS_TOKEN) {
       return NextResponse.json(
@@ -27,16 +19,23 @@ export async function POST(request: Request) {
       );
     }
 
+    const isMutation = query.trim().startsWith("mutation");
     const endpoint = `https://${DOMAIN}/api/2024-01/graphql.json`;
-    const response = await fetch(endpoint, {
+
+    const fetchInit: RequestInit & { next?: { revalidate?: number | false } } = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Shopify-Storefront-Access-Token": ACCESS_TOKEN,
       },
       body: JSON.stringify({ query, variables }),
-      next: { revalidate: 60 }
-    });
+    };
+
+    if (isMutation) {
+      fetchInit.cache = "no-store";
+    }
+
+    const response = await fetch(endpoint, fetchInit);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -49,12 +48,21 @@ export async function POST(request: Request) {
 
     const data = await response.json();
 
-    // Cache the response if there are no GraphQL query errors
-    if (data && !data.errors) {
-      cache.set(cacheKey, { data, timestamp: Date.now() });
+    const responseHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (!isMutation && !data.errors) {
+      // Allow edge CDN caching for read queries
+      responseHeaders["Cache-Control"] = "public, s-maxage=300, stale-while-revalidate=600";
+    } else {
+      responseHeaders["Cache-Control"] = "no-store, no-cache, must-revalidate";
     }
 
-    return NextResponse.json(data);
+    return new NextResponse(JSON.stringify(data), {
+      status: 200,
+      headers: responseHeaders,
+    });
   } catch (error: any) {
     console.error("Error in Shopify API proxy handler:", error);
     return NextResponse.json(

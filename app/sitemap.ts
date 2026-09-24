@@ -1,5 +1,7 @@
 import { MetadataRoute } from "next";
-import { getProducts, getCollections } from "@/lib/shopify";
+import { getProductHandlesForSitemap, getCollections } from "@/lib/shopify";
+
+export const revalidate = 86400; // 24-hour fallback ISR cache window, revalidated on-demand
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://iranimotohub.in";
@@ -24,11 +26,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     }));
 
-    // Dynamic products URLs
-    const products = await getProducts();
+    // Dynamic products URLs (lightweight handle + updatedAt fetch)
+    const products = await getProductHandlesForSitemap();
     const productRoutes = products.map((prod) => ({
       url: `${baseUrl}/products/${prod.handle}`,
-      lastModified: new Date(),
+      lastModified: new Date(prod.updatedAt),
       changeFrequency: "weekly" as const,
       priority: 0.7,
     }));

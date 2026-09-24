@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import { getCollection, getCollections, getProducts } from "@/lib/shopify";
 import CollectionClientPage from "./CollectionClientPage";
 
-export const revalidate = 60; // Revalidate cache every 60 seconds (ISR)
+export const revalidate = 86400; // 24-hour fallback ISR cache window, revalidated on-demand
 
 interface Props {
   params: Promise<{ handle: string }>;
@@ -42,7 +42,7 @@ export default async function CollectionPage({ params }: Props) {
   const [initialCollection, initialCollections, initialProducts] = await Promise.all([
     getCollection(handle),
     getCollections(),
-    getProducts({ collectionHandle: handle })
+    getProducts({ collectionHandle: handle, limit: 48 })
   ]);
 
   const breadcrumbSchema = {

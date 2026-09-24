@@ -4,7 +4,7 @@ import Link from "next/link";
 import { getProduct, getProducts, getRelatedProducts } from "@/lib/shopify";
 import ProductClientPage from "./ProductClientPage";
 
-export const revalidate = 3600; // Revalidate cache every hour (ISR)
+export const revalidate = 86400; // 24-hour fallback ISR cache window, revalidated on-demand via Shopify webhooks
 
 interface Props {
   params: Promise<{ handle: string }>;
@@ -115,9 +115,9 @@ export default async function ProductPage({ params }: Props) {
   );
 }
 
-// Pre-render top-selling catalog products at build time (limit to top 30)
+// Pre-render top-selling catalog products at build time (top 100)
 export async function generateStaticParams() {
-  const products = await getProducts({ limit: 30 });
+  const products = await getProducts({ limit: 100 });
   return products.map((prod) => ({
     handle: prod.handle,
   }));
