@@ -42,7 +42,7 @@ export default async function CollectionPage({ params }: Props) {
   const [initialCollection, initialCollections, initialProducts] = await Promise.all([
     getCollection(handle),
     getCollections(),
-    getProducts({ collectionHandle: handle, limit: 48 })
+    getProducts({ collectionHandle: handle })
   ]);
 
   const breadcrumbSchema = {

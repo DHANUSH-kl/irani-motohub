@@ -997,8 +997,10 @@ export function formatShopifyProduct(shopifyProduct: any): Product {
     shopifyProduct.tags.forEach((t: string) => {
       const tTrimmed = t.trim();
       const tLower = tTrimmed.toLowerCase();
-      // Only include tags that match known bike brands or models, NOT arbitrary part tags
-      if (KNOWN_BIKE_BRANDS.some(b => tLower.includes(b.toLowerCase())) || tLower === "universal") {
+      // Include tags that match known bike brands or verified models or explicit universal
+      const matchesBrand = KNOWN_BIKE_BRANDS.some(b => tLower.includes(b.toLowerCase()));
+      const matchesModel = MASTER_MOTORCYCLES.some(m => tLower.includes(m.model.toLowerCase()) || m.model.toLowerCase().includes(tLower));
+      if (matchesBrand || matchesModel || tLower === "universal") {
         if (!compatibility.includes(tTrimmed)) {
           compatibility.push(tTrimmed);
         }
@@ -1103,12 +1105,18 @@ export async function getProducts(options?: { collectionHandle?: string; limit?:
   const limit = options?.limit;
   const collectionHandle = options?.collectionHandle;
 
+  if (collectionHandle) {
+    if (limit && limit < 250) {
+      return fetchProductsBatch(collectionHandle, limit);
+    }
+    return fetchAllProductsInternal(collectionHandle);
+  }
+
   if (limit) {
     return fetchProductsBatch(collectionHandle, limit);
   }
 
-  // Default to a safe batch (48 items) to prevent unbounded 3,000+ catalog downloads
-  return fetchProductsBatch(collectionHandle, 48);
+  return fetchAllProductsInternal();
 }
 
 async function fetchAllProductsInternal(collectionHandle?: string): Promise<Product[]> {
@@ -1150,7 +1158,6 @@ async function fetchAllProductsInternal(collectionHandle?: string): Promise<Prod
                     id
                     handle
                     title
-                    description
                     vendor
                     productType
                     tags
@@ -1160,7 +1167,7 @@ async function fetchAllProductsInternal(collectionHandle?: string): Promise<Prod
                         currencyCode
                       }
                     }
-                    images(first: 5) {
+                    images(first: 2) {
                       edges {
                         node {
                           url
@@ -1168,7 +1175,7 @@ async function fetchAllProductsInternal(collectionHandle?: string): Promise<Prod
                         }
                       }
                     }
-                    variants(first: 10) {
+                    variants(first: 2) {
                       edges {
                         node {
                           id
@@ -1223,7 +1230,6 @@ async function fetchAllProductsInternal(collectionHandle?: string): Promise<Prod
                   id
                   handle
                   title
-                  description
                   vendor
                   productType
                   tags
@@ -1233,7 +1239,7 @@ async function fetchAllProductsInternal(collectionHandle?: string): Promise<Prod
                       currencyCode
                     }
                   }
-                  images(first: 5) {
+                  images(first: 2) {
                     edges {
                       node {
                         url
@@ -1241,7 +1247,7 @@ async function fetchAllProductsInternal(collectionHandle?: string): Promise<Prod
                       }
                     }
                   }
-                  variants(first: 10) {
+                  variants(first: 2) {
                     edges {
                       node {
                         id
@@ -2498,7 +2504,19 @@ export function getProductCanonicalBrands(product: Product): string[] {
     });
   }
 
-  // 3. Fallback to vendor / product.brand if recognized as a motorcycle maker
+  // 3. Product tags (e.g. KTM, Bajaj, Yamaha, etc.)
+  if (product.tags && Array.isArray(product.tags)) {
+    product.tags.forEach(tag => {
+      const tagLower = tag.toLowerCase().trim();
+      for (const [alias, canon] of Object.entries(CANONICAL_BRAND_MAP)) {
+        if (tagLower === alias || tagLower.includes(alias)) {
+          result.add(canon);
+        }
+      }
+    });
+  }
+
+  // 4. Fallback to vendor / product.brand if recognized as a motorcycle maker
   if (product.brand) {
     const brandCanon = normalizeBrandName(product.brand);
     if (CANONICAL_BRANDS.includes(brandCanon as any)) {
@@ -2506,8 +2524,8 @@ export function getProductCanonicalBrands(product: Product): string[] {
     }
   }
 
-  // 4. Fallback to title scanning if no brand found yet
-  if (result.size === 0 && product.title) {
+  // 5. Title scanning for recognized brand aliases
+  if (product.title) {
     const titleLower = product.title.toLowerCase();
     for (const [alias, canon] of Object.entries(CANONICAL_BRAND_MAP)) {
       if (titleLower.includes(alias)) {
@@ -2578,42 +2596,69 @@ export function isProductCompatible(
 
   // B. MODEL MATCH
   if (filterModelRaw) {
-    const filterModelNorm = normalizeModelName(filterModelRaw);
+    const cleanFilter = filterModelRaw.toLowerCase().trim().replace(/[\/,\-\s]+/g, " ");
+    const filterTokens = cleanFilter.split(" ").filter(t => t.length > 0);
+
+    const titleLower = (product.title || "").toLowerCase();
+    const bikeNameLower = (product.bike_name || "").toLowerCase();
+    const bikeNamesLower = (product.bike_names || []).map((b: string) => b.toLowerCase());
+    const tagsLower = (product.tags || []).map((t: string) => t.toLowerCase());
+    const compLower = (product.compatibility || []).map((c: string) => c.toLowerCase());
+
+    const searchables = [bikeNameLower, ...bikeNamesLower, ...compLower, ...tagsLower, titleLower]
+      .map(s => s.trim().replace(/[\/,\-\s]+/g, " "))
+      .filter(Boolean);
+
     let modelMatches = false;
 
-    const bikeNames = (product.bike_names && product.bike_names.length > 0)
-      ? product.bike_names
-      : parseBikeNames(product.bike_name || product.metafields?.custom?.bike_name);
-
-    if (bikeNames.length > 0) {
-      modelMatches = bikeNames.some((bn: string) => normalizeModelName(bn) === filterModelNorm);
+    // 1. Direct phrase match: does any searchable string contain cleanFilter?
+    // e.g. "duke 390" in "duke 390 bs4", "duke 390 bs6", "ktm duke 390 front disc"
+    if (searchables.some(s => s.includes(cleanFilter))) {
+      modelMatches = true;
     }
 
-    if (!modelMatches && fitment.models && fitment.models.length > 0) {
-      modelMatches = fitment.models.includes(filterModelNorm);
-    }
-
-    if (!modelMatches) {
-      const titleLower = (product.title || "").toLowerCase();
-      const compLower = (product.compatibility || []).map(c => c.toLowerCase());
-
-      const candidates = [
-        product.bike_name,
-        ...(product.bike_names || []),
-        ...compLower,
-        titleLower
-      ].filter(Boolean) as string[];
-
-      for (const candidate of candidates) {
-        const subParts = candidate.includes("/") ? candidate.split("/") : [candidate];
-        for (const part of subParts) {
-          const candNorm = normalizeModelName(part);
-          if (candNorm === filterModelNorm) {
-            modelMatches = true;
-            break;
-          }
+    // 2. Token match: do all filter tokens appear in a single candidate string?
+    // e.g. ["duke", "390"] in "duke rc adv 200 250 390"
+    if (!modelMatches && filterTokens.length > 1) {
+      for (const text of searchables) {
+        if (filterTokens.every(tok => text.includes(tok))) {
+          modelMatches = true;
+          break;
         }
-        if (modelMatches) break;
+      }
+    }
+
+    // 3. Family aliases & common synonyms
+    if (!modelMatches) {
+      if (cleanFilter.startsWith("himalayan") && searchables.some(s => s.includes("himalayan"))) {
+        modelMatches = true;
+      } else if (cleanFilter.includes("interceptor") && searchables.some(s => s.includes("interceptor") || s.includes("int 650"))) {
+        modelMatches = true;
+      } else if ((cleanFilter.includes("gt 650") || cleanFilter.includes("continental gt")) && 
+          searchables.some(s => s.includes("gt 650") || s.includes("gt650") || s.includes("continental gt"))) {
+        modelMatches = true;
+      } else if (cleanFilter.includes("r15") && searchables.some(s => s.includes("r15"))) {
+        modelMatches = true;
+      } else if (cleanFilter.includes("mt 15") && searchables.some(s => s.includes("mt 15") || s.includes("mt15"))) {
+        modelMatches = true;
+      } else if (cleanFilter.includes("g310") && searchables.some(s => s.includes("g310") || s.includes("gs310") || s.includes("310gs") || s.includes("310r"))) {
+        modelMatches = true;
+      } else if (cleanFilter.includes("speed 400") && searchables.some(s => s.includes("speed 400"))) {
+        modelMatches = true;
+      } else if (cleanFilter.includes("scrambler 400") && searchables.some(s => s.includes("scrambler 400") || s.includes("scrambler 400x"))) {
+        modelMatches = true;
+      } else if (cleanFilter.includes("ninja 300") && searchables.some(s => s.includes("ninja 300"))) {
+        modelMatches = true;
+      } else if (cleanFilter.includes("ninja 400") && searchables.some(s => s.includes("ninja 400"))) {
+        modelMatches = true;
+      } else if (cleanFilter.includes("z900") && searchables.some(s => s.includes("z900") || s.includes("z 900"))) {
+        modelMatches = true;
+      } else if (cleanFilter.includes("apache rr 310") && searchables.some(s => s.includes("apache rr 310") || s.includes("rr 310") || s.includes("rr310") || s.includes("rtr 310"))) {
+        modelMatches = true;
+      } else if (cleanFilter.includes("aerox") && searchables.some(s => s.includes("aerox"))) {
+        modelMatches = true;
+      } else if (cleanFilter.includes("dominar 400") && searchables.some(s => s.includes("dominar 400"))) {
+        modelMatches = true;
       }
     }
 
@@ -2728,24 +2773,27 @@ export function extractUniqueProductFilters(products: Product[]): ExtractedProdu
     // Primary Source of Truth: Add normalized bike_names under appropriate canonical maker(s)
     bikeNames.forEach((modelName: string) => {
       const cleanModel = modelName.trim();
-      if (!cleanModel) return;
+      if (!cleanModel || !isLikelyBikeModel(cleanModel)) return;
+
+      const masterMatch = MASTER_MOTORCYCLES.find(m => {
+        const nm = normalizeModelName(m.model);
+        const nc = normalizeModelName(cleanModel);
+        return nc === nm || nc.includes(nm) || nm.includes(nc);
+      });
 
       let targetBrands = canonicalBrands.length > 0 ? canonicalBrands : [];
-      
-      if (targetBrands.length === 0) {
-        const masterMatch = MASTER_MOTORCYCLES.find(m => 
-          normalizeModelName(m.model) === normalizeModelName(cleanModel)
-        );
-        if (masterMatch) {
-          targetBrands = [normalizeBrandName(masterMatch.maker)];
-        }
+      if (targetBrands.length === 0 && masterMatch) {
+        targetBrands = [normalizeBrandName(masterMatch.maker)];
       }
+
+      const modelToAdd = masterMatch ? masterMatch.model : cleanModel;
+      if (modelToAdd.length < 3 || /^\d+$/.test(modelToAdd)) return;
 
       targetBrands.forEach((canonBrand) => {
         if (!makerModelsMap[canonBrand]) {
           makerModelsMap[canonBrand] = new Set();
         }
-        makerModelsMap[canonBrand].add(cleanModel);
+        makerModelsMap[canonBrand].add(modelToAdd);
       });
     });
 
@@ -2830,15 +2878,21 @@ export const MASTER_MOTORCYCLES: BikeProfile[] = [
   { maker: "KTM", model: "Duke 390", stockHP: 45.0, stockWeight: 168, engine: "399cc Liquid-Cooled Single", image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop" },
   { maker: "KTM", model: "RC 390", stockHP: 43.5, stockWeight: 172, engine: "373cc Liquid-Cooled Single", image: "https://images.unsplash.com/photo-1609630875171-b1321377ee65?q=80&w=400&auto=format&fit=crop" },
   { maker: "KTM", model: "Duke 250", stockHP: 30.0, stockWeight: 163, engine: "249cc Liquid-Cooled Single", image: "" },
+  { maker: "KTM", model: "Duke 200", stockHP: 25.0, stockWeight: 159, engine: "199.5cc Liquid-Cooled Single", image: "" },
+  { maker: "KTM", model: "Duke 125", stockHP: 14.5, stockWeight: 150, engine: "124.7cc Liquid-Cooled Single", image: "" },
   { maker: "KTM", model: "Adventure 390", stockHP: 43.5, stockWeight: 177, engine: "373cc Liquid-Cooled Single", image: "" },
+  { maker: "KTM", model: "Adventure 250", stockHP: 30.0, stockWeight: 177, engine: "249cc Liquid-Cooled Single", image: "" },
 
   // ROYAL ENFIELD
   { maker: "ROYAL ENFIELD", model: "Himalayan 450", stockHP: 40.0, stockWeight: 196, engine: "452cc Liquid-Cooled Sherpa Single", image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop" },
+  { maker: "ROYAL ENFIELD", model: "Himalayan 411", stockHP: 24.3, stockWeight: 191, engine: "411cc Air-Cooled Single", image: "" },
   { maker: "ROYAL ENFIELD", model: "Interceptor 650", stockHP: 47.0, stockWeight: 202, engine: "648cc Air-Oil Cooled Twin", image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop" },
   { maker: "ROYAL ENFIELD", model: "Continental GT 650", stockHP: 47.0, stockWeight: 198, engine: "648cc Air-Oil Cooled Twin", image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop" },
   { maker: "ROYAL ENFIELD", model: "Super Meteor 650", stockHP: 47.0, stockWeight: 241, engine: "648cc Parallel Twin", image: "" },
   { maker: "ROYAL ENFIELD", model: "Hunter 350", stockHP: 20.2, stockWeight: 181, engine: "349cc Single", image: "" },
   { maker: "ROYAL ENFIELD", model: "Classic 350", stockHP: 20.2, stockWeight: 195, engine: "349cc Single", image: "" },
+  { maker: "ROYAL ENFIELD", model: "Meteor 350", stockHP: 20.2, stockWeight: 191, engine: "349cc Single", image: "" },
+  { maker: "ROYAL ENFIELD", model: "Scram 411", stockHP: 24.3, stockWeight: 185, engine: "411cc Air-Cooled Single", image: "" },
 
   // BMW
   { maker: "BMW", model: "S1000R/HP4", stockHP: 165.0, stockWeight: 199, engine: "999cc Inline-Four", image: "" },
@@ -2849,8 +2903,16 @@ export const MASTER_MOTORCYCLES: BikeProfile[] = [
 
   // YAMAHA
   { maker: "YAMAHA", model: "R15 V4", stockHP: 18.4, stockWeight: 142, engine: "155cc Liquid-Cooled VVA Single", image: "https://images.unsplash.com/photo-1609630875171-b1321377ee65?q=80&w=400&auto=format&fit=crop" },
+  { maker: "YAMAHA", model: "R15 V3", stockHP: 18.6, stockWeight: 142, engine: "155cc Liquid-Cooled VVA Single", image: "" },
   { maker: "YAMAHA", model: "MT 15", stockHP: 18.4, stockWeight: 141, engine: "155cc Liquid-Cooled VVA Single", image: "" },
+  { maker: "YAMAHA", model: "Aerox 155", stockHP: 15.0, stockWeight: 126, engine: "155cc Liquid-Cooled VVA Single", image: "" },
   { maker: "YAMAHA", model: "R3", stockHP: 42.0, stockWeight: 169, engine: "321cc Parallel Twin", image: "" },
+
+  // BAJAJ
+  { maker: "BAJAJ", model: "Dominar 400", stockHP: 40.0, stockWeight: 193, engine: "373.3cc Liquid-Cooled Single", image: "" },
+  { maker: "BAJAJ", model: "Dominar 250", stockHP: 27.0, stockWeight: 180, engine: "248.8cc Liquid-Cooled Single", image: "" },
+  { maker: "BAJAJ", model: "Pulsar NS200", stockHP: 24.5, stockWeight: 158, engine: "199.5cc Triple-Spark Single", image: "" },
+  { maker: "BAJAJ", model: "Pulsar RS200", stockHP: 24.5, stockWeight: 166, engine: "199.5cc Liquid-Cooled Single", image: "" },
 
   // TRIUMPH
   { maker: "TRIUMPH", model: "Speed 400", stockHP: 40.0, stockWeight: 170, engine: "398cc Liquid-Cooled Single", image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=400&auto=format&fit=crop" },
@@ -2859,18 +2921,32 @@ export const MASTER_MOTORCYCLES: BikeProfile[] = [
   // HONDA
   { maker: "HONDA", model: "CB350", stockHP: 21.0, stockWeight: 187, engine: "348cc Air-Cooled Single", image: "" },
   { maker: "HONDA", model: "CB300R", stockHP: 31.1, stockWeight: 146, engine: "286cc Liquid-Cooled Single", image: "" },
+  { maker: "HONDA", model: "CBR 250R", stockHP: 26.5, stockWeight: 167, engine: "249.6cc Liquid-Cooled Single", image: "" },
+  { maker: "HONDA", model: "CBR 650R", stockHP: 87.0, stockWeight: 211, engine: "649cc Inline-Four", image: "" },
+  { maker: "HONDA", model: "Africa Twin", stockHP: 98.0, stockWeight: 239, engine: "1084cc Parallel Twin", image: "" },
 
   // KAWASAKI
   { maker: "KAWASAKI", model: "Ninja 300", stockHP: 39.0, stockWeight: 179, engine: "296cc Parallel Twin", image: "" },
   { maker: "KAWASAKI", model: "Ninja 400", stockHP: 45.0, stockWeight: 168, engine: "399cc Parallel Twin", image: "" },
+  { maker: "KAWASAKI", model: "Ninja 650", stockHP: 68.0, stockWeight: 196, engine: "649cc Parallel Twin", image: "" },
   { maker: "KAWASAKI", model: "Z900", stockHP: 125.0, stockWeight: 212, engine: "948cc Inline-Four", image: "" },
+  { maker: "KAWASAKI", model: "Z650", stockHP: 68.0, stockWeight: 191, engine: "649cc Parallel Twin", image: "" },
+  { maker: "KAWASAKI", model: "Versys 650", stockHP: 66.0, stockWeight: 219, engine: "649cc Parallel Twin", image: "" },
 
   // TVS
   { maker: "TVS", model: "Apache RR 310", stockHP: 34.0, stockWeight: 174, engine: "312cc Liquid-Cooled Single", image: "" },
+  { maker: "TVS", model: "Apache RTR 310", stockHP: 35.6, stockWeight: 169, engine: "312.12cc Liquid-Cooled Single", image: "" },
   { maker: "TVS", model: "Apache RTR 200 4V", stockHP: 20.8, stockWeight: 152, engine: "197.75cc Oil-Cooled Single", image: "" },
   { maker: "TVS", model: "Ronin 225", stockHP: 20.4, stockWeight: 160, engine: "225.9cc Oil-Cooled Single", image: "" },
   { maker: "TVS", model: "Ntorq 125", stockHP: 10.2, stockWeight: 118, engine: "124.8cc Air-Cooled Single", image: "" },
-  { maker: "TVS", model: "Raider 125", stockHP: 11.3, stockWeight: 123, engine: "124.8cc Air-Cooled Single", image: "" }
+  { maker: "TVS", model: "Raider 125", stockHP: 11.3, stockWeight: 123, engine: "124.8cc Air-Cooled Single", image: "" },
+
+  // APRILIA
+  { maker: "APRILIA", model: "RS 457", stockHP: 47.6, stockWeight: 175, engine: "457cc Parallel Twin", image: "" },
+  { maker: "APRILIA", model: "Tuono 457", stockHP: 47.6, stockWeight: 175, engine: "457cc Parallel Twin", image: "" },
+
+  // HERO
+  { maker: "HERO", model: "Xpulse 200 4V", stockHP: 19.1, stockWeight: 158, engine: "199.6cc Oil-Cooled Single", image: "" }
 ];
 
 export const BRAND_SYNONYMS: Record<string, string[]> = {

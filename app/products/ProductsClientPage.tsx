@@ -114,8 +114,7 @@ export default function ProductsClientPage({ initialProducts, initialCollections
       setLoading(true);
       try {
         const prods = await getProducts({
-          collectionHandle: selectedCollection === "all" ? undefined : selectedCollection,
-          limit: 48
+          collectionHandle: selectedCollection === "all" ? undefined : selectedCollection
         });
         setProducts(prods);
       } catch (e) {

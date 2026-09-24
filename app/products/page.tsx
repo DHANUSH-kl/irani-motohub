@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default async function AllProductsPage() {
   const [initialProducts, initialCollections] = await Promise.all([
-    getProducts({ limit: 48 }),
+    getProducts(),
     getCollections()
   ]);
 
